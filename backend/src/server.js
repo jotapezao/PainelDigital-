@@ -175,8 +175,20 @@ runMigrations()
     try {
       await pool.query('SELECT NOW()');
       console.log('✅ Database connected');
+
+      // Force ensure admin user
+      const { rows: adminRows } = await pool.query("SELECT id FROM users WHERE email = 'admin@sistema.com'");
+      if (adminRows.length === 0) {
+        console.log('👷 Creating default admin user...');
+        const bcrypt = require('bcryptjs');
+        const hash = await bcrypt.hash('admin123', 10);
+        
+        const clientResult = await pool.query("INSERT INTO clients (name, email) VALUES ('Sistema', 'admin@sistema.com') ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name RETURNING id");
+        await pool.query("INSERT INTO users (client_id, name, email, password_hash, role) VALUES ($1, 'Administrador', 'admin@sistema.com', $2, 'admin')", [clientResult.rows[0].id, hash]);
+        console.log('✅ Default admin created: admin@sistema.com / admin123');
+      }
     } catch (dbErr) {
-      console.error('❌ Database connection failed:', dbErr.message);
+      console.error('❌ Database initialization error:', dbErr.message);
     }
 
     server.listen(PORT, '0.0.0.0', () => {
