@@ -17,6 +17,7 @@ const scheduleRoutes = require('./routes/schedules');
 const logRoutes = require('./routes/logs');
 const statsRoutes = require('./routes/stats');
 const deviceGroupRoutes = require('./routes/device_groups');
+const settingsRoutes = require('./routes/settings');
 
 const app = express();
 const server = http.createServer(app);
@@ -64,6 +65,7 @@ app.use('/api/schedules', scheduleRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/device-groups', deviceGroupRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {

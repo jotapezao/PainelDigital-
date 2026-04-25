@@ -14,7 +14,8 @@ const UserEditor = () => {
     password: '',
     role: 'client',
     client_id: '',
-    active: true
+    active: true,
+    avatar_url: ''
   });
   
   const [clients, setClients] = useState([]);
@@ -122,6 +123,16 @@ const UserEditor = () => {
               </select>
             </div>
           )}
+        </div>
+
+        <div className="input-group">
+          <label>URL da Foto de Perfil <span className="info-icon" title="Link para a imagem do perfil do usuário">?</span></label>
+          <input 
+            type="text" 
+            value={form.avatar_url || ''} 
+            onChange={e => setForm(p => ({ ...p, avatar_url: e.target.value }))} 
+            placeholder="https://exemplo.com/avatar.jpg" 
+          />
         </div>
 
         <div className="input-group">

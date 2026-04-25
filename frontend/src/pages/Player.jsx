@@ -10,8 +10,10 @@ const Player = () => {
   const [playlist, setPlaylist] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [isStarted, setIsStarted] = useState(false);
   const videoRef = useRef(null);
   const timerRef = useRef(null);
+  const containerRef = useRef(null);
 
   useEffect(() => {
     fetchPlaylist();
@@ -105,6 +107,31 @@ const Player = () => {
     );
   }
 
+  const handleStart = () => {
+    setIsStarted(true);
+    if (containerRef.current?.requestFullscreen) {
+      containerRef.current.requestFullscreen();
+    }
+  };
+
+  if (!isStarted && !previewId) {
+    return (
+      <div style={{ 
+        background: '#000', height: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', color: '#fff', textAlign: 'center'
+      }}>
+        <h1 style={{ marginBottom: '20px', fontFamily: 'Outfit, sans-serif' }}>Painel Digital</h1>
+        <button 
+          onClick={handleStart}
+          className="btn btn-primary"
+          style={{ padding: '20px 40px', fontSize: '1.25rem' }}
+        >
+          🚀 Iniciar Exibição em Tela Cheia
+        </button>
+      </div>
+    );
+  }
+
   if (!playlist || playlist.items.length === 0) {
     return (
       <div style={{ background: '#000', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', textAlign: 'center', padding: '20px' }}>
@@ -117,16 +144,31 @@ const Player = () => {
   const mediaUrl = currentItem.url || currentItem.filename;
 
   return (
-    <div style={{ 
-      background: '#000', 
-      height: '100vh', 
-      width: '100vw', 
-      overflow: 'hidden', 
-      position: 'relative',
-      display: 'flex',
-      flexDirection: playlist?.footer_position === 'top' ? 'column-reverse' : 'column',
-      fontFamily: `${playlist?.footer_font_family || 'Inter'}, sans-serif`
-    }}>
+    <div 
+      ref={containerRef}
+      style={{ 
+        background: '#000', 
+        height: '100vh', 
+        width: '100vw', 
+        overflow: 'hidden', 
+        position: 'relative',
+        display: 'flex',
+        flexDirection: playlist?.footer_position === 'top' ? 'column-reverse' : 'column',
+        fontFamily: `${playlist?.footer_font_family || 'Inter'}, sans-serif`
+      }}
+    >
+      {/* Hidden Logout Button (Top Right) */}
+      {!previewId && (
+        <button 
+          onClick={() => { if(window.confirm('Deseja sair do player?')) { localStorage.clear(); sessionStorage.clear(); window.location.href = '/login'; } }}
+          style={{
+            position: 'absolute', top: 0, right: 0, width: '50px', height: '50px',
+            background: 'transparent', border: 'none', cursor: 'pointer', zIndex: 1000,
+            opacity: 0
+          }}
+          title="Sair"
+        />
+      )}
       {/* ESTILO PARA ANIMAÇÕES */}
       <style>{`
         @keyframes scrollText {

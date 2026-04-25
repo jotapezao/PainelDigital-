@@ -75,7 +75,7 @@ const Medias = () => {
     <div className="animate-fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Sua Biblioteca</h2>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Sua Biblioteca <span className="info-icon" title="Arquivos de imagem e vídeo que você pode usar em seus planos de exibição">?</span></h2>
           <p style={{ color: 'var(--text-muted)' }}>Gerencie imagens e vídeos para suas playlists.</p>
         </div>
 

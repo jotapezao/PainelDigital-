@@ -8,8 +8,8 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storagedUser = localStorage.getItem('@DigitalSignage:user');
-    const storagedToken = localStorage.getItem('@DigitalSignage:token');
+    const storagedUser = localStorage.getItem('@DigitalSignage:user') || sessionStorage.getItem('@DigitalSignage:user');
+    const storagedToken = localStorage.getItem('@DigitalSignage:token') || sessionStorage.getItem('@DigitalSignage:token');
 
     if (storagedUser && storagedToken) {
       setUser(JSON.parse(storagedUser));
@@ -19,14 +19,16 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  async function login(email, password) {
+  async function login(email, password, remember = false) {
     try {
       const response = await api.post('/auth/login', { email, password });
       
       const { user, token } = response.data;
 
-      localStorage.setItem('@DigitalSignage:user', JSON.stringify(user));
-      localStorage.setItem('@DigitalSignage:token', token);
+      const storage = remember ? localStorage : sessionStorage;
+
+      storage.setItem('@DigitalSignage:user', JSON.stringify(user));
+      storage.setItem('@DigitalSignage:token', token);
 
       api.defaults.headers.Authorization = `Bearer ${token}`;
       setUser(user);
@@ -43,6 +45,8 @@ export const AuthProvider = ({ children }) => {
   function logout() {
     localStorage.removeItem('@DigitalSignage:user');
     localStorage.removeItem('@DigitalSignage:token');
+    sessionStorage.removeItem('@DigitalSignage:user');
+    sessionStorage.removeItem('@DigitalSignage:token');
     api.defaults.headers.Authorization = undefined;
     setUser(null);
   }

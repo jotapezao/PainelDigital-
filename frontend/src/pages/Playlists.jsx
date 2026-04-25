@@ -54,7 +54,7 @@ const Playlists = () => {
     <div className="animate-fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Planos de Exibição</h2>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Planos de Exibição <span className="info-icon" title="Combine várias mídias em uma sequência para exibir em suas TVs">?</span></h2>
           <p style={{ color: 'var(--text-muted)' }}>Gerencie os planos e sequências de mídias.</p>
         </div>
         <button className="btn btn-primary" onClick={() => navigate('/playlists/new')}>

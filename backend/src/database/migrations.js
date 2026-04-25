@@ -18,7 +18,6 @@ async function runMigrations() {
       );
     `);
 
-    await client.query(`
       CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
@@ -27,9 +26,42 @@ async function runMigrations() {
         password_hash VARCHAR(255) NOT NULL,
         role VARCHAR(20) NOT NULL DEFAULT 'client' CHECK (role IN ('admin', 'client', 'viewer')),
         active BOOLEAN DEFAULT true,
+        avatar_url VARCHAR(500),
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
+    `);
+
+    // Create system_settings table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS system_settings (
+        id INTEGER PRIMARY KEY DEFAULT 1,
+        system_name VARCHAR(255) DEFAULT 'Painel Digital',
+        whatsapp_number VARCHAR(50),
+        support_text TEXT DEFAULT 'Precisa de ajuda? Entre em contato conosco!',
+        primary_color VARCHAR(20) DEFAULT '#6366f1',
+        logo_url VARCHAR(500),
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        CONSTRAINT one_row CHECK (id = 1)
+      );
+    `);
+
+    // Ensure system_settings has a row
+    await client.query(`
+      INSERT INTO system_settings (id, system_name)
+      VALUES (1, 'Painel Digital')
+      ON CONFLICT (id) DO NOTHING;
+    `);
+
+    // Ensure avatar_url column exists in users (for existing databases)
+    await client.query(`
+      DO $$ 
+      BEGIN 
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='avatar_url') THEN 
+          ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500); 
+        END IF;
+      END $$;
     `);
 
     await client.query(`
@@ -217,6 +249,27 @@ async function runMigrations() {
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='scale_mode') THEN 
           ALTER TABLE playlists ADD COLUMN scale_mode VARCHAR(20) DEFAULT 'cover'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='footer_opacity') THEN 
+          ALTER TABLE playlists ADD COLUMN footer_opacity DECIMAL DEFAULT 0.8; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='footer_font_size') THEN 
+          ALTER TABLE playlists ADD COLUMN footer_font_size VARCHAR(20) DEFAULT '1.5rem'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='footer_font_color') THEN 
+          ALTER TABLE playlists ADD COLUMN footer_font_color VARCHAR(20) DEFAULT '#ffffff'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='footer_position') THEN 
+          ALTER TABLE playlists ADD COLUMN footer_position VARCHAR(20) DEFAULT 'bottom'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='footer_font_family') THEN 
+          ALTER TABLE playlists ADD COLUMN footer_font_family VARCHAR(50) DEFAULT 'Inter'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='rss_url') THEN 
+          ALTER TABLE playlists ADD COLUMN rss_url TEXT; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='transition_effect') THEN 
+          ALTER TABLE playlists ADD COLUMN transition_effect VARCHAR(50) DEFAULT 'fade'; 
         END IF;
       END $$;
     `);

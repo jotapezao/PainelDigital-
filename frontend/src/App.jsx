@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -17,6 +18,7 @@ import DeviceEditor from './pages/DeviceEditor';
 import ClientEditor from './pages/ClientEditor';
 import ScheduleEditor from './pages/ScheduleEditor';
 import UserEditor from './pages/UserEditor';
+import Settings from './pages/Settings';
 
 const PrivateRoute = ({ children, adminOnly = false }) => {
   const { user, loading } = useAuth();
@@ -33,8 +35,9 @@ const RoleRedirect = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <ToastProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <ToastProvider>
         <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -82,13 +85,18 @@ function App() {
             <Route path="/logs" element={<PrivateRoute><Layout title="Logs de Atividade" /></PrivateRoute>}>
               <Route index element={<Logs />} />
             </Route>
+            
+            <Route path="/settings" element={<PrivateRoute adminOnly><Layout title="Configurações do Sistema" /></PrivateRoute>}>
+              <Route index element={<Settings />} />
+            </Route>
 
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Router>
       </ToastProvider>
     </AuthProvider>
-  );
+  </ThemeProvider>
+);
 }
 
 export default App;

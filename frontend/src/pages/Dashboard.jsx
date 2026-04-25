@@ -76,10 +76,10 @@ const Dashboard = () => {
 
       {/* Stats Grid */}
       <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-        <StatCard icon="📺" label="Dispositivos Online" value={loading ? '...' : `${stats?.online_devices ?? 0} / ${stats?.total_devices ?? 0}`}
+        <StatCard icon="📺" label={<>Dispositivos Online <span className="info-icon" title="Quantidade de telas ligadas agora vs total cadastrado">?</span></>} value={loading ? '...' : `${stats?.online_devices ?? 0} / ${stats?.total_devices ?? 0}`}
           sub={stats ? `${Math.round((stats.online_devices / Math.max(stats.total_devices, 1)) * 100)}%` : undefined}
           color="var(--success)" onClick={() => navigate('/devices')} />
-        <StatCard icon="🎬" label="Playlists Ativas" value={loading ? '...' : stats?.total_playlists ?? 0}
+        <StatCard icon="🎬" label={<>Playlists Ativas <span className="info-icon" title="Listas de reprodução que estão em uso no momento">?</span></>} value={loading ? '...' : stats?.total_playlists ?? 0}
           color="var(--primary)" onClick={() => navigate('/playlists')} />
         <StatCard icon="🖼️" label="Mídias na Biblioteca" value={loading ? '...' : stats?.total_medias ?? 0}
           color="var(--accent)" onClick={() => navigate('/medias')} />

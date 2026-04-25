@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
@@ -15,8 +16,8 @@ const Login = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
-    const result = await login(email, password);
+    
+    const result = await login(email, password, remember);
     
     if (result.success) {
       // O result.user virá do AuthContext atualizado
@@ -70,6 +71,18 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+          </div>
+
+          <div className="input-group" style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: '500' }}>
+              <input 
+                type="checkbox" 
+                checked={remember} 
+                onChange={(e) => setRemember(e.target.checked)}
+                style={{ width: '18px', height: '18px' }}
+              />
+              <span style={{ color: 'var(--text-main)' }}>Continuar logado</span>
+            </label>
           </div>
 
           {error && (

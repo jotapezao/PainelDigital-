@@ -41,6 +41,7 @@ async function login(req, res) {
         role: user.role,
         client_id: user.client_id,
         client_name: user.client_name,
+        avatar_url: user.avatar_url,
       },
     });
   } catch (err) {
@@ -53,7 +54,7 @@ async function login(req, res) {
 async function me(req, res) {
   try {
     const { rows } = await pool.query(
-      `SELECT u.id, u.name, u.email, u.role, u.client_id, c.name as client_name
+      `SELECT u.id, u.name, u.email, u.role, u.client_id, u.avatar_url, c.name as client_name
        FROM users u LEFT JOIN clients c ON u.client_id = c.id
        WHERE u.id = $1`,
       [req.user.id]
@@ -74,9 +75,9 @@ async function register(req, res) {
   try {
     const hash = await bcrypt.hash(password, 10);
     const { rows } = await pool.query(
-      `INSERT INTO users (name, email, password_hash, role, client_id)
-       VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, role, client_id`,
-      [name, email, hash, role || 'client', client_id || null]
+      `INSERT INTO users (name, email, password_hash, role, client_id, avatar_url)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, email, role, client_id, avatar_url`,
+      [name, email, hash, role || 'client', client_id || null, req.body.avatar_url || null]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -105,7 +106,7 @@ async function changePassword(req, res) {
 async function listUsers(req, res) {
   try {
     const { rows } = await pool.query(
-      `SELECT u.id, u.name, u.email, u.role, u.active, u.client_id, u.created_at, c.name as client_name
+      `SELECT u.id, u.name, u.email, u.role, u.active, u.client_id, u.avatar_url, u.created_at, c.name as client_name
        FROM users u LEFT JOIN clients c ON u.client_id = c.id
        ORDER BY u.created_at DESC`
     );
@@ -117,12 +118,12 @@ async function listUsers(req, res) {
 
 // PUT /api/auth/users/:id (admin only)
 async function updateUser(req, res) {
-  const { name, email, role, client_id, active } = req.body;
+  const { name, email, role, client_id, active, avatar_url } = req.body;
   try {
     const { rows } = await pool.query(
-      `UPDATE users SET name=$1, email=$2, role=$3, client_id=$4, active=$5, updated_at=NOW()
-       WHERE id=$6 RETURNING id, name, email, role, client_id, active`,
-      [name, email, role, client_id || null, active !== false, req.params.id]
+      `UPDATE users SET name=$1, email=$2, role=$3, client_id=$4, active=$5, avatar_url=$6, updated_at=NOW()
+       WHERE id=$7 RETURNING id, name, email, role, client_id, active, avatar_url`,
+      [name, email, role, client_id || null, active !== false, avatar_url || null, req.params.id]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Usuário não encontrado' });
     res.json(rows[0]);
