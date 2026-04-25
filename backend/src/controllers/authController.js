@@ -101,4 +101,45 @@ async function changePassword(req, res) {
   }
 }
 
-module.exports = { login, me, register, changePassword };
+// GET /api/auth/users (admin only)
+async function listUsers(req, res) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT u.id, u.name, u.email, u.role, u.active, u.client_id, u.created_at, c.name as client_name
+       FROM users u LEFT JOIN clients c ON u.client_id = c.id
+       ORDER BY u.created_at DESC`
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro interno' });
+  }
+}
+
+// PUT /api/auth/users/:id (admin only)
+async function updateUser(req, res) {
+  const { name, email, role, client_id, active } = req.body;
+  try {
+    const { rows } = await pool.query(
+      `UPDATE users SET name=$1, email=$2, role=$3, client_id=$4, active=$5, updated_at=NOW()
+       WHERE id=$6 RETURNING id, name, email, role, client_id, active`,
+      [name, email, role, client_id || null, active !== false, req.params.id]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'Usuário não encontrado' });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro interno' });
+  }
+}
+
+// DELETE /api/auth/users/:id (admin only)
+async function deleteUser(req, res) {
+  try {
+    const { rowCount } = await pool.query('DELETE FROM users WHERE id = $1', [req.params.id]);
+    if (rowCount === 0) return res.status(404).json({ error: 'Usuário não encontrado' });
+    res.json({ message: 'Usuário removido' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro interno' });
+  }
+}
+
+module.exports = { login, me, register, changePassword, listUsers, updateUser, deleteUser };

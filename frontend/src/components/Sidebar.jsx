@@ -29,6 +29,7 @@ const Sidebar = () => {
 
   if (user?.role === 'admin') {
     menuItems.splice(4, 0, { name: 'Clientes', path: '/clients', icon: 'users' });
+    menuItems.splice(5, 0, { name: 'Usuários', path: '/users', icon: 'users' });
   }
 
   return (

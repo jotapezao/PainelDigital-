@@ -81,12 +81,12 @@ async function create(req, res) {
 
 // PUT /api/devices/:id
 async function update(req, res) {
-  const { name, location, orientation, resolution, notes, active } = req.body;
+  const { name, location, orientation, resolution, notes, client_id } = req.body;
   try {
     const { rows } = await pool.query(
-      `UPDATE devices SET name=$1, location=$2, orientation=$3, resolution=$4, notes=$5, updated_at=NOW()
-       WHERE id=$6 RETURNING *`,
-      [name, location || null, orientation || 'landscape', resolution || null, notes || null, req.params.id]
+      `UPDATE devices SET name=$1, location=$2, orientation=$3, resolution=$4, notes=$5, client_id=$6, updated_at=NOW()
+       WHERE id=$7 RETURNING *`,
+      [name, location || null, orientation || 'landscape', resolution || null, notes || null, client_id || null, req.params.id]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Dispositivo não encontrado' });
     res.json(rows[0]);

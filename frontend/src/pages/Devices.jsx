@@ -26,16 +26,21 @@ const StatusDot = ({ status }) => {
   );
 };
 
-const DeviceModal = ({ isOpen, device, playlists, onClose, onSave }) => {
-  const [form, setForm] = useState({ name: '', location: '', playlist_id: '' });
+const DeviceModal = ({ isOpen, device, playlists, clients, onClose, onSave }) => {
+  const [form, setForm] = useState({ name: '', location: '', playlist_id: '', client_id: '' });
   const [saving, setSaving] = useState(false);
   const { addToast } = useToast();
 
   useEffect(() => {
     if (device) {
-      setForm({ name: device.name || '', location: device.location || '', playlist_id: device.playlist_id || '' });
+      setForm({ 
+        name: device.name || '', 
+        location: device.location || '', 
+        playlist_id: device.playlist_id || '',
+        client_id: device.client_id || ''
+      });
     } else {
-      setForm({ name: '', location: '', playlist_id: '' });
+      setForm({ name: '', location: '', playlist_id: '', client_id: '' });
     }
   }, [device, isOpen]);
 
@@ -90,6 +95,13 @@ const DeviceModal = ({ isOpen, device, playlists, onClose, onSave }) => {
               {playlists.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
+          <div className="input-group">
+            <label>Vincular ao Cliente (Empresa)</label>
+            <select value={form.client_id} onChange={e => setForm(p => ({ ...p, client_id: e.target.value }))}>
+              <option value="">— Selecione um Cliente —</option>
+              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
         </div>
         <div style={{ padding: '20px 28px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
           <button className="btn btn-outline" onClick={onClose}>Cancelar</button>
@@ -105,6 +117,7 @@ const DeviceModal = ({ isOpen, device, playlists, onClose, onSave }) => {
 const Devices = () => {
   const [devices, setDevices] = useState([]);
   const [playlists, setPlaylists] = useState([]);
+  const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState(null);
@@ -114,11 +127,16 @@ const Devices = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [devRes, playRes] = await Promise.all([api.get('/devices'), api.get('/playlists')]);
+      const [devRes, playRes, clientRes] = await Promise.all([
+        api.get('/devices'), 
+        api.get('/playlists'),
+        api.get('/clients')
+      ]);
       setDevices(devRes.data);
       setPlaylists(playRes.data);
+      setClients(clientRes.data);
     } catch {
-      addToast('error', 'Erro', 'Não foi possível carregar os dispositivos.');
+      addToast('error', 'Erro', 'Não foi possível carregar os dados.');
     } finally {
       setLoading(false);
     }
@@ -214,6 +232,7 @@ const Devices = () => {
                   <div>
                     <h4 style={{ fontWeight: '700', marginBottom: '2px' }}>{device.name}</h4>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{device.location || 'Sem localização'}</p>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: '600' }}>🏢 {device.client_name || 'Sem Cliente'}</p>
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -256,6 +275,7 @@ const Devices = () => {
         isOpen={modalOpen}
         device={editingDevice}
         playlists={playlists}
+        clients={clients}
         onClose={() => setModalOpen(false)}
         onSave={fetchData}
       />

@@ -11,6 +11,7 @@ import Clients from './pages/Clients';
 import Schedules from './pages/Schedules';
 import Logs from './pages/Logs';
 import Player from './pages/Player';
+import Users from './pages/Users';
 
 const PrivateRoute = ({ children, adminOnly = false }) => {
   const { user, loading } = useAuth();
@@ -53,6 +54,10 @@ function App() {
 
             <Route path="/clients" element={<PrivateRoute adminOnly><Layout title="Clientes" /></PrivateRoute>}>
               <Route index element={<Clients />} />
+            </Route>
+
+            <Route path="/users" element={<PrivateRoute adminOnly><Layout title="Usuários" /></PrivateRoute>}>
+              <Route index element={<Users />} />
             </Route>
 
             <Route path="/schedules" element={<PrivateRoute><Layout title="Agendamentos" /></PrivateRoute>}>
