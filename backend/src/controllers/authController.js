@@ -5,7 +5,7 @@ const { pool } = require('../database/db');
 function signToken(user) {
   return jwt.sign(
     { id: user.id, email: user.email, role: user.role, client_id: user.client_id },
-    process.env.JWT_SECRET,
+    process.env.JWT_SECRET || 'fallback_secret_key_change_me_in_production',
     { expiresIn: '7d' }
   );
 }
