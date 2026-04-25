@@ -4,14 +4,14 @@ const { uploadFile, deleteFile, listFiles } = require('../services/r2Service');
 // GET /api/medias
 async function list(req, res) {
   try {
-    const isAdmin = req.user.role === 'admin';
+    const isRestricted = req.user.role === 'client' || req.user.role === 'estagiario';
     const { type, client_id } = req.query;
 
     let conditions = [];
     let params = [];
     let idx = 1;
 
-    if (!isAdmin) {
+    if (isRestricted) {
       conditions.push(`m.client_id = $${idx++}`);
       params.push(req.user.client_id);
     } else if (client_id) {
@@ -55,11 +55,12 @@ async function list(req, res) {
 async function upload(req, res) {
   if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo enviado' });
   try {
+    const isRestricted = req.user.role === 'client' || req.user.role === 'estagiario';
     const isVideo = req.file.mimetype.startsWith('video/');
     const type = isVideo ? 'video' : 'image';
-    const clientId = req.user.role === 'admin' && req.body.client_id
-      ? req.body.client_id
-      : req.user.client_id;
+    const clientId = isRestricted
+      ? req.user.client_id
+      : (req.body.client_id || req.user.client_id);
 
     // Upload to R2
     const { fileName, url } = await uploadFile(req.file);

@@ -30,6 +30,11 @@ const Sidebar = () => {
   if (user?.role === 'admin') {
     menuItems.splice(4, 0, { name: 'Clientes', path: '/clients', icon: 'users' });
     menuItems.splice(5, 0, { name: 'Usuários', path: '/users', icon: 'users' });
+  } else if (user?.role === 'estagiario') {
+    // Estagiário vê quase tudo, mas não Clientes e Usuários
+  } else if (user?.role === 'client') {
+    // Cliente vê apenas o essencial se entrar no Dashboard
+    return null; // Ou poderíamos filtrar mais, mas o ideal é que ele vá pro /player
   }
 
   return (

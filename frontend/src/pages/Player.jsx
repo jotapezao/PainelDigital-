@@ -72,9 +72,11 @@ const Player = () => {
   }
 
   const currentItem = playlist.items[currentIndex];
-  const mediaUrl = currentItem.filename.startsWith('http') 
-    ? currentItem.filename 
-    : `${import.meta.env.VITE_API_URL.replace('/api', '')}/uploads/${currentItem.filename}`;
+  
+  // Se for widget, a URL é o próprio filename
+  // Se for mídia no R2, usamos o R2_PUBLIC_URL vindo da API ou montamos aqui
+  // O backend já deve enviar a URL completa agora, mas vamos garantir:
+  const mediaUrl = currentItem.url || currentItem.filename;
 
   return (
     <div style={{ background: '#000', height: '100vh', width: '100vw', overflow: 'hidden', position: 'relative' }}>

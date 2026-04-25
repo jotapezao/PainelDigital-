@@ -76,9 +76,9 @@ const UserModal = ({ isOpen, user, clients, onClose, onSave }) => {
           <div className="input-group">
             <label>Cargo / Nível de Acesso</label>
             <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}>
-              <option value="client">Cliente (Player)</option>
-              <option value="admin">Administrador (Gestão)</option>
-              <option value="viewer">Apenas Visualização</option>
+              <option value="client">Cliente (Acesso ao Player/Sua Empresa)</option>
+              <option value="estagiario">Estagiário (Gestor de Conteúdo)</option>
+              <option value="admin">Administrador (Gestão Total)</option>
             </select>
           </div>
           
@@ -90,7 +90,9 @@ const UserModal = ({ isOpen, user, clients, onClose, onSave }) => {
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '4px' }}>
-                Usuários do tipo 'Cliente' só verão mídias e playlists desta empresa.
+                {form.role === 'client' 
+                  ? 'Este usuário será direcionado para o Player da empresa vinculada.' 
+                  : 'Este usuário poderá gerenciar apenas o conteúdo da empresa selecionada.'}
               </p>
             </div>
           )}
@@ -181,8 +183,8 @@ const Users = () => {
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{u.email}</div>
                 </td>
                 <td style={{ padding: '16px 24px' }}>
-                  <span className={`badge ${u.role === 'admin' ? 'badge-primary' : 'badge-outline'}`} style={{ textTransform: 'capitalize' }}>
-                    {u.role === 'admin' ? '👑 Admin' : u.role === 'client' ? '👤 Cliente' : '👁️ Viewer'}
+                  <span className={`badge ${u.role === 'admin' ? 'badge-primary' : u.role === 'estagiario' ? 'badge-secondary' : 'badge-outline'}`} style={{ textTransform: 'capitalize' }}>
+                    {u.role === 'admin' ? '👑 Admin' : u.role === 'estagiario' ? '📝 Estagiário' : '👤 Cliente'}
                   </span>
                 </td>
                 <td style={{ padding: '16px 24px', color: u.client_name ? 'var(--text-muted)' : 'var(--text-dim)' }}>

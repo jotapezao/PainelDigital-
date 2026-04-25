@@ -3,13 +3,19 @@ const { pool } = require('../database/db');
 // GET /api/playlists
 async function list(req, res) {
   try {
-    const isAdmin = req.user.role === 'admin';
+    const isRestricted = req.user.role === 'client' || req.user.role === 'estagiario';
     const { client_id } = req.query;
     let conditions = [];
     let params = [];
     let idx = 1;
-    if (!isAdmin) { conditions.push(`p.client_id = $${idx++}`); params.push(req.user.client_id); }
-    else if (client_id) { conditions.push(`p.client_id = $${idx++}`); params.push(client_id); }
+    if (isRestricted) { 
+      conditions.push(`p.client_id = $${idx++}`); 
+      params.push(req.user.client_id); 
+    }
+    else if (client_id) { 
+      conditions.push(`p.client_id = $${idx++}`); 
+      params.push(client_id); 
+    }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const { rows } = await pool.query(
       `SELECT p.*, c.name as client_name,
@@ -44,10 +50,13 @@ async function getById(req, res) {
       [req.params.id]
     );
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const publicUrl = process.env.R2_PUBLIC_URL.endsWith('/') 
+      ? process.env.R2_PUBLIC_URL 
+      : `${process.env.R2_PUBLIC_URL}/`;
+
     playlist.items = items.map(item => ({
       ...item,
-      url: `${baseUrl}/uploads/${item.media_type === 'video' ? 'videos' : 'images'}/${item.media_filename}`,
+      url: item.media_type === 'widget' ? item.media_filename : `${publicUrl}${item.media_filename}`,
     }));
 
     res.json(playlist);
@@ -60,7 +69,8 @@ async function getById(req, res) {
 async function create(req, res) {
   const { name, description, client_id } = req.body;
   if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
-  const effectiveClientId = req.user.role === 'admin' ? (client_id || req.user.client_id) : req.user.client_id;
+  const isRestricted = req.user.role === 'client' || req.user.role === 'estagiario';
+  const effectiveClientId = isRestricted ? req.user.client_id : (client_id || req.user.client_id);
   try {
     const { rows } = await pool.query(
       `INSERT INTO playlists (client_id, name, description) VALUES ($1, $2, $3) RETURNING *`,
@@ -148,7 +158,14 @@ async function getActive(req, res) {
       [playlist.id]
     );
 
-    playlist.items = items;
+    const publicUrl = process.env.R2_PUBLIC_URL.endsWith('/') 
+      ? process.env.R2_PUBLIC_URL 
+      : `${process.env.R2_PUBLIC_URL}/`;
+
+    playlist.items = items.map(item => ({
+      ...item,
+      url: item.type === 'widget' ? item.filename : `${publicUrl}${item.filename}`,
+    }));
     res.json(playlist);
   } catch (err) {
     res.status(500).json({ error: 'Erro interno' });
