@@ -171,13 +171,46 @@ async function setItems(req, res) {
 // GET /api/playlists/active (for Player mode)
 async function getActive(req, res) {
   try {
-    const { rows: playlists } = await pool.query(
-      `SELECT * FROM playlists WHERE client_id = $1 AND active = true LIMIT 1`,
-      [req.user.client_id]
-    );
-    if (playlists.length === 0) return res.status(404).json({ error: 'Nenhuma playlist ativa' });
-    const playlist = playlists[0];
+    const now = new Date();
+    const currentTime = now.toTimeString().split(' ')[0]; // HH:MM:SS
+    const currentDay = now.getDay(); // 0 (Sun) to 6 (Sat)
 
+    // 1. Check for Active Schedules (Highest priority)
+    const { rows: schedules } = await pool.query(
+      `SELECT p.*, c.name as client_name 
+       FROM schedules s
+       JOIN playlists p ON s.playlist_id = p.id
+       LEFT JOIN clients c ON p.client_id = c.id
+       WHERE p.client_id = $1 
+         AND p.active = true 
+         AND s.active = true
+         AND $2 = ANY(s.days_of_week)
+         AND s.start_time <= $3
+         AND s.end_time >= $3
+       LIMIT 1`,
+      [req.user.client_id, currentDay, currentTime]
+    );
+
+    let playlist;
+
+    if (schedules.length > 0) {
+      playlist = schedules[0];
+    } else {
+      // 2. Fallback: Get the first active playlist for this client
+      const { rows: playlists } = await pool.query(
+        `SELECT p.*, c.name as client_name 
+         FROM playlists p 
+         LEFT JOIN clients c ON p.client_id = c.id
+         WHERE p.client_id = $1 AND p.active = true 
+         ORDER BY p.created_at ASC LIMIT 1`,
+        [req.user.client_id]
+      );
+      
+      if (playlists.length === 0) return res.status(404).json({ error: 'Nenhuma playlist ativa' });
+      playlist = playlists[0];
+    }
+
+    // Fetch items for the chosen playlist
     const { rows: items } = await pool.query(
       `SELECT pi.*, m.type, m.filename 
        FROM playlist_items pi JOIN medias m ON pi.media_id = m.id
@@ -196,8 +229,10 @@ async function getActive(req, res) {
       ...item,
       url: item.type === 'widget' ? item.filename : `${publicUrl}${item.filename}`,
     }));
+    
     res.json(playlist);
   } catch (err) {
+    console.error('Erro em getActive:', err);
     res.status(500).json({ error: 'Erro interno' });
   }
 }

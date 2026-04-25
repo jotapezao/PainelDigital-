@@ -12,18 +12,32 @@ const Player = () => {
 
   useEffect(() => {
     fetchPlaylist();
-    // Atualizar playlist a cada 5 minutos
-    const interval = setInterval(fetchPlaylist, 5 * 60 * 1000);
-    return () => clearInterval(interval);
+    
+    // Sinal de vida (Heartbeat) para ficar ONLINE no Dashboard
+    const heartbeat = setInterval(async () => {
+      try {
+        await api.post('/devices/heartbeat');
+      } catch (e) {
+        console.error('Falha no sinal de vida');
+      }
+    }, 30000); // A cada 30 segundos
+
+    // Atualizar playlist a cada 2 minutos
+    const interval = setInterval(fetchPlaylist, 2 * 60 * 1000);
+    
+    return () => {
+      clearInterval(heartbeat);
+      clearInterval(interval);
+    };
   }, []);
 
   const fetchPlaylist = async () => {
     try {
-      // No modo Player, buscamos a playlist vinculada ao cliente logado
-      // Ou podemos buscar por dispositivo se implementarmos registro de device
       const response = await api.get('/playlists/active'); 
-      if (response.data && response.data.items) {
+      if (response.data && response.data.items && response.data.items.length > 0) {
         setPlaylist(response.data);
+      } else {
+        setPlaylist(null); // Nenhuma mídia
       }
       setLoading(false);
     } catch (error) {

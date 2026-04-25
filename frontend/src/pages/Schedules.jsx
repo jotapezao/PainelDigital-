@@ -67,18 +67,15 @@ const ScheduleModal = ({ isOpen, schedule, devices, playlists, onClose, onSave }
 
   if (!isOpen) return null;
 
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 1000,
-      backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
-    }}>
-      <div className="card" style={{ width: '100%', maxWidth: '560px', padding: 0 }}>
-        <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '700' }}>{schedule?.id ? 'Editar Agendamento' : 'Novo Agendamento'}</h2>
+    <div className="modal-overlay">
+      <div className="modal-container">
+        {/* Header */}
+        <div className="modal-header">
+          <h2>{schedule?.id ? '✏️ Editar Agendamento' : '📅 Novo Agendamento'}</h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.5rem', lineHeight: 1 }}>×</button>
         </div>
-        <div style={{ padding: '28px' }}>
+        {/* Content */}
+        <div className="modal-body">
           <div className="input-group">
             <label>Nome do Agendamento *</label>
             <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Ex: Promoção Manhã" />
@@ -132,7 +129,9 @@ const ScheduleModal = ({ isOpen, schedule, devices, playlists, onClose, onSave }
             </label>
           </div>
         </div>
-        <div style={{ padding: '20px 28px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+
+        {/* Footer */}
+        <div className="modal-footer">
           <button className="btn btn-outline" onClick={onClose}>Cancelar</button>
           <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
             {saving ? 'Salvando...' : (schedule?.id ? 'Salvar' : 'Criar Agendamento')}

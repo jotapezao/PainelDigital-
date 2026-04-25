@@ -60,30 +60,19 @@ const UserModal = ({ isOpen, user, clients, onClose, onSave }) => {
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 1000,
-      backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)',
-      display: 'flex', justifyContent: 'center', padding: '40px 20px',
-      overflowY: 'auto', // Permite rolar a tela toda se o modal for grande
-      alignItems: 'flex-start' // Garante que o topo nunca suma
-    }}>
-      <div className="card animate-fade-in" style={{ 
-        width: '100%', maxWidth: '500px', padding: 0, 
-        overflow: 'visible', display: 'flex', flexDirection: 'column',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-        marginBottom: '40px' // Espaço no final ao rolar
-      }}>
+    <div className="modal-overlay">
+      <div className="modal-container">
         {/* Header */}
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
+        <div className="modal-header">
           <div>
-            <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#fff' }}>{user?.id ? '✏️ Editar Usuário' : '👤 Novo Usuário'}</h2>
+            <h2>{user?.id ? '✏️ Editar Usuário' : '👤 Novo Usuário'}</h2>
             <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Informações de acesso ao sistema.</p>
           </div>
           <button onClick={onClose} style={{ background: 'var(--bg-input)', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
         </div>
 
         {/* Content */}
-        <div style={{ padding: '24px' }}>
+        <div className="modal-body">
           <div className="input-group" style={{ marginBottom: '16px' }}>
             <label style={{ color: 'var(--text-main)', fontWeight: '600', fontSize: '0.85rem', marginBottom: '6px' }}>Nome Completo *</label>
             <input 
@@ -154,7 +143,7 @@ const UserModal = ({ isOpen, user, clients, onClose, onSave }) => {
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '12px', background: 'rgba(255,255,255,0.02)' }}>
+        <div className="modal-footer">
           <button className="btn btn-outline" onClick={onClose} style={{ padding: '8px 16px', fontSize: '0.85rem' }}>Cancelar</button>
           <button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ padding: '8px 24px', fontSize: '0.85rem' }}>
             {saving ? 'Salvando...' : (user?.id ? 'Salvar' : 'Cadastrar Usuário')}

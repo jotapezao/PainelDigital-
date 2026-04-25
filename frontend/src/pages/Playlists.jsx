@@ -108,45 +108,34 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
   const totalDuration = selectedItems.reduce((acc, i) => acc + (i.duration || 0), 0);
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 1000,
-      backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
-    }}>
-      <div className="card" style={{
-        width: '100%', maxWidth: '800px', maxHeight: '90vh',
-        display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0
-      }}>
+    <div className="modal-overlay">
+      <div className="modal-container" style={{ maxWidth: '800px' }}>
         {/* Header */}
-        <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '700' }}>
-            {playlist?.id ? 'Editar Playlist' : 'Nova Playlist'}
-          </h2>
+        <div className="modal-header">
+          <h2>{playlist?.id ? 'Editar Playlist' : 'Nova Playlist'}</h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.5rem', lineHeight: 1 }}>×</button>
         </div>
 
-        {/* Tabs */}
-        <div className="table-container" style={{ borderBottom: '1px solid var(--border)', padding: '0 14px' }}>
-          <div style={{ display: 'flex', minWidth: 'max-content' }}>
-            {[
-              { id: 'info', label: 'Informações' },
-              { id: 'medias', label: `Mídias (${selectedItems.length})` },
-              { id: 'layout', label: '🎨 Visual & Widgets' }
-            ].map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-                padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer',
-                color: activeTab === tab.id ? 'var(--primary)' : 'var(--text-muted)',
-                borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent',
-                fontWeight: '600', transition: 'all 0.2s'
-              }}>
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '28px' }}>
+        <div className="modal-body">
+          <div className="table-container" style={{ borderBottom: '1px solid var(--border)', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', minWidth: 'max-content' }}>
+              {[
+                { id: 'info', label: 'Informações' },
+                { id: 'medias', label: `Mídias (${selectedItems.length})` },
+                { id: 'layout', label: '🎨 Visual & Widgets' }
+              ].map(tab => (
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+                  padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer',
+                  color: activeTab === tab.id ? 'var(--primary)' : 'var(--text-muted)',
+                  borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent',
+                  fontWeight: '600', transition: 'all 0.2s'
+                }}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
           {activeTab === 'info' ? (
             <div>
               <div className="input-group">
@@ -299,7 +288,7 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '20px 28px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+        <div className="modal-footer">
           <button className="btn btn-outline" onClick={onClose}>Cancelar</button>
           <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
             {saving ? 'Salvando...' : (playlist?.id ? 'Salvar Alterações' : 'Criar Playlist')}
