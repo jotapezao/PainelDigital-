@@ -1,6 +1,8 @@
 require('dotenv').config();
 const { Pool } = require('pg');
 
+console.log('📋 Available env vars:', Object.keys(process.env).filter(k => !k.includes('SECRET') && !k.includes('PASSWORD') && !k.includes('KEY')));
+
 if (!process.env.DATABASE_URL) {
   console.warn('⚠️ DATABASE_URL is not defined in environment variables');
 } else {
