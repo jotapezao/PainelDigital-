@@ -1,0 +1,67 @@
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
+import Layout from './components/Layout';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Medias from './pages/Medias';
+import Playlists from './pages/Playlists';
+import Devices from './pages/Devices';
+import Clients from './pages/Clients';
+import Schedules from './pages/Schedules';
+import Logs from './pages/Logs';
+
+const PrivateRoute = ({ children, adminOnly = false }) => {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="loading-screen">Carregando...</div>;
+  if (!user) return <Navigate to="/login" />;
+  if (adminOnly && user.role !== 'admin') return <Navigate to="/" />;
+  return children;
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <ToastProvider>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+
+            {/* Protected layout routes */}
+            <Route path="/" element={<PrivateRoute><Layout title="Dashboard" /></PrivateRoute>}>
+              <Route index element={<Dashboard />} />
+            </Route>
+
+            <Route path="/medias" element={<PrivateRoute><Layout title="Mídias" /></PrivateRoute>}>
+              <Route index element={<Medias />} />
+            </Route>
+
+            <Route path="/playlists" element={<PrivateRoute><Layout title="Playlists" /></PrivateRoute>}>
+              <Route index element={<Playlists />} />
+            </Route>
+
+            <Route path="/devices" element={<PrivateRoute><Layout title="Dispositivos" /></PrivateRoute>}>
+              <Route index element={<Devices />} />
+            </Route>
+
+            <Route path="/clients" element={<PrivateRoute adminOnly><Layout title="Clientes" /></PrivateRoute>}>
+              <Route index element={<Clients />} />
+            </Route>
+
+            <Route path="/schedules" element={<PrivateRoute><Layout title="Agendamentos" /></PrivateRoute>}>
+              <Route index element={<Schedules />} />
+            </Route>
+
+            <Route path="/logs" element={<PrivateRoute><Layout title="Logs de Atividade" /></PrivateRoute>}>
+              <Route index element={<Logs />} />
+            </Route>
+
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </Router>
+      </ToastProvider>
+    </AuthProvider>
+  );
+}
+
+export default App;
