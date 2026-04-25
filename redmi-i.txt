@@ -1,0 +1,35 @@
+Implementei toda a lógica de "Player Automático" e "Painel Administrativo" no mesmo aplicativo.
+
+O que eu fiz:
+Criei o Player.jsx: Uma tela cheia que busca a playlist ativa do cliente e reproduz mídias (vídeo e imagem) em loop.
+Lógica de Login Inteligente:
+Se você logar com um Cliente, o app abre direto o Player em tela cheia.
+Se você logar com um Admin, o app abre o Painel de Gerenciamento.
+Backend atualizado: Adicionei a rota /api/playlists/active para que o Player saiba o que tocar.
+Como gerar o APK nativo agora:
+Para transformar isso em um APK nativo, vamos usar o Capacitor. Siga estes comandos no seu terminal (dentro da pasta frontend):
+
+Instale as ferramentas do Capacitor:
+
+bash
+cd frontend
+npm install @capacitor/core @capacitor/cli @capacitor/android
+Inicialize o Capacitor no projeto:
+
+bash
+npx cap init "Painel Digital" com.paineldigital.app --web-dir dist
+Adicione a plataforma Android:
+
+bash
+npx cap add android
+Sempre que você fizer uma alteração no código e quiser atualizar o APK:
+
+bash
+npm run build
+npx cap copy
+npx cap open android
+Isso vai abrir o Android Studio. Lá, basta clicar no ícone de "Play" para rodar no seu dispositivo ou ir em Build > Build Bundle(s) / APK(s) > Build APK(s) para gerar o arquivo .apk final.
+
+Dica para TV: Como você quer que o app rode em TVs Android, no Android Studio, lembre-se de marcar a categoria "Leanback" ou "Android TV" nas configurações do manifesto se quiser que ele apareça na vitrine de apps da TV.
+
+Já subi todas as alterações de código para o seu GitHub! Se precisar de ajuda com algum passo do Android Studio, é só me avisar.

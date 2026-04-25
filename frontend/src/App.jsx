@@ -10,6 +10,7 @@ import Devices from './pages/Devices';
 import Clients from './pages/Clients';
 import Schedules from './pages/Schedules';
 import Logs from './pages/Logs';
+import Player from './pages/Player';
 
 const PrivateRoute = ({ children, adminOnly = false }) => {
   const { user, loading } = useAuth();
@@ -19,6 +20,11 @@ const PrivateRoute = ({ children, adminOnly = false }) => {
   return children;
 };
 
+const RoleRedirect = () => {
+  const { user } = useAuth();
+  return user?.role === 'client' ? <Navigate to="/player" /> : <Dashboard />;
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -26,10 +32,11 @@ function App() {
         <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/player" element={<PrivateRoute><Player /></PrivateRoute>} />
 
             {/* Protected layout routes */}
             <Route path="/" element={<PrivateRoute><Layout title="Dashboard" /></PrivateRoute>}>
-              <Route index element={<Dashboard />} />
+              <Route index element={<RoleRedirect />} />
             </Route>
 
             <Route path="/medias" element={<PrivateRoute><Layout title="Mídias" /></PrivateRoute>}>

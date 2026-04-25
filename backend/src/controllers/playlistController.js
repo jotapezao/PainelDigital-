@@ -128,4 +128,31 @@ async function setItems(req, res) {
   }
 }
 
-module.exports = { list, getById, create, update, remove, setItems };
+// GET /api/playlists/active (for Player mode)
+async function getActive(req, res) {
+  try {
+    const { rows: playlists } = await pool.query(
+      `SELECT * FROM playlists WHERE client_id = $1 AND active = true LIMIT 1`,
+      [req.user.client_id]
+    );
+    if (playlists.length === 0) return res.status(404).json({ error: 'Nenhuma playlist ativa' });
+    const playlist = playlists[0];
+
+    const { rows: items } = await pool.query(
+      `SELECT pi.*, m.type, m.filename 
+       FROM playlist_items pi JOIN medias m ON pi.media_id = m.id
+       WHERE pi.playlist_id = $1 
+         AND (pi.valid_from IS NULL OR pi.valid_from <= NOW())
+         AND (pi.valid_until IS NULL OR pi.valid_until >= NOW())
+       ORDER BY pi.position ASC`,
+      [playlist.id]
+    );
+
+    playlist.items = items;
+    res.json(playlist);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro interno' });
+  }
+}
+
+module.exports = { list, getById, create, update, remove, setItems, getActive };

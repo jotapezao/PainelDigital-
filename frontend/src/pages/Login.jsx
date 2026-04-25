@@ -19,7 +19,12 @@ const Login = () => {
     const result = await login(email, password);
     
     if (result.success) {
-      navigate('/');
+      // O result.user virá do AuthContext atualizado
+      if (result.user?.role === 'client') {
+        navigate('/player');
+      } else {
+        navigate('/');
+      }
     } else {
       setError(result.message);
     }

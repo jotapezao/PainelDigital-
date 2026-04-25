@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Painel Digital</string>
+    <string name="title_activity_main">Painel Digital</string>
+    <string name="package_name">com.paineldigital.app</string>
+    <string name="custom_url_scheme">com.paineldigital.app</string>
+</resources>
