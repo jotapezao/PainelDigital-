@@ -13,7 +13,7 @@ const UserModal = ({ isOpen, user, clients, onClose, onSave }) => {
       setForm({ 
         name: user.name || '', 
         email: user.email || '', 
-        password: '', // Don't show password
+        password: '', 
         role: user.role || 'client',
         client_id: user.client_id || '',
         active: user.active !== false
@@ -37,7 +37,7 @@ const UserModal = ({ isOpen, user, clients, onClose, onSave }) => {
       return;
     }
     if (form.role !== 'admin' && !form.client_id) {
-      addToast('warning', 'Atenção', 'Vincule este usuário a uma Empresa (Cliente).');
+      addToast('warning', 'Atenção', 'Vincule este usuário a uma Empresa.');
       return;
     }
     setSaving(true);
@@ -62,75 +62,99 @@ const UserModal = ({ isOpen, user, clients, onClose, onSave }) => {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 1000,
-      backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+      backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
     }}>
-      <div className="card" style={{ width: '100%', maxWidth: '480px', padding: 0 }}>
-        <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '700' }}>{user?.id ? 'Editar Usuário' : 'Novo Usuário'}</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.5rem' }}>×</button>
+      <div className="card animate-fade-in" style={{ 
+        width: '100%', maxWidth: '500px', padding: 0, 
+        overflow: 'hidden', display: 'flex', flexDirection: 'column',
+        maxHeight: '90vh', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+      }}>
+        {/* Header */}
+        <div style={{ padding: '24px 30px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
+          <div>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#fff' }}>{user?.id ? '✏️ Editar Usuário' : '👤 Novo Usuário'}</h2>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>Preencha as informações de acesso.</p>
+          </div>
+          <button onClick={onClose} style={{ background: 'var(--bg-input)', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.2rem', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
         </div>
-        <div style={{ padding: '28px' }}>
-          <div className="input-group" style={{ display: 'block', marginBottom: '16px' }}>
-            <label htmlFor="user_email_field">E-mail (Login) *</label>
+
+        {/* Scrollable Content */}
+        <div style={{ padding: '30px', overflowY: 'auto', flex: 1 }}>
+          <div className="input-group">
+            <label style={{ color: 'var(--text-main)', fontWeight: '600' }}>Nome Completo *</label>
             <input 
-              id="user_email_field"
+              value={form.name} 
+              onChange={e => setForm(p => ({ ...p, name: e.target.value }))} 
+              placeholder="Ex: João Paulo Fernandes" 
+              style={{ border: '1px solid var(--border)', background: 'var(--bg-input)' }}
+            />
+          </div>
+
+          <div className="input-group">
+            <label style={{ color: 'var(--text-main)', fontWeight: '600' }}>E-mail (Login) *</label>
+            <input 
               type="email" 
               value={form.email} 
               onChange={e => setForm(p => ({ ...p, email: e.target.value }))} 
               placeholder="joao@empresa.com" 
+              style={{ border: '1px solid var(--border)', background: 'var(--bg-input)' }}
             />
           </div>
 
-          <div className="input-group" style={{ display: 'block', marginBottom: '16px' }}>
-            <label htmlFor="user_fullname_field">Nome Completo *</label>
-            <input 
-              id="user_fullname_field"
-              value={form.name} 
-              onChange={e => setForm(p => ({ ...p, name: e.target.value }))} 
-              placeholder="Ex: João Silva" 
-              autoFocus
-            />
-          </div>
           {!user && (
             <div className="input-group">
-              <label>Senha Provisória *</label>
-              <input type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" />
-            </div>
-          )}
-          <div className="input-group">
-            <label>Cargo / Nível de Acesso</label>
-            <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}>
-              <option value="client">Cliente (Acesso ao Player/Sua Empresa)</option>
-              <option value="estagiario">Estagiário (Gestor de Conteúdo)</option>
-              <option value="admin">Administrador (Gestão Total)</option>
-            </select>
-          </div>
-          
-          {form.role !== 'admin' && (
-            <div className="input-group">
-              <label>Vincular a uma Empresa (Cliente)</label>
-              <select value={form.client_id} onChange={e => setForm(p => ({ ...p, client_id: e.target.value }))}>
-                <option value="">— Selecione uma Empresa —</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '4px' }}>
-                {form.role === 'client' 
-                  ? 'Este usuário será direcionado para o Player da empresa vinculada.' 
-                  : 'Este usuário poderá gerenciar apenas o conteúdo da empresa selecionada.'}
-              </p>
+              <label style={{ color: 'var(--text-main)', fontWeight: '600' }}>Senha Provisória *</label>
+              <input 
+                type="password" 
+                value={form.password} 
+                onChange={e => setForm(p => ({ ...p, password: e.target.value }))} 
+                placeholder="••••••••" 
+                style={{ border: '1px solid var(--border)', background: 'var(--bg-input)' }}
+              />
             </div>
           )}
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
-            <input type="checkbox" id="user-active" checked={form.active} onChange={e => setForm(p => ({ ...p, active: e.target.checked }))} />
-            <label htmlFor="user-active" style={{ cursor: 'pointer', marginBottom: 0 }}>Usuário Ativo</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
+            <div className="input-group">
+              <label style={{ color: 'var(--text-main)', fontWeight: '600' }}>Nível de Acesso</label>
+              <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))} style={{ border: '1px solid var(--border)', background: 'var(--bg-input)' }}>
+                <option value="client">👤 Cliente (Acesso ao Player)</option>
+                <option value="estagiario">📝 Estagiário (Gestor)</option>
+                <option value="admin">👑 Administrador (Total)</option>
+              </select>
+            </div>
+            
+            {form.role !== 'admin' && (
+              <div className="input-group animate-fade-in">
+                <label style={{ color: 'var(--text-main)', fontWeight: '600' }}>Vincular a uma Empresa *</label>
+                <select value={form.client_id} onChange={e => setForm(p => ({ ...p, client_id: e.target.value }))} style={{ border: '1px solid var(--border)', background: 'var(--bg-input)' }}>
+                  <option value="">— Selecione uma Empresa —</option>
+                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+            )}
+          </div>
+
+          <div style={{ 
+            display: 'flex', alignItems: 'center', gap: '12px', 
+            padding: '16px', backgroundColor: 'rgba(255,255,255,0.03)', 
+            borderRadius: 'var(--radius-md)', marginTop: '10px', border: '1px solid var(--border)'
+          }}>
+            <input 
+              type="checkbox" id="user-active" checked={form.active} 
+              onChange={e => setForm(p => ({ ...p, active: e.target.checked }))} 
+              style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+            />
+            <label htmlFor="user-active" style={{ cursor: 'pointer', marginBottom: 0, fontWeight: '600' }}>Usuário Ativo</label>
           </div>
         </div>
-        <div style={{ padding: '20px 28px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-          <button className="btn btn-outline" onClick={onClose}>Cancelar</button>
-          <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? 'Salvando...' : (user?.id ? 'Salvar' : 'Cadastrar')}
+
+        {/* Footer */}
+        <div style={{ padding: '20px 30px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '12px', background: 'rgba(255,255,255,0.02)' }}>
+          <button className="btn btn-outline" onClick={onClose} style={{ minWidth: '100px' }}>Cancelar</button>
+          <button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ minWidth: '140px' }}>
+            {saving ? 'Salvando...' : (user?.id ? 'Salvar' : 'Cadastrar Usuário')}
           </button>
         </div>
       </div>
