@@ -177,7 +177,7 @@ const Users = () => {
 
   return (
     <div className="animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Usuários</h2>
           <p style={{ color: 'var(--text-muted)' }}>Gerencie os acessos ao sistema.</p>
@@ -187,8 +187,8 @@ const Users = () => {
         </button>
       </div>
 
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="table-container card" style={{ padding: 0 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
           <thead>
             <tr style={{ backgroundColor: 'var(--bg-input)', textAlign: 'left' }}>
               <th style={{ padding: '16px 24px', fontSize: '0.875rem', fontWeight: '600' }}>Nome</th>

@@ -174,7 +174,7 @@ const Devices = () => {
     <div className="animate-fade-in">
       <style>{`@keyframes pulse { 0%,100%{transform:scale(1);opacity:0.3} 50%{transform:scale(2);opacity:0.1} }`}</style>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Dispositivos</h2>
           <p style={{ color: 'var(--text-muted)' }}>Monitore e gerencie suas TVs e displays.</p>
@@ -185,7 +185,7 @@ const Devices = () => {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '28px' }}>
+      <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '28px' }}>
         {[
           { label: 'Total', value: stats.total, color: 'var(--primary)' },
           { label: 'Online', value: stats.online, color: 'var(--success)' },
@@ -199,7 +199,7 @@ const Devices = () => {
       </div>
 
       {/* Filter Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
         {['all', 'online', 'offline'].map(f => (
           <button key={f} onClick={() => setFilter(f)} className={f === filter ? 'btn btn-primary' : 'btn btn-outline'}
             style={{ padding: '8px 18px', fontSize: '0.875rem' }}>
@@ -220,7 +220,7 @@ const Devices = () => {
           {filter === 'all' && <button className="btn btn-outline" onClick={() => { setEditingDevice(null); setModalOpen(true); }}>Cadastrar Dispositivo</button>}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+        <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
           {filtered.map(device => (
             <div key={device.id} className="card" style={{ padding: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>

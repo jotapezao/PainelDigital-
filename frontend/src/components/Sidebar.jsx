@@ -15,7 +15,7 @@ const Icon = ({ name }) => {
   return icons[name] || null;
 };
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, onClose }) => {
   const { logout, user } = useAuth();
 
   const menuItems = [
@@ -31,48 +31,53 @@ const Sidebar = () => {
     menuItems.splice(4, 0, { name: 'Clientes', path: '/clients', icon: 'users' });
     menuItems.splice(5, 0, { name: 'Usuários', path: '/users', icon: 'users' });
   } else if (user?.role === 'estagiario') {
-    // Estagiário vê quase tudo, mas não Clientes e Usuários
+    // Estagiário vê quase tudo
   } else if (user?.role === 'client') {
-    // Cliente vê apenas o essencial se entrar no Dashboard
-    return null; // Ou poderíamos filtrar mais, mas o ideal é que ele vá pro /player
+    return null;
   }
 
   return (
-    <div className="sidebar" style={{
+    <div className={`sidebar ${isOpen ? 'open' : ''}`} style={{
       width: 'var(--sidebar-width)',
       backgroundColor: 'var(--bg-sidebar)',
       borderRight: '1px solid var(--border)',
       height: '100vh',
       display: 'flex',
       flexDirection: 'column',
-      position: 'sticky',
-      top: 0
+      position: 'fixed',
+      left: 0,
+      top: 0,
+      transition: 'transform 0.3s ease',
+      zIndex: 2001
     }}>
       <div className="sidebar-header" style={{
         padding: '30px 24px',
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'space-between',
         gap: '12px'
       }}>
-        <div style={{
-          width: '32px',
-          height: '32px',
-          borderRadius: '8px',
-          background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontWeight: 'bold'
-        }}>P</div>
-        <span style={{ 
-          fontSize: '1.25rem', 
-          fontWeight: '700', 
-          fontFamily: 'Outfit',
-          background: 'linear-gradient(to right, #fff, #94a3b8)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent'
-        }}>Painel Digital</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{
+            width: '32px', height: '32px', borderRadius: '8px',
+            background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold'
+          }}>P</div>
+          <span className="sidebar-text" style={{ 
+            fontSize: '1.25rem', fontWeight: '700', fontFamily: 'Outfit',
+            background: 'linear-gradient(to right, #fff, #94a3b8)',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
+          }}>Painel Digital</span>
+        </div>
+        
+        {/* Mobile Close Button */}
+        <button 
+          onClick={onClose}
+          className="mobile-only"
+          style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer', display: 'none' }}
+        >
+          ✕
+        </button>
       </div>
 
       <nav style={{ flex: 1, padding: '0 12px' }}>
@@ -81,6 +86,7 @@ const Sidebar = () => {
             <li key={item.path} style={{ marginBottom: '4px' }}>
               <NavLink 
                 to={item.path}
+                onClick={() => { if (window.innerWidth <= 768) onClose(); }}
                 className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
                 style={({ isActive }) => ({
                   display: 'flex',
@@ -98,7 +104,7 @@ const Sidebar = () => {
                 })}
               >
                 <span style={{ color: 'inherit', display: 'flex' }}><Icon name={item.icon} /></span>
-                {item.name}
+                <span className="sidebar-text">{item.name}</span>
               </NavLink>
             </li>
           ))}
@@ -112,25 +118,13 @@ const Sidebar = () => {
         <button 
           onClick={logout}
           style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            padding: '12px',
-            borderRadius: 'var(--radius-md)',
-            backgroundColor: 'transparent',
-            border: 'none',
-            color: 'var(--error)',
-            cursor: 'pointer',
-            fontSize: '0.9375rem',
-            fontWeight: '600',
-            transition: 'background 0.2s'
+            width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px',
+            borderRadius: 'var(--radius-md)', backgroundColor: 'transparent', border: 'none',
+            color: 'var(--error)', cursor: 'pointer', fontSize: '0.9375rem', fontWeight: '600'
           }}
-          onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
-          onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
         >
           <Icon name="logout" />
-          Sair
+          <span className="sidebar-text">Sair</span>
         </button>
       </div>
     </div>

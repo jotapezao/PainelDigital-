@@ -73,7 +73,7 @@ const Medias = () => {
 
   return (
     <div className="animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Sua Biblioteca</h2>
           <p style={{ color: 'var(--text-muted)' }}>Gerencie imagens e vídeos para suas playlists.</p>
@@ -106,7 +106,7 @@ const Medias = () => {
           <button className="btn btn-outline" onClick={handleUploadClick}>Fazer meu primeiro upload</button>
         </div>
       ) : (
-        <div style={{ 
+        <div className="grid-responsive" style={{ 
           display: 'grid', 
           gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
           gap: '24px' 

@@ -126,21 +126,23 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', padding: '0 28px' }}>
-          {[
-            { id: 'info', label: 'Informações' },
-            { id: 'medias', label: `Mídias (${selectedItems.length})` },
-            { id: 'layout', label: '🎨 Visual & Widgets' }
-          ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-              padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer',
-              color: activeTab === tab.id ? 'var(--primary)' : 'var(--text-muted)',
-              borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent',
-              fontWeight: '600', transition: 'all 0.2s'
-            }}>
-              {tab.label}
-            </button>
-          ))}
+        <div className="table-container" style={{ borderBottom: '1px solid var(--border)', padding: '0 14px' }}>
+          <div style={{ display: 'flex', minWidth: 'max-content' }}>
+            {[
+              { id: 'info', label: 'Informações' },
+              { id: 'medias', label: `Mídias (${selectedItems.length})` },
+              { id: 'layout', label: '🎨 Visual & Widgets' }
+            ].map(tab => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+                padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer',
+                color: activeTab === tab.id ? 'var(--primary)' : 'var(--text-muted)',
+                borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent',
+                fontWeight: '600', transition: 'all 0.2s'
+              }}>
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Content */}
@@ -169,7 +171,7 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
             <div className="animate-fade-in">
               <div className="input-group">
                 <label>Layout da Tela</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <button onClick={() => setLayout('fullscreen')} style={{
                     padding: '16px', borderRadius: 'var(--radius-md)', border: layout === 'fullscreen' ? '2px solid var(--primary)' : '2px solid var(--border)',
                     background: layout === 'fullscreen' ? 'rgba(99,102,241,0.1)' : 'var(--bg-input)', cursor: 'pointer'
@@ -193,7 +195,7 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
                 <input value={footerText} onChange={e => setFooterText(e.target.value)} placeholder="Ex: Promoção do Dia: Picanha R$ 49,90 • Feliz Natal! • " />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+              <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                 <div className="input-group">
                   <label>Cor do Tema</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
@@ -203,7 +205,7 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
                 </div>
                 <div className="input-group">
                   <label>Widgets Ativos</label>
-                  <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
+                  <div style={{ display: 'flex', gap: '20px', marginTop: '10px', flexWrap: 'wrap' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                       <input type="checkbox" checked={showClock} onChange={e => setShowClock(e.target.checked)} /> Relógio
                     </label>
@@ -262,7 +264,7 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
               {medias.length === 0 ? (
                 <p style={{ color: 'var(--text-dim)', textAlign: 'center', padding: '40px' }}>Nenhuma mídia disponível. Faça upload primeiro.</p>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px' }}>
+                <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px' }}>
                   {medias.map(media => {
                     const isSelected = selectedItems.some(i => i.media_id === media.id);
                     return (
@@ -365,7 +367,7 @@ const Playlists = () => {
 
   return (
     <div className="animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Playlists</h2>
           <p style={{ color: 'var(--text-muted)' }}>Organize e sequencie suas mídias para exibição.</p>
@@ -385,7 +387,7 @@ const Playlists = () => {
           <button className="btn btn-outline" onClick={() => { setEditingPlaylist(null); setModalOpen(true); }}>Criar Primeira Playlist</button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+        <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
           {playlists.map(playlist => (
             <div key={playlist.id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
