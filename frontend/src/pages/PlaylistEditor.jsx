@@ -22,6 +22,13 @@ const PlaylistEditor = () => {
   const [themeColor, setThemeColor] = useState('#818cf8');
   const [orientation, setOrientation] = useState('horizontal');
   const [scaleMode, setScaleMode] = useState('cover');
+  const [footerOpacity, setFooterOpacity] = useState(0.8);
+  const [footerFontSize, setFooterFontSize] = useState('1.5rem');
+  const [footerFontColor, setFooterFontColor] = useState('#ffffff');
+  const [footerPosition, setFooterPosition] = useState('bottom');
+  const [footerFontFamily, setFooterFontFamily] = useState('Inter');
+  const [rssUrl, setRssUrl] = useState('');
+  const [transitionEffect, setTransitionEffect] = useState('fade');
   
   const [medias, setMedias] = useState([]);
   const [clients, setClients] = useState([]);
@@ -52,6 +59,13 @@ const PlaylistEditor = () => {
           setThemeColor(p.theme_color || '#818cf8');
           setOrientation(p.orientation || 'horizontal');
           setScaleMode(p.scale_mode || 'cover');
+          setFooterOpacity(p.footer_opacity || 0.8);
+          setFooterFontSize(p.footer_font_size || '1.5rem');
+          setFooterFontColor(p.footer_font_color || '#ffffff');
+          setFooterPosition(p.footer_position || 'bottom');
+          setFooterFontFamily(p.footer_font_family || 'Inter');
+          setRssUrl(p.rss_url || '');
+          setTransitionEffect(p.transition_effect || 'fade');
         }
       } catch (err) {
         addToast('error', 'Erro', 'Falha ao carregar dados do plano.');
@@ -93,6 +107,10 @@ const PlaylistEditor = () => {
         name, description, client_id: clientId, layout,
         footer_text: footerText, show_clock: showClock, show_weather: showWeather,
         theme_color: themeColor, orientation, scale_mode: scaleMode,
+        footer_opacity: footerOpacity, footer_font_size: footerFontSize,
+        footer_font_color: footerFontColor, footer_position: footerPosition,
+        footer_font_family: footerFontFamily, rss_url: rssUrl,
+        transition_effect: transitionEffect,
         items: selectedItems.map((item, i) => ({
           media_id: item.media_id,
           duration_seconds: item.media?.type === 'video' ? 0 : (item.duration || 10),
@@ -194,6 +212,17 @@ const PlaylistEditor = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
                 <div>
                   <div className="input-group">
+                    <label>Efeito de Transição (entre mídias)</label>
+                    <select value={transitionEffect} onChange={e => setTransitionEffect(e.target.value)}>
+                      <option value="none">Sem Efeito</option>
+                      <option value="fade">Fade (Esmaecer)</option>
+                      <option value="slide-left">Slide Esquerda</option>
+                      <option value="slide-right">Slide Direita</option>
+                      <option value="zoom">Zoom</option>
+                    </select>
+                  </div>
+
+                  <div className="input-group">
                     <label>Layout Estrutural</label>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                       <button className={`btn ${layout === 'fullscreen' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setLayout('fullscreen')} style={{ height: '80px' }}>
@@ -214,8 +243,43 @@ const PlaylistEditor = () => {
                 </div>
                 <div>
                   <div className="input-group">
-                    <label>Texto do Rodapé (Informativo/Ticker)</label>
-                    <textarea value={footerText} onChange={e => setFooterText(e.target.value)} placeholder="Digite aqui as notícias ou promoções que vão rolar no rodapé..." rows={3} />
+                    <label>Fonte de Notícias (RSS Feed URL)</label>
+                    <input value={rssUrl} onChange={e => setRssUrl(e.target.value)} placeholder="Ex: https://g1.globo.com/rss/g1/" />
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '4px' }}>Deixe em branco para usar o texto manual abaixo.</p>
+                  </div>
+                  <div className="input-group">
+                    <label>Texto do Rodapé (Manual)</label>
+                    <textarea value={footerText} onChange={e => setFooterText(e.target.value)} placeholder="Digite aqui as notícias..." rows={2} />
+                  </div>
+
+                  <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div className="input-group">
+                      <label>Posição do Rodapé</label>
+                      <select value={footerPosition} onChange={e => setFooterPosition(e.target.value)}>
+                        <option value="bottom">Embaixo (Padrão)</option>
+                        <option value="top">Em Cima</option>
+                      </select>
+                    </div>
+                    <div className="input-group">
+                      <label>Transparência (0.1 a 1.0)</label>
+                      <input type="range" min="0.1" max="1" step="0.1" value={footerOpacity} onChange={e => setFooterOpacity(e.target.value)} />
+                    </div>
+                  </div>
+
+                  <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div className="input-group">
+                      <label>Cor da Letra</label>
+                      <input type="color" value={footerFontColor} onChange={e => setFooterFontColor(e.target.value)} />
+                    </div>
+                    <div className="input-group">
+                      <label>Fonte</label>
+                      <select value={footerFontFamily} onChange={e => setFooterFontFamily(e.target.value)}>
+                        <option value="Inter">Inter (Moderna)</option>
+                        <option value="Outfit">Outfit (Display)</option>
+                        <option value="Roboto">Roboto</option>
+                        <option value="serif">Serifada (Clássica)</option>
+                      </select>
+                    </div>
                   </div>
                   <div className="input-group">
                     <label>Widgets Auxiliares</label>

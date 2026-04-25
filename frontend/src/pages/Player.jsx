@@ -40,16 +40,29 @@ const Player = () => {
     try {
       let response;
       if (previewId) {
-        // Buscar playlist específica para preview
         response = await api.get(`/playlists/${previewId}`);
       } else {
         response = await api.get('/playlists/active'); 
       }
       
       if (response.data && (response.data.items || response.data.media)) {
-        // Normalizar dados se necessário (o editor usa 'items', o player pode esperar algo similar)
         const data = response.data;
         if (!data.items && data.media) data.items = data.media;
+        
+        // Fetch RSS if provided
+        if (data.rss_url) {
+          try {
+            // Using a public RSS to JSON proxy for demonstration
+            const rssRes = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(data.rss_url)}`);
+            const rssData = await rssRes.json();
+            if (rssData.items) {
+              data.footer_text = rssData.items.map(item => item.title).join(' • ');
+            }
+          } catch (e) {
+            console.error('RSS fetch error:', e);
+          }
+        }
+        
         setPlaylist(data);
       } else {
         setPlaylist(null);
@@ -111,8 +124,8 @@ const Player = () => {
       overflow: 'hidden', 
       position: 'relative',
       display: 'flex',
-      flexDirection: 'column',
-      fontFamily: 'Inter, sans-serif'
+      flexDirection: playlist?.footer_position === 'top' ? 'column-reverse' : 'column',
+      fontFamily: `${playlist?.footer_font_family || 'Inter'}, sans-serif`
     }}>
       {/* ESTILO PARA ANIMAÇÕES */}
       <style>{`
@@ -120,8 +133,15 @@ const Player = () => {
           0% { transform: translateX(100%); }
           100% { transform: translateX(-100%); }
         }
-        .fade-enter { opacity: 0; }
-        .fade-enter-active { opacity: 1; transition: opacity 1000ms; }
+        .transition-fade { animation: fadeEffect 1000ms forwards; }
+        .transition-slide-left { animation: slideLeftEffect 800ms ease-out forwards; }
+        .transition-slide-right { animation: slideRightEffect 800ms ease-out forwards; }
+        .transition-zoom { animation: zoomEffect 1000ms ease-out forwards; }
+
+        @keyframes fadeEffect { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideLeftEffect { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        @keyframes slideRightEffect { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        @keyframes zoomEffect { from { transform: scale(1.1); opacity: 0.5; } to { transform: scale(1); opacity: 1; } }
       `}</style>
 
       {/* ÁREA PRINCIPAL DA MÍDIA */}
@@ -135,21 +155,22 @@ const Player = () => {
       }}>
         {currentItem.type === 'image' ? (
           <img 
-            key={currentItem.id}
+            key={`${currentItem.id}-${currentIndex}`}
             src={mediaUrl} 
             alt="Media" 
-            className="animate-fade-in"
-            style={{ width: '100%', height: '100%', objectFit: playlist.layout === 'fullscreen' ? 'contain' : 'cover' }}
+            className={`transition-${playlist.transition_effect || 'fade'}`}
+            style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode || 'cover' }}
           />
         ) : (
           <video
-            key={currentItem.id}
+            key={`${currentItem.id}-${currentIndex}`}
             ref={videoRef}
             src={mediaUrl}
             autoPlay
             muted
             onEnded={handleVideoEnd}
-            style={{ width: '100%', height: '100%', objectFit: playlist.layout === 'fullscreen' ? 'contain' : 'cover' }}
+            className={`transition-${playlist.transition_effect || 'fade'}`}
+            style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode || 'cover' }}
           />
         )}
 
@@ -183,41 +204,44 @@ const Player = () => {
         )}
       </div>
 
-      {/* BARRA DE PROMOÇÕES (TICKER) */}
       {(playlist.layout === 'with_footer' || playlist.footer_text) && (
         <div style={{
-          height: '100px',
+          height: '80px',
           background: playlist.theme_color || '#818cf8',
-          color: '#fff',
+          backgroundColor: `rgba(${hexToRgb(playlist.theme_color || '#818cf8')}, ${playlist.footer_opacity || 0.8})`,
+          color: playlist.footer_font_color || '#fff',
           display: 'flex',
           alignItems: 'center',
           overflow: 'hidden',
           whiteSpace: 'nowrap',
-          boxShadow: '0 -10px 30px rgba(0,0,0,0.5)',
-          zIndex: 20
+          boxShadow: playlist.footer_position === 'top' ? '0 10px 30px rgba(0,0,0,0.5)' : '0 -10px 30px rgba(0,0,0,0.5)',
+          zIndex: 20,
+          backdropFilter: 'blur(10px)'
         }}>
           <div style={{
             padding: '0 40px',
-            background: 'rgba(0,0,0,0.2)',
+            background: 'rgba(0,0,0,0.1)',
             height: '100%',
             display: 'flex',
             alignItems: 'center',
             fontWeight: 'bold',
-            fontSize: '1.5rem',
+            fontSize: '1.2rem',
             textTransform: 'uppercase',
             letterSpacing: '2px',
-            borderRight: '4px solid rgba(255,255,255,0.3)'
+            borderRight: '2px solid rgba(255,255,255,0.2)',
+            fontFamily: 'Outfit, sans-serif'
           }}>
-            OFERTAS DO DIA
+            NOTÍCIAS
           </div>
           <div style={{
             display: 'inline-block',
             paddingLeft: '100%',
-            animation: 'scrollText 25s linear infinite',
-            fontSize: '2.5rem',
-            fontWeight: '600'
+            animation: 'scrollText 30s linear infinite',
+            fontSize: playlist.footer_font_size || '2rem',
+            fontWeight: '600',
+            fontFamily: playlist.footer_font_family || 'inherit'
           }}>
-            {playlist.footer_text || 'Confira nossas promoções especiais! • Painel Digital: Sua comunicação em outro nível • ' + playlist.client_name}
+            {playlist.footer_text || 'Painel Digital • Sua comunicação em outro nível • ' + playlist.client_name}
           </div>
         </div>
       )}
@@ -228,6 +252,13 @@ const Player = () => {
       </div>
     </div>
   );
+};
+
+const hexToRgb = (hex) => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? 
+    `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : 
+    '129, 140, 248';
 };
 
 export default Player;

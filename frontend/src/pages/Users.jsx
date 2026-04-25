@@ -1,165 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import ConfirmModal from '../components/ConfirmModal';
 
-const UserModal = ({ isOpen, user, clients, onClose, onSave }) => {
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'client', client_id: '', active: true });
-  const [saving, setSaving] = useState(false);
-  const { addToast } = useToast();
-
-  useEffect(() => {
-    if (user) {
-      setForm({ 
-        name: user.name || '', 
-        email: user.email || '', 
-        password: '', 
-        role: user.role || 'client',
-        client_id: user.client_id || '',
-        active: user.active !== false
-      });
-    } else {
-      setForm({ name: '', email: '', password: '', role: 'client', client_id: '', active: true });
-    }
-  }, [user, isOpen]);
-
-  const handleSave = async () => {
-    if (!form.name.trim()) {
-      addToast('warning', 'Atenção', 'O campo Nome Completo é obrigatório.');
-      return;
-    }
-    if (!form.email.trim()) {
-      addToast('warning', 'Atenção', 'O campo E-mail é obrigatório.');
-      return;
-    }
-    if (!user && !form.password.trim()) {
-      addToast('warning', 'Atenção', 'A Senha Provisória é obrigatória.');
-      return;
-    }
-    if (form.role !== 'admin' && !form.client_id) {
-      addToast('warning', 'Atenção', 'Vincule este usuário a uma Empresa.');
-      return;
-    }
-    setSaving(true);
-    try {
-      if (user?.id) {
-        await api.put(`/auth/users/${user.id}`, form);
-      } else {
-        await api.post('/auth/register', form);
-      }
-      addToast('success', 'Sucesso', `Usuário ${user?.id ? 'atualizado' : 'cadastrado'}!`);
-      onSave();
-      onClose();
-    } catch (err) {
-      addToast('error', 'Erro', err.response?.data?.error || 'Falha ao salvar usuário.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="modal-overlay">
-      <div className="modal-container">
-        {/* Header */}
-        <div className="modal-header">
-          <div>
-            <h2>{user?.id ? '✏️ Editar Usuário' : '👤 Novo Usuário'}</h2>
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Informações de acesso ao sistema.</p>
-          </div>
-          <button onClick={onClose} style={{ background: 'var(--bg-input)', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
-        </div>
-
-        {/* Content */}
-        <div className="modal-body">
-          <div className="input-group" style={{ marginBottom: '16px' }}>
-            <label style={{ color: 'var(--text-main)', fontWeight: '600', fontSize: '0.85rem', marginBottom: '6px' }}>Nome Completo *</label>
-            <input 
-              value={form.name} 
-              onChange={e => setForm(p => ({ ...p, name: e.target.value }))} 
-              placeholder="Ex: João Paulo Fernandes" 
-              style={{ border: '1px solid var(--border)', background: 'var(--bg-input)', padding: '10px 14px' }}
-            />
-          </div>
-
-          <div className="input-group" style={{ marginBottom: '16px' }}>
-            <label style={{ color: 'var(--text-main)', fontWeight: '600', fontSize: '0.85rem', marginBottom: '6px' }}>E-mail (Login) *</label>
-            <input 
-              type="email" 
-              value={form.email} 
-              onChange={e => setForm(p => ({ ...p, email: e.target.value }))} 
-              placeholder="joao@empresa.com" 
-              style={{ border: '1px solid var(--border)', background: 'var(--bg-input)', padding: '10px 14px' }}
-            />
-          </div>
-
-          {!user && (
-            <div className="input-group" style={{ marginBottom: '16px' }}>
-              <label style={{ color: 'var(--text-main)', fontWeight: '600', fontSize: '0.85rem', marginBottom: '6px' }}>Senha Provisória *</label>
-              <input 
-                type="password" 
-                value={form.password} 
-                onChange={e => setForm(p => ({ ...p, password: e.target.value }))} 
-                placeholder="••••••••" 
-                style={{ border: '1px solid var(--border)', background: 'var(--bg-input)', padding: '10px 14px' }}
-              />
-            </div>
-          )}
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: '16px' }}>
-            <div className="input-group">
-              <label style={{ color: 'var(--text-main)', fontWeight: '600', fontSize: '0.85rem', marginBottom: '6px' }}>Nível de Acesso</label>
-              <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))} style={{ border: '1px solid var(--border)', background: 'var(--bg-input)', padding: '10px 14px' }}>
-                <option value="client">👤 Cliente (Acesso ao Player)</option>
-                <option value="estagiario">📝 Estagiário (Gestor)</option>
-                <option value="admin">👑 Administrador (Total)</option>
-              </select>
-            </div>
-            
-            {form.role !== 'admin' && (
-              <div className="input-group animate-fade-in">
-                <label style={{ color: 'var(--text-main)', fontWeight: '600', fontSize: '0.85rem', marginBottom: '6px' }}>Vincular a uma Empresa *</label>
-                <select value={form.client_id} onChange={e => setForm(p => ({ ...p, client_id: e.target.value }))} style={{ border: '1px solid var(--border)', background: 'var(--bg-input)', padding: '10px 14px' }}>
-                  <option value="">— Selecione uma Empresa —</option>
-                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
-            )}
-          </div>
-
-          <div style={{ 
-            display: 'flex', alignItems: 'center', gap: '12px', 
-            padding: '12px 16px', backgroundColor: 'rgba(255,255,255,0.03)', 
-            borderRadius: 'var(--radius-md)', border: '1px solid var(--border)'
-          }}>
-            <input 
-              type="checkbox" id="user-active" checked={form.active} 
-              onChange={e => setForm(p => ({ ...p, active: e.target.checked }))} 
-              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-            />
-            <label htmlFor="user-active" style={{ cursor: 'pointer', marginBottom: 0, fontWeight: '600', fontSize: '0.85rem' }}>Usuário Ativo</label>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="modal-footer">
-          <button className="btn btn-outline" onClick={onClose} style={{ padding: '8px 16px', fontSize: '0.85rem' }}>Cancelar</button>
-          <button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ padding: '8px 24px', fontSize: '0.85rem' }}>
-            {saving ? 'Salvando...' : (user?.id ? 'Salvar' : 'Cadastrar Usuário')}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+// Removed UserModal
 
 const Users = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
   const [deleteModal, setDeleteModal] = useState({ open: false, user: null });
   const { addToast } = useToast();
 
@@ -198,7 +49,7 @@ const Users = () => {
           <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Usuários</h2>
           <p style={{ color: 'var(--text-muted)' }}>Gerencie os acessos ao sistema.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => { setEditingUser(null); setModalOpen(true); }}>
+        <button className="btn btn-primary" onClick={() => navigate('/users/new')}>
           + Novo Usuário
         </button>
       </div>
@@ -241,7 +92,7 @@ const Users = () => {
                 <td style={{ padding: '16px 24px', textAlign: 'right' }}>
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                     <button className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '0.75rem' }}
-                      onClick={() => { setEditingUser(u); setModalOpen(true); }}>✏️</button>
+                      onClick={() => navigate(`/users/${u.id}`)}>✏️</button>
                     <button className="btn" style={{ padding: '6px 12px', fontSize: '0.75rem', backgroundColor: 'rgba(239,68,68,0.1)', color: 'var(--error)' }}
                       onClick={() => setDeleteModal({ open: true, user: u })}>🗑️</button>
                   </div>
@@ -252,13 +103,6 @@ const Users = () => {
         </table>
       </div>
 
-      <UserModal
-        isOpen={modalOpen}
-        user={editingUser}
-        clients={clients}
-        onClose={() => setModalOpen(false)}
-        onSave={fetchData}
-      />
 
       <ConfirmModal
         isOpen={deleteModal.open}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import ConfirmModal from '../components/ConfirmModal';
@@ -26,101 +27,14 @@ const StatusDot = ({ status }) => {
   );
 };
 
-const DeviceModal = ({ isOpen, device, playlists, clients, onClose, onSave }) => {
-  const [form, setForm] = useState({ name: '', location: '', playlist_id: '', client_id: '' });
-  const [saving, setSaving] = useState(false);
-  const { addToast } = useToast();
-
-  useEffect(() => {
-    if (device) {
-      setForm({ 
-        name: device.name || '', 
-        location: device.location || '', 
-        playlist_id: device.playlist_id || '',
-        client_id: device.client_id || ''
-      });
-    } else {
-      setForm({ name: '', location: '', playlist_id: '', client_id: '' });
-    }
-  }, [device, isOpen]);
-
-  const handleSave = async () => {
-    if (!form.name.trim()) {
-      addToast('warning', 'Atenção', 'O nome do dispositivo é obrigatório.');
-      return;
-    }
-    setSaving(true);
-    try {
-      if (device?.id) {
-        await api.put(`/devices/${device.id}`, form);
-      } else {
-        await api.post('/devices', form);
-      }
-      addToast('success', 'Sucesso', `Dispositivo ${device?.id ? 'atualizado' : 'cadastrado'}!`);
-      onSave();
-      onClose();
-    } catch (err) {
-      addToast('error', 'Erro', err.response?.data?.message || 'Falha ao salvar dispositivo.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 1000,
-      backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
-    }}>
-      <div className="card" style={{ width: '100%', maxWidth: '480px', padding: 0 }}>
-        <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '700' }}>{device?.id ? 'Editar Dispositivo' : 'Novo Dispositivo'}</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.5rem', lineHeight: 1 }}>×</button>
-        </div>
-        <div style={{ padding: '28px' }}>
-          <div className="input-group">
-            <label>Nome do Dispositivo *</label>
-            <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Ex: TV Recepção - 01" />
-          </div>
-          <div className="input-group">
-            <label>Localização</label>
-            <input value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} placeholder="Ex: Andar 2, Sala de Espera" />
-          </div>
-          <div className="input-group">
-            <label>Plano Padrão</label>
-            <select value={form.playlist_id} onChange={e => setForm(p => ({ ...p, playlist_id: e.target.value }))}>
-              <option value="">— Nenhum —</option>
-              {playlists.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </div>
-          <div className="input-group">
-            <label>Vincular ao Cliente (Empresa)</label>
-            <select value={form.client_id} onChange={e => setForm(p => ({ ...p, client_id: e.target.value }))}>
-              <option value="">— Selecione um Cliente —</option>
-              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </div>
-        </div>
-        <div style={{ padding: '20px 28px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-          <button className="btn btn-outline" onClick={onClose}>Cancelar</button>
-          <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? 'Salvando...' : (device?.id ? 'Salvar' : 'Cadastrar')}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+// Removed DeviceModal component
 
 const Devices = () => {
+  const navigate = useNavigate();
   const [devices, setDevices] = useState([]);
   const [playlists, setPlaylists] = useState([]);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingDevice, setEditingDevice] = useState(null);
   const [deleteModal, setDeleteModal] = useState({ open: false, device: null });
   const [filter, setFilter] = useState('all');
   const { addToast } = useToast();
@@ -179,7 +93,7 @@ const Devices = () => {
           <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Dispositivos</h2>
           <p style={{ color: 'var(--text-muted)' }}>Monitore e gerencie suas TVs e displays.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => { setEditingDevice(null); setModalOpen(true); }}>
+        <button className="btn btn-primary" onClick={() => navigate('/devices/new')}>
           + Novo Dispositivo
         </button>
       </div>
@@ -217,7 +131,7 @@ const Devices = () => {
           <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>
             {filter === 'all' ? 'Cadastre seu primeiro dispositivo para começar.' : 'Não há dispositivos com esse status no momento.'}
           </p>
-          {filter === 'all' && <button className="btn btn-outline" onClick={() => { setEditingDevice(null); setModalOpen(true); }}>Cadastrar Dispositivo</button>}
+          {filter === 'all' && <button className="btn btn-outline" onClick={() => navigate('/devices/new')}>Cadastrar Dispositivo</button>}
         </div>
       ) : (
         <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
@@ -258,7 +172,7 @@ const Devices = () => {
 
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button className="btn btn-outline" style={{ flex: 1, padding: '8px', fontSize: '0.8125rem' }}
-                  onClick={() => { setEditingDevice(device); setModalOpen(true); }}>
+                  onClick={() => navigate(`/devices/${device.id}`)}>
                   ✏️ Editar
                 </button>
                 <button className="btn" style={{ padding: '8px 14px', backgroundColor: 'rgba(239,68,68,0.1)', color: 'var(--error)', border: '1px solid rgba(239,68,68,0.2)' }}
@@ -271,14 +185,6 @@ const Devices = () => {
         </div>
       )}
 
-      <DeviceModal
-        isOpen={modalOpen}
-        device={editingDevice}
-        playlists={playlists}
-        clients={clients}
-        onClose={() => setModalOpen(false)}
-        onSave={fetchData}
-      />
 
       <ConfirmModal
         isOpen={deleteModal.open}
