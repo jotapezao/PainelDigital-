@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 const Player = () => {
+  const [searchParams] = useSearchParams();
+  const previewId = searchParams.get('preview');
   const { user } = useAuth();
   const [playlist, setPlaylist] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -13,31 +16,43 @@ const Player = () => {
   useEffect(() => {
     fetchPlaylist();
     
-    // Sinal de vida (Heartbeat) para ficar ONLINE no Dashboard
-    const heartbeat = setInterval(async () => {
-      try {
-        await api.post('/devices/heartbeat');
-      } catch (e) {
-        console.error('Falha no sinal de vida');
-      }
-    }, 30000); // A cada 30 segundos
+    // Skip heartbeat if in preview mode
+    let heartbeat;
+    if (!previewId) {
+      heartbeat = setInterval(async () => {
+        try {
+          await api.post('/devices/heartbeat');
+        } catch (e) {
+          console.error('Falha no sinal de vida');
+        }
+      }, 30000);
+    }
 
-    // Atualizar playlist a cada 2 minutos
     const interval = setInterval(fetchPlaylist, 2 * 60 * 1000);
     
     return () => {
-      clearInterval(heartbeat);
+      if (heartbeat) clearInterval(heartbeat);
       clearInterval(interval);
     };
-  }, []);
+  }, [previewId]);
 
   const fetchPlaylist = async () => {
     try {
-      const response = await api.get('/playlists/active'); 
-      if (response.data && response.data.items && response.data.items.length > 0) {
-        setPlaylist(response.data);
+      let response;
+      if (previewId) {
+        // Buscar playlist específica para preview
+        response = await api.get(`/playlists/${previewId}`);
       } else {
-        setPlaylist(null); // Nenhuma mídia
+        response = await api.get('/playlists/active'); 
+      }
+      
+      if (response.data && (response.data.items || response.data.media)) {
+        // Normalizar dados se necessário (o editor usa 'items', o player pode esperar algo similar)
+        const data = response.data;
+        if (!data.items && data.media) data.items = data.media;
+        setPlaylist(data);
+      } else {
+        setPlaylist(null);
       }
       setLoading(false);
     } catch (error) {

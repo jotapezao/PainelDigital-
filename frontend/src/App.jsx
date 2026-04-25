@@ -12,6 +12,7 @@ import Schedules from './pages/Schedules';
 import Logs from './pages/Logs';
 import Player from './pages/Player';
 import Users from './pages/Users';
+import PlaylistEditor from './pages/PlaylistEditor';
 
 const PrivateRoute = ({ children, adminOnly = false }) => {
   const { user, loading } = useAuth();
@@ -44,8 +45,10 @@ function App() {
               <Route index element={<Medias />} />
             </Route>
 
-            <Route path="/playlists" element={<PrivateRoute><Layout title="Playlists" /></PrivateRoute>}>
+            <Route path="/playlists" element={<PrivateRoute><Layout title="Planos de Exibição" /></PrivateRoute>}>
               <Route index element={<Playlists />} />
+              <Route path="new" element={<PlaylistEditor />} />
+              <Route path=":id" element={<PlaylistEditor />} />
             </Route>
 
             <Route path="/devices" element={<PrivateRoute><Layout title="Dispositivos" /></PrivateRoute>}>
