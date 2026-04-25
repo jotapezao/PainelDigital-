@@ -141,9 +141,18 @@ async function runMigrations() {
       ALTER TABLE medias ADD CONSTRAINT medias_type_check CHECK (type IN ('video', 'image', 'widget'));
     `);
 
-    // 2. Add validity columns to playlist_items
-    try { await client.query(`ALTER TABLE playlist_items ADD COLUMN valid_from TIMESTAMPTZ;`); } catch(e) {}
-    try { await client.query(`ALTER TABLE playlist_items ADD COLUMN valid_until TIMESTAMPTZ;`); } catch(e) {}
+    // 2. Add validity columns to playlist_items safely
+    await client.query(`
+      DO $$ 
+      BEGIN 
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlist_items' AND column_name='valid_from') THEN 
+          ALTER TABLE playlist_items ADD COLUMN valid_from TIMESTAMPTZ; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlist_items' AND column_name='valid_until') THEN 
+          ALTER TABLE playlist_items ADD COLUMN valid_until TIMESTAMPTZ; 
+        END IF;
+      END $$;
+    `);
 
     // 3. Create device_groups
     await client.query(`
