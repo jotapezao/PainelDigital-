@@ -158,7 +158,16 @@ const PORT = process.env.PORT || 3001;
 
 // Initialize DB then start server
 runMigrations()
-  .then(() => {
+  .then(async () => {
+    // Verify connection
+    const { pool } = require('./database/db');
+    try {
+      await pool.query('SELECT NOW()');
+      console.log('✅ Database connected');
+    } catch (dbErr) {
+      console.error('❌ Database connection failed:', dbErr.message);
+    }
+
     server.listen(PORT, '0.0.0.0', () => {
       console.log(`✅ Server running on port ${PORT}`);
     });

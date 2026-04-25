@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { 
         success: false, 
-        message: error.response?.data?.message || 'Erro ao realizar login' 
+        message: error.response?.data?.error || error.response?.data?.message || 'Erro ao realizar login' 
       };
     }
   }
