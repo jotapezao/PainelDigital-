@@ -67,6 +67,7 @@ const ScheduleModal = ({ isOpen, schedule, devices, playlists, onClose, onSave }
 
   if (!isOpen) return null;
 
+  return (
     <div className="modal-overlay">
       <div className="modal-container">
         {/* Header */}
