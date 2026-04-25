@@ -292,6 +292,7 @@ const PlaylistModal = ({ isOpen, playlist, medias, clients, onClose, onSave }) =
             {saving ? 'Salvando...' : 'Salvar Alterações'}
           </button>
         </div>
+      </div>
     </div>
   );
 };
