@@ -69,8 +69,10 @@ async function getById(req, res) {
 async function create(req, res) {
   const { name, description, client_id, layout, footer_text, show_clock, show_weather, theme_color } = req.body;
   if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
-  const isRestricted = req.user.role === 'client' || req.user.role === 'estagiario';
-  const effectiveClientId = isRestricted ? req.user.client_id : (client_id || req.user.client_id);
+  
+  // Se for admin, usa o client_id enviado. Se for cliente, usa o dele mesmo.
+  const effectiveClientId = req.user.role === 'admin' ? (client_id || req.user.client_id) : req.user.client_id;
+  
   try {
     const { rows } = await pool.query(
       `INSERT INTO playlists (client_id, name, description, layout, footer_text, show_clock, show_weather, theme_color)
@@ -93,19 +95,31 @@ async function create(req, res) {
 
     res.status(201).json({ ...playlist, items: req.body.items || [] });
   } catch (err) {
+    console.error('Erro ao criar playlist:', err);
     res.status(500).json({ error: 'Erro interno' });
   }
 }
 
 // PUT /api/playlists/:id
 async function update(req, res) {
-  const { name, description, active, layout, footer_text, show_clock, show_weather, theme_color } = req.body;
+  const { name, description, active, layout, footer_text, show_clock, show_weather, theme_color, client_id } = req.body;
   try {
-    const { rows } = await pool.query(
-      `UPDATE playlists SET name=$1, description=$2, active=$3, layout=$4, footer_text=$5, show_clock=$6, show_weather=$7, theme_color=$8, updated_at=NOW()
-       WHERE id=$9 RETURNING *`,
-      [name, description || null, active !== false, layout, footer_text, show_clock, show_weather, theme_color, req.params.id]
-    );
+    // Admins podem trocar o cliente da playlist
+    const effectiveClientId = req.user.role === 'admin' ? client_id : undefined;
+
+    let query = `UPDATE playlists SET name=$1, description=$2, active=$3, layout=$4, footer_text=$5, show_clock=$6, show_weather=$7, theme_color=$8, updated_at=NOW()`;
+    let params = [name, description || null, active !== false, layout, footer_text, show_clock, show_weather, theme_color];
+    let idx = 9;
+
+    if (effectiveClientId) {
+      query += `, client_id=$${idx++}`;
+      params.push(effectiveClientId);
+    }
+
+    query += ` WHERE id=$${idx} RETURNING *`;
+    params.push(req.params.id);
+
+    const { rows } = await pool.query(query, params);
     if (rows.length === 0) return res.status(404).json({ error: 'Playlist não encontrada' });
     const playlist = rows[0];
 
