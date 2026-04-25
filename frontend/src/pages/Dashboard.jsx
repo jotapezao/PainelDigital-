@@ -52,6 +52,8 @@ const Dashboard = () => {
       }
     };
     fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const LOG_ICONS = { upload: '📤', delete: '🗑️', login: '🔑', logout: '🚪', create: '✨', update: '✏️', device_online: '✅', device_offline: '❌', default: '📋' };

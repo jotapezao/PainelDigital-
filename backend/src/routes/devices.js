@@ -12,6 +12,7 @@ router.get('/:id/sync', ctrl.syncDevice);
 router.post('/', ctrl.create);
 router.put('/:id', ctrl.update);
 router.post('/:id/playlist', ctrl.assignPlaylist);
+router.post('/heartbeat', ctrl.heartbeat);
 router.delete('/:id', ctrl.remove);
 
 module.exports = router;

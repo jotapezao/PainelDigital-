@@ -29,6 +29,11 @@ const PlaylistEditor = () => {
   const [footerFontFamily, setFooterFontFamily] = useState('Inter');
   const [rssUrl, setRssUrl] = useState('');
   const [transitionEffect, setTransitionEffect] = useState('fade');
+  const [tickerSpeed, setTickerSpeed] = useState('medium');
+  const [tickerDirection, setTickerDirection] = useState('ltr');
+  const [tickerHeight, setTickerHeight] = useState(80);
+  const [tickerBlur, setTickerBlur] = useState(true);
+  const [tickerFontWeight, setTickerFontWeight] = useState('600');
   
   const [medias, setMedias] = useState([]);
   const [clients, setClients] = useState([]);
@@ -66,6 +71,11 @@ const PlaylistEditor = () => {
           setFooterFontFamily(p.footer_font_family || 'Inter');
           setRssUrl(p.rss_url || '');
           setTransitionEffect(p.transition_effect || 'fade');
+          setTickerSpeed(p.ticker_speed || 'medium');
+          setTickerDirection(p.ticker_direction || 'ltr');
+          setTickerHeight(p.ticker_height || 80);
+          setTickerBlur(p.ticker_blur !== false);
+          setTickerFontWeight(p.ticker_font_weight || '600');
         }
       } catch (err) {
         addToast('error', 'Erro', 'Falha ao carregar dados do plano.');
@@ -96,6 +106,24 @@ const PlaylistEditor = () => {
     ));
   };
 
+  const moveUp = (idx) => {
+    if (idx === 0) return;
+    setSelectedItems(prev => {
+      const copy = [...prev];
+      [copy[idx - 1], copy[idx]] = [copy[idx], copy[idx - 1]];
+      return copy;
+    });
+  };
+
+  const moveDown = (idx) => {
+    if (idx === selectedItems.length - 1) return;
+    setSelectedItems(prev => {
+      const copy = [...prev];
+      [copy[idx + 1], copy[idx]] = [copy[idx], copy[idx + 1]];
+      return copy;
+    });
+  };
+
   const handleSave = async () => {
     if (!name.trim()) {
       addToast('warning', 'Atenção', 'O nome do plano é obrigatório.');
@@ -107,10 +135,15 @@ const PlaylistEditor = () => {
         name, description, client_id: clientId, layout,
         footer_text: footerText, show_clock: showClock, show_weather: showWeather,
         theme_color: themeColor, orientation, scale_mode: scaleMode,
-        footer_opacity: footerOpacity, footer_font_size: footerFontSize,
+        footer_opacity: parseFloat(footerOpacity), footer_font_size: footerFontSize,
         footer_font_color: footerFontColor, footer_position: footerPosition,
         footer_font_family: footerFontFamily, rss_url: rssUrl,
         transition_effect: transitionEffect,
+        ticker_speed: tickerSpeed,
+        ticker_direction: tickerDirection,
+        ticker_height: parseInt(tickerHeight) || 80,
+        ticker_blur: tickerBlur,
+        ticker_font_weight: tickerFontWeight,
         items: selectedItems.map((item, i) => ({
           media_id: item.media_id,
           duration_seconds: item.media?.type === 'video' ? 0 : (item.duration || 10),
@@ -130,6 +163,8 @@ const PlaylistEditor = () => {
       setSaving(false);
     }
   };
+
+  const totalDuration = selectedItems.reduce((acc, item) => acc + (item.media?.type === 'video' ? 0 : (item.duration || 10)), 0);
 
   if (loading) return <div className="loading-screen">Carregando editor...</div>;
 
@@ -240,6 +275,40 @@ const PlaylistEditor = () => {
                       <input value={themeColor} onChange={e => setThemeColor(e.target.value)} style={{ flex: 1 }} />
                     </div>
                   </div>
+
+                  <div className="input-group">
+                    <label>Configurações do Ticker (Rodapé)</label>
+                    <div style={{ background: 'var(--bg-input)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Velocidade</label>
+                          <select value={tickerSpeed} onChange={e => setTickerSpeed(e.target.value)}>
+                            <option value="slow">Lento</option>
+                            <option value="medium">Médio</option>
+                            <option value="fast">Rápido</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Direção</label>
+                          <select value={tickerDirection} onChange={e => setTickerDirection(e.target.value)}>
+                            <option value="ltr">Esquerda → Direita</option>
+                            <option value="rtl">Direita → Esquerda</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Altura (px)</label>
+                          <input type="number" value={tickerHeight} onChange={e => setTickerHeight(e.target.value)} />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', paddingTop: '20px' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.875rem' }}>
+                            <input type="checkbox" checked={tickerBlur} onChange={e => setTickerBlur(e.target.checked)} /> Efeito Blur (Vidro)
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <div className="input-group">
@@ -272,12 +341,11 @@ const PlaylistEditor = () => {
                       <input type="color" value={footerFontColor} onChange={e => setFooterFontColor(e.target.value)} />
                     </div>
                     <div className="input-group">
-                      <label>Fonte</label>
-                      <select value={footerFontFamily} onChange={e => setFooterFontFamily(e.target.value)}>
-                        <option value="Inter">Inter (Moderna)</option>
-                        <option value="Outfit">Outfit (Display)</option>
-                        <option value="Roboto">Roboto</option>
-                        <option value="serif">Serifada (Clássica)</option>
+                      <label>Peso da Fonte</label>
+                      <select value={tickerFontWeight} onChange={e => setTickerFontWeight(e.target.value)}>
+                        <option value="400">Regular</option>
+                        <option value="600">Semibold</option>
+                        <option value="800">Extra Bold</option>
                       </select>
                     </div>
                   </div>
@@ -301,7 +369,10 @@ const PlaylistEditor = () => {
             <div className="animate-fade-in">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '32px' }}>
                 <div>
-                  <h4 style={{ marginBottom: '16px', color: 'var(--text-muted)' }}>Mídias Selecionadas ({selectedItems.length})</h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h4 style={{ color: 'var(--text-muted)' }}>Mídias Selecionadas ({selectedItems.length})</h4>
+                    <span style={{ fontSize: '0.875rem', color: 'var(--primary)', fontWeight: '700' }}>Tempo Total: {totalDuration}s</span>
+                  </div>
                   {selectedItems.length === 0 ? (
                     <div style={{ padding: '40px', textAlign: 'center', background: 'var(--bg-input)', borderRadius: '12px', border: '2px dashed var(--border)' }}>
                       Nenhuma mídia selecionada. Escolha na biblioteca ao lado.
@@ -309,20 +380,22 @@ const PlaylistEditor = () => {
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {selectedItems.map((item, idx) => (
-                        <div key={item.media_id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '12px 20px', background: 'var(--bg-input)', borderRadius: '12px' }}>
-                          <span style={{ fontWeight: '800', color: 'var(--primary)', width: '24px' }}>{idx + 1}</span>
-                          <div style={{ width: '50px', height: '50px', borderRadius: '8px', overflow: 'hidden', background: '#000' }}>
-                            {item.media?.type === 'image' ? <img src={item.media?.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>▶</div>}
+                        <div key={`${item.media_id}-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: 'var(--bg-input)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <button onClick={() => moveUp(idx)} disabled={idx === 0} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, opacity: idx === 0 ? 0.3 : 1 }}>▲</button>
+                            <button onClick={() => moveDown(idx)} disabled={idx === selectedItems.length - 1} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, opacity: idx === selectedItems.length - 1 ? 0.3 : 1 }}>▼</button>
+                          </div>
+                          <div style={{ width: '48px', height: '48px', borderRadius: '8px', overflow: 'hidden', background: '#000', position: 'relative' }}>
+                            {item.media?.type === 'image' ? <img src={item.media?.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '10px' }}>VIDEO</div>}
+                            <div style={{ position: 'absolute', top: 0, left: 0, background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '10px', padding: '2px 4px' }}>{item.media?.type === 'image' ? 'IMG' : 'VID'}</div>
                           </div>
                           <div style={{ flex: 1 }}>
-                            <p style={{ fontWeight: '600', fontSize: '0.9375rem' }}>{item.media?.name}</p>
-                            <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{item.media?.type === 'video' ? 'Vídeo (Duração Original)' : 'Imagem'}</p>
+                            <p style={{ fontWeight: '600', fontSize: '0.875rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '200px' }}>{item.media?.name}</p>
                           </div>
                           {item.media?.type !== 'video' && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <label style={{ fontSize: '0.75rem' }}>Duração:</label>
-                              <input type="number" value={item.duration} onChange={e => updateDuration(item.media_id, e.target.value)} style={{ width: '70px', textAlign: 'center' }} />
-                              <span>s</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <input type="number" value={item.duration} onChange={e => updateDuration(item.media_id, e.target.value)} style={{ width: '60px', textAlign: 'center', padding: '6px' }} />
+                              <span style={{ fontSize: '0.75rem' }}>s</span>
                             </div>
                           )}
                           <button onClick={() => toggleMedia(item.media)} className="btn" style={{ padding: '8px', color: 'var(--error)' }}>🗑️</button>
@@ -333,19 +406,25 @@ const PlaylistEditor = () => {
                 </div>
                 <div>
                   <h4 style={{ marginBottom: '16px', color: 'var(--text-muted)' }}>Biblioteca de Mídias</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', maxHeight: '500px', overflowY: 'auto', paddingRight: '8px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', maxHeight: '600px', overflowY: 'auto', paddingRight: '8px' }}>
                     {medias.map(m => (
                       <div key={m.id} onClick={() => toggleMedia(m)} style={{ 
                         cursor: 'pointer', borderRadius: '12px', overflow: 'hidden', position: 'relative',
-                        border: selectedItems.some(i => i.media_id === m.id) ? '3px solid var(--primary)' : '2px solid transparent',
-                        transition: 'all 0.2s'
+                        border: selectedItems.some(i => i.media_id === m.id) ? '3px solid var(--primary)' : '2px solid var(--border)',
+                        transition: 'all 0.2s', height: '120px'
                       }}>
-                        <div style={{ height: '100px', background: '#000' }}>
-                          {m.type === 'image' ? <img src={m.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>▶ Vídeo</div>}
+                        <div style={{ height: '80px', background: '#000' }}>
+                          {m.type === 'image' ? <img src={m.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.75rem' }}>▶ Vídeo</div>}
+                        </div>
+                        <div style={{ padding: '6px', fontSize: '0.75rem', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: 'rgba(255,255,255,0.05)' }}>
+                          {m.name}
                         </div>
                         {selectedItems.some(i => i.media_id === m.id) && (
                           <div style={{ position: 'absolute', top: '8px', right: '8px', background: 'var(--primary)', color: 'white', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>✓</div>
                         )}
+                        <div style={{ position: 'absolute', bottom: '40px', left: '8px', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '10px', padding: '2px 4px', borderRadius: '4px' }}>
+                          {m.type === 'image' ? 'Imagem' : 'Vídeo'}
+                        </div>
                       </div>
                     ))}
                   </div>

@@ -237,4 +237,25 @@ async function syncDevice(req, res) {
   }
 }
 
-module.exports = { list, getById, create, update, remove, assignPlaylist, pairDevice, syncDevice };
+async function heartbeat(req, res) {
+  const deviceId = req.user.id; // From authMiddleware (viewer/device token)
+  try {
+    await pool.query(
+      'UPDATE devices SET status = $1, last_seen = NOW() WHERE id = $2',
+      ['online', deviceId]
+    );
+    
+    // Notify admins via WebSocket
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('device:status', { deviceId, status: 'online' });
+    }
+    
+    res.json({ status: 'ok' });
+  } catch (err) {
+    console.error('Heartbeat error:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+}
+
+module.exports = { list, getById, create, update, remove, assignPlaylist, pairDevice, syncDevice, heartbeat };

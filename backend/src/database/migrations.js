@@ -272,6 +272,23 @@ async function runMigrations() {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='transition_effect') THEN 
           ALTER TABLE playlists ADD COLUMN transition_effect VARCHAR(50) DEFAULT 'fade'; 
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='ticker_speed') THEN 
+          ALTER TABLE playlists ADD COLUMN ticker_speed VARCHAR(20) DEFAULT 'medium'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='ticker_direction') THEN 
+          ALTER TABLE playlists ADD COLUMN ticker_direction VARCHAR(10) DEFAULT 'ltr'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='ticker_height') THEN 
+          ALTER TABLE playlists ADD COLUMN ticker_height INTEGER DEFAULT 80; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='ticker_blur') THEN 
+          ALTER TABLE playlists ADD COLUMN ticker_blur BOOLEAN DEFAULT true; 
+        END IF;
+
+        -- Add theme_color to clients
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='theme_color') THEN 
+          ALTER TABLE clients ADD COLUMN theme_color VARCHAR(20) DEFAULT '#6366f1'; 
+        END IF;
       END $$;
     `);
     // --- END NEW MIGRATIONS ---
