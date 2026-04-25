@@ -3,9 +3,11 @@ import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import ConfirmModal from '../components/ConfirmModal';
 
-const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
+const PlaylistModal = ({ isOpen, playlist, medias, clients, onClose, onSave }) => {
+  const { user } = useAuth();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [clientId, setClientId] = useState('');
   const [selectedItems, setSelectedItems] = useState([]);
   const [activeTab, setActiveTab] = useState('info');
   const [layout, setLayout] = useState('fullscreen');
@@ -20,6 +22,7 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
     if (playlist) {
       setName(playlist.name || '');
       setDescription(playlist.description || '');
+      setClientId(playlist.client_id || '');
       setSelectedItems(playlist.items || []);
       setLayout(playlist.layout || 'fullscreen');
       setFooterText(playlist.footer_text || '');
@@ -29,6 +32,7 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
     } else {
       setName('');
       setDescription('');
+      setClientId('');
       setSelectedItems([]);
       setLayout('fullscreen');
       setFooterText('');
@@ -55,7 +59,7 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
 
   const updateDuration = (mediaId, duration) => {
     setSelectedItems(prev => prev.map(i =>
-      i.media_id === mediaId ? { ...i, duration: parseInt(duration) || 0 } : i
+      i.media_id === mediaId ? { ...i, duration: Math.max(1, parseInt(duration) || 1) } : i
     ));
   };
 
@@ -77,6 +81,7 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
       const payload = {
         name,
         description,
+        client_id: clientId,
         layout,
         footer_text: footerText,
         show_clock: showClock,
@@ -84,7 +89,7 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
         theme_color: themeColor,
         items: selectedItems.map((item, i) => ({
           media_id: item.media_id,
-          duration_seconds: item.duration,
+          duration_seconds: item.media?.type === 'video' ? 0 : (item.duration || 10),
           position: i
         }))
       };
@@ -105,7 +110,10 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
 
   if (!isOpen) return null;
 
-  const totalDuration = selectedItems.reduce((acc, i) => acc + (i.duration || 0), 0);
+  const totalDuration = selectedItems.reduce((acc, i) => {
+    const dur = i.media?.type === 'video' ? 0 : (i.duration || 10);
+    return acc + dur;
+  }, 0);
 
   return (
     <div className="modal-overlay">
@@ -137,10 +145,19 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
             </div>
           </div>
           {activeTab === 'info' ? (
-            <div>
+            <div className="animate-fade-in">
+              {user?.role === 'admin' && (
+                <div className="input-group">
+                  <label>Empresa (Cliente) *</label>
+                  <select value={clientId} onChange={e => setClientId(e.target.value)} style={{ border: '1px solid var(--border)', background: 'var(--bg-input)' }}>
+                    <option value="">— Selecione uma Empresa —</option>
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+              )}
               <div className="input-group">
                 <label>Nome da Playlist *</label>
-                <input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Promoções de Verão" />
+                <input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Cardápio Digital Loja 1" style={{ border: '1px solid var(--border)', background: 'var(--bg-input)' }} />
               </div>
               <div className="input-group">
                 <label>Descrição</label>
@@ -207,7 +224,6 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
             </div>
           ) : (
             <div>
-              {/* Selected items order */}
               {selectedItems.length > 0 && (
                 <div style={{ marginBottom: '28px' }}>
                   <h4 style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Ordem de Reprodução</h4>
@@ -230,7 +246,7 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
                       {item.media?.type !== 'video' && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Duração(s):</span>
-                          <input type="number" value={item.duration} min="1" max="3600"
+                          <input type="number" value={item.duration} min="10" max="3600"
                             onChange={e => updateDuration(item.media_id, e.target.value)}
                             style={{ width: '70px', padding: '6px 10px', fontSize: '0.875rem' }} />
                         </div>
@@ -248,7 +264,6 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
                 </div>
               )}
 
-              {/* Media library */}
               <h4 style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Biblioteca de Mídias</h4>
               {medias.length === 0 ? (
                 <p style={{ color: 'var(--text-dim)', textAlign: 'center', padding: '40px' }}>Nenhuma mídia disponível. Faça upload primeiro.</p>
@@ -287,7 +302,6 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
           )}
         </div>
 
-        {/* Footer */}
         <div className="modal-footer">
           <button className="btn btn-outline" onClick={onClose}>Cancelar</button>
           <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
@@ -300,8 +314,10 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
 };
 
 const Playlists = () => {
+  const { user } = useAuth();
   const [playlists, setPlaylists] = useState([]);
   const [medias, setMedias] = useState([]);
+  const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPlaylist, setEditingPlaylist] = useState(null);
@@ -309,8 +325,20 @@ const Playlists = () => {
   const { addToast } = useToast();
 
   useEffect(() => {
-    Promise.all([fetchPlaylists(), fetchMedias()]);
+    Promise.all([
+      fetchPlaylists(),
+      fetchMedias(),
+      fetchClients()
+    ]).finally(() => setLoading(false));
   }, []);
+
+  const fetchClients = async () => {
+    if (user?.role !== 'admin') return;
+    try {
+      const res = await api.get('/clients');
+      setClients(res.data);
+    } catch { /* silent */ }
+  };
 
   const fetchPlaylists = async () => {
     try {
@@ -409,6 +437,7 @@ const Playlists = () => {
         isOpen={modalOpen}
         playlist={editingPlaylist}
         medias={medias}
+        clients={clients}
         onClose={() => setModalOpen(false)}
         onSave={fetchPlaylists}
       />

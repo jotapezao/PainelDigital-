@@ -171,11 +171,16 @@ async function setItems(req, res) {
 // GET /api/playlists/active (for Player mode)
 async function getActive(req, res) {
   try {
+    const clientId = req.user.client_id;
+    if (!clientId) return res.status(401).json({ error: 'Cliente não identificado' });
+
     const now = new Date();
     const currentTime = now.toTimeString().split(' ')[0]; // HH:MM:SS
-    const currentDay = now.getDay(); // 0 (Sun) to 6 (Sat)
+    const currentDay = now.getDay(); // 0-6
 
-    // 1. Check for Active Schedules (Highest priority)
+    console.log(`[Player] Buscando playlist para cliente ${clientId}. Hora: ${currentTime}, Dia: ${currentDay}`);
+
+    // 1. Check for Active Schedules
     const { rows: schedules } = await pool.query(
       `SELECT p.*, c.name as client_name 
        FROM schedules s
@@ -188,29 +193,34 @@ async function getActive(req, res) {
          AND s.start_time <= $3
          AND s.end_time >= $3
        LIMIT 1`,
-      [req.user.client_id, currentDay, currentTime]
+      [clientId, currentDay, currentTime]
     );
 
     let playlist;
 
     if (schedules.length > 0) {
+      console.log(`[Player] Agendamento encontrado: ${schedules[0].name}`);
       playlist = schedules[0];
     } else {
-      // 2. Fallback: Get the first active playlist for this client
+      // 2. Fallback: Get the FIRST active playlist for this client that has items
       const { rows: playlists } = await pool.query(
         `SELECT p.*, c.name as client_name 
          FROM playlists p 
          LEFT JOIN clients c ON p.client_id = c.id
          WHERE p.client_id = $1 AND p.active = true 
+         AND (SELECT COUNT(*) FROM playlist_items WHERE playlist_id = p.id) > 0
          ORDER BY p.created_at ASC LIMIT 1`,
-        [req.user.client_id]
+        [clientId]
       );
       
-      if (playlists.length === 0) return res.status(404).json({ error: 'Nenhuma playlist ativa' });
+      if (playlists.length === 0) {
+        console.log(`[Player] Nenhuma playlist ativa encontrada para o cliente ${clientId}`);
+        return res.status(404).json({ error: 'Nenhuma playlist ativa' });
+      }
       playlist = playlists[0];
     }
 
-    // Fetch items for the chosen playlist
+    // Fetch items
     const { rows: items } = await pool.query(
       `SELECT pi.*, m.type, m.filename 
        FROM playlist_items pi JOIN medias m ON pi.media_id = m.id
@@ -221,9 +231,11 @@ async function getActive(req, res) {
       [playlist.id]
     );
 
-    const publicUrl = process.env.R2_PUBLIC_URL.endsWith('/') 
+    console.log(`[Player] Playlist: ${playlist.name}, Itens carregados: ${items.length}`);
+
+    const publicUrl = (process.env.R2_PUBLIC_URL || '').endsWith('/') 
       ? process.env.R2_PUBLIC_URL 
-      : `${process.env.R2_PUBLIC_URL}/`;
+      : `${process.env.R2_PUBLIC_URL || ''}/`;
 
     playlist.items = items.map(item => ({
       ...item,
@@ -232,7 +244,7 @@ async function getActive(req, res) {
     
     res.json(playlist);
   } catch (err) {
-    console.error('Erro em getActive:', err);
+    console.error('[Player] Erro em getActive:', err);
     res.status(500).json({ error: 'Erro interno' });
   }
 }
