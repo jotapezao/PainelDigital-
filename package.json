@@ -1,0 +1,17 @@
+{
+  "name": "painel-digital-root",
+  "private": true,
+  "description": "Root package for Digital Signage Platform",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "backend:dev": "npm run dev --workspace=backend",
+    "frontend:dev": "npm run dev --workspace=frontend",
+    "start": "npm start --workspace=backend",
+    "build": "npm run build --workspace=frontend"
+  },
+  "author": "",
+  "license": "ISC"
+}
