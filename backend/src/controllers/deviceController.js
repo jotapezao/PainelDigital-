@@ -24,10 +24,13 @@ async function list(req, res) {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const { rows } = await pool.query(
       `SELECT d.*, c.name as client_name,
-        (SELECT p.name FROM device_playlists dp
-         JOIN playlists p ON dp.playlist_id = p.id
-         WHERE dp.device_id = d.id AND dp.active = true
-         LIMIT 1) as current_playlist
+          (SELECT p.name FROM device_playlists dp
+           JOIN playlists p ON dp.playlist_id = p.id
+           WHERE dp.device_id = d.id AND dp.active = true
+           LIMIT 1) as playlist_name,
+          (SELECT dp.playlist_id FROM device_playlists dp
+           WHERE dp.device_id = d.id AND dp.active = true
+           LIMIT 1) as playlist_id
        FROM devices d LEFT JOIN clients c ON d.client_id = c.id
        ${where} ORDER BY d.created_at DESC`,
       params
@@ -72,7 +75,16 @@ async function create(req, res) {
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [effectiveClientId, name, location || null, code, orientation || 'landscape', resolution || null, notes || null]
     );
-    res.status(201).json(rows[0]);
+    const device = rows[0];
+
+    // Assign playlist if provided
+    if (req.body.playlist_id) {
+      await pool.query(
+        `INSERT INTO device_playlists (device_id, playlist_id, active) VALUES ($1, $2, true)`,
+        [device.id, req.body.playlist_id]
+      );
+    }
+    res.status(201).json(device);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro interno' });
@@ -81,7 +93,7 @@ async function create(req, res) {
 
 // PUT /api/devices/:id
 async function update(req, res) {
-  const { name, location, orientation, resolution, notes, client_id } = req.body;
+  const { name, location, orientation, resolution, notes, client_id, playlist_id } = req.body;
   try {
     const { rows } = await pool.query(
       `UPDATE devices SET name=$1, location=$2, orientation=$3, resolution=$4, notes=$5, client_id=$6, updated_at=NOW()
@@ -89,7 +101,20 @@ async function update(req, res) {
       [name, location || null, orientation || 'landscape', resolution || null, notes || null, client_id || null, req.params.id]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Dispositivo não encontrado' });
-    res.json(rows[0]);
+    const device = rows[0];
+
+    // Handle playlist assignment
+    await pool.query('UPDATE device_playlists SET active = false WHERE device_id = $1', [device.id]);
+    if (playlist_id) {
+      await pool.query(
+        `INSERT INTO device_playlists (device_id, playlist_id, active)
+         VALUES ($1, $2, true)
+         ON CONFLICT (device_id, playlist_id) DO UPDATE SET active = true, assigned_at = NOW()`,
+        [device.id, playlist_id]
+      );
+    }
+
+    res.json(device);
   } catch (err) {
     res.status(500).json({ error: 'Erro interno' });
   }

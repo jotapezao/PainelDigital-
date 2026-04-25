@@ -71,13 +71,26 @@ const UserModal = ({ isOpen, user, clients, onClose, onSave }) => {
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.5rem' }}>×</button>
         </div>
         <div style={{ padding: '28px' }}>
-          <div className="input-group">
-            <label>Nome Completo *</label>
-            <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Ex: João Silva" />
+          <div className="input-group" style={{ display: 'block', marginBottom: '16px' }}>
+            <label htmlFor="user_email_field">E-mail (Login) *</label>
+            <input 
+              id="user_email_field"
+              type="email" 
+              value={form.email} 
+              onChange={e => setForm(p => ({ ...p, email: e.target.value }))} 
+              placeholder="joao@empresa.com" 
+            />
           </div>
-          <div className="input-group">
-            <label>E-mail (Login) *</label>
-            <input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="joao@empresa.com" />
+
+          <div className="input-group" style={{ display: 'block', marginBottom: '16px' }}>
+            <label htmlFor="user_fullname_field">Nome Completo *</label>
+            <input 
+              id="user_fullname_field"
+              value={form.name} 
+              onChange={e => setForm(p => ({ ...p, name: e.target.value }))} 
+              placeholder="Ex: João Silva" 
+              autoFocus
+            />
           </div>
           {!user && (
             <div className="input-group">
