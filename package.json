@@ -8,9 +8,7 @@
   ],
   "scripts": {
     "backend:dev": "npm run dev --workspace=backend",
-    "frontend:dev": "npm run dev --workspace=frontend",
-    "start": "npm start --workspace=backend",
-    "build": "npm run build --workspace=frontend"
+    "frontend:dev": "npm run dev --workspace=frontend"
   },
   "author": "",
   "license": "ISC"
