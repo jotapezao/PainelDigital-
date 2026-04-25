@@ -65,6 +65,17 @@ app.use('/api/logs', logRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/device-groups', deviceGroupRoutes);
 
+// Serve frontend in production
+if (process.env.NODE_ENV === 'production') {
+  const frontendPath = path.join(__dirname, '../../frontend/dist');
+  app.use(express.static(frontendPath));
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+      res.sendFile(path.join(frontendPath, 'index.html'));
+    }
+  });
+}
+
 // WebSocket – device connections
 const connectedDevices = new Map(); // deviceId -> socketId
 
