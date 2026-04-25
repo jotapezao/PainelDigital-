@@ -67,7 +67,7 @@ async function getById(req, res) {
 
 // POST /api/playlists
 async function create(req, res) {
-  const { name, description, client_id, layout, footer_text, show_clock, show_weather, theme_color } = req.body;
+  const { name, description, client_id, layout, footer_text, show_clock, show_weather, theme_color, orientation, scale_mode } = req.body;
   if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
   
   // Se for admin, usa o client_id enviado. Se for cliente, usa o dele mesmo.
@@ -75,9 +75,9 @@ async function create(req, res) {
   
   try {
     const { rows } = await pool.query(
-      `INSERT INTO playlists (client_id, name, description, layout, footer_text, show_clock, show_weather, theme_color)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [effectiveClientId, name, description || null, layout || 'fullscreen', footer_text || null, show_clock || false, show_weather || false, theme_color || '#818cf8']
+      `INSERT INTO playlists (client_id, name, description, layout, footer_text, show_clock, show_weather, theme_color, orientation, scale_mode)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      [effectiveClientId, name, description || null, layout || 'fullscreen', footer_text || null, show_clock || false, show_weather || false, theme_color || '#818cf8', orientation || 'horizontal', scale_mode || 'cover']
     );
     const playlist = rows[0];
 
@@ -102,14 +102,14 @@ async function create(req, res) {
 
 // PUT /api/playlists/:id
 async function update(req, res) {
-  const { name, description, active, layout, footer_text, show_clock, show_weather, theme_color, client_id } = req.body;
+  const { name, description, active, layout, footer_text, show_clock, show_weather, theme_color, client_id, orientation, scale_mode } = req.body;
   try {
     // Admins podem trocar o cliente da playlist
     const effectiveClientId = req.user.role === 'admin' ? client_id : undefined;
 
-    let query = `UPDATE playlists SET name=$1, description=$2, active=$3, layout=$4, footer_text=$5, show_clock=$6, show_weather=$7, theme_color=$8, updated_at=NOW()`;
-    let params = [name, description || null, active !== false, layout, footer_text, show_clock, show_weather, theme_color];
-    let idx = 9;
+    let query = `UPDATE playlists SET name=$1, description=$2, active=$3, layout=$4, footer_text=$5, show_clock=$6, show_weather=$7, theme_color=$8, orientation=$9, scale_mode=$10, updated_at=NOW()`;
+    let params = [name, description || null, active !== false, layout, footer_text, show_clock, show_weather, theme_color, orientation || 'horizontal', scale_mode || 'cover'];
+    let idx = 11;
 
     if (effectiveClientId) {
       query += `, client_id=$${idx++}`;

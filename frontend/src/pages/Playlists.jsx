@@ -16,6 +16,8 @@ const PlaylistModal = ({ isOpen, playlist, medias, clients, onClose, onSave }) =
   const [showClock, setShowClock] = useState(false);
   const [showWeather, setShowWeather] = useState(false);
   const [themeColor, setThemeColor] = useState('#818cf8');
+  const [orientation, setOrientation] = useState('horizontal');
+  const [scaleMode, setScaleMode] = useState('cover');
   const [saving, setSaving] = useState(false);
   const { addToast } = useToast();
 
@@ -30,6 +32,8 @@ const PlaylistModal = ({ isOpen, playlist, medias, clients, onClose, onSave }) =
       setShowClock(playlist.show_clock || false);
       setShowWeather(playlist.show_weather || false);
       setThemeColor(playlist.theme_color || '#818cf8');
+      setOrientation(playlist.orientation || 'horizontal');
+      setScaleMode(playlist.scale_mode || 'cover');
     } else {
       setName('');
       setDescription('');
@@ -40,6 +44,8 @@ const PlaylistModal = ({ isOpen, playlist, medias, clients, onClose, onSave }) =
       setShowClock(false);
       setShowWeather(false);
       setThemeColor('#818cf8');
+      setOrientation('horizontal');
+      setScaleMode('cover');
     }
     setActiveTab('info');
   }, [playlist, isOpen]);
@@ -88,6 +94,8 @@ const PlaylistModal = ({ isOpen, playlist, medias, clients, onClose, onSave }) =
         show_clock: showClock,
         show_weather: showWeather,
         theme_color: themeColor,
+        orientation: orientation,
+        scale_mode: scaleMode,
         items: selectedItems.map((item, i) => ({
           media_id: item.media_id,
           duration_seconds: item.media?.type === 'video' ? 0 : (item.duration || 10),
@@ -118,198 +126,172 @@ const PlaylistModal = ({ isOpen, playlist, medias, clients, onClose, onSave }) =
 
   return (
     <div className="modal-overlay">
-      <div className="modal-container" style={{ maxWidth: '800px' }}>
-        {/* Header */}
+      <div className="modal-container" style={{ maxWidth: '1100px', height: '90vh' }}>
         <div className="modal-header">
-          <h2>{playlist?.id ? 'Editar Playlist' : 'Nova Playlist'}</h2>
+          <h2>{playlist?.id ? '✏️ Editar Playlist' : '🎬 Nova Playlist'}</h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.5rem', lineHeight: 1 }}>×</button>
         </div>
 
-        {/* Content */}
-        <div className="modal-body">
-          <div className="table-container" style={{ borderBottom: '1px solid var(--border)', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', minWidth: 'max-content' }}>
-              {[
-                { id: 'info', label: 'Informações' },
-                { id: 'medias', label: `Mídias (${selectedItems.length})` },
-                { id: 'layout', label: '🎨 Visual & Widgets' }
-              ].map(tab => (
-                <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-                  padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer',
-                  color: activeTab === tab.id ? 'var(--primary)' : 'var(--text-muted)',
-                  borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent',
-                  fontWeight: '600', transition: 'all 0.2s'
-                }}>
-                  {tab.label}
-                </button>
-              ))}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', height: 'calc(90vh - 140px)', overflow: 'hidden' }}>
+          {/* Main Controls Area */}
+          <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div className="table-container" style={{ borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+              <div style={{ display: 'flex' }}>
+                {[
+                  { id: 'info', label: 'Informações' },
+                  { id: 'medias', label: `Mídias (${selectedItems.length})` },
+                  { id: 'layout', label: '🎨 Visual & Widgets' }
+                ].map(tab => (
+                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+                    padding: '14px 24px', background: 'none', border: 'none', cursor: 'pointer',
+                    color: activeTab === tab.id ? 'var(--primary)' : 'var(--text-muted)',
+                    borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent',
+                    fontWeight: '600', transition: 'all 0.2s'
+                  }}>{tab.label}</button>
+                ))}
+              </div>
+            </div>
+
+            <div className="modal-body" style={{ flex: 1, padding: '28px', overflowY: 'auto' }}>
+              {activeTab === 'info' ? (
+                <div className="animate-fade-in">
+                  {user?.role === 'admin' && (
+                    <div className="input-group">
+                      <label>Empresa (Cliente) *</label>
+                      <select value={clientId} onChange={e => setClientId(e.target.value)} style={{ border: '1px solid var(--border)', background: 'var(--bg-input)' }}>
+                        <option value="">— Selecione uma Empresa —</option>
+                        {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                    </div>
+                  )}
+                  <div className="input-group">
+                    <label>Nome da Playlist *</label>
+                    <input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Cardápio Digital Loja 1" />
+                  </div>
+                  <div className="input-group">
+                    <label>Descrição</label>
+                    <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Opcional..." rows={3} />
+                  </div>
+                  <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div className="input-group">
+                      <label>Orientação da Tela</label>
+                      <select value={orientation} onChange={e => setOrientation(e.target.value)}>
+                        <option value="horizontal">Horizontal (16:9)</option>
+                        <option value="portrait">Vertical (9:16)</option>
+                      </select>
+                    </div>
+                    <div className="input-group">
+                      <label>Ajuste da Mídia</label>
+                      <select value={scaleMode} onChange={e => setScaleMode(e.target.value)}>
+                        <option value="cover">Preencher Tela (Corte)</option>
+                        <option value="contain">Manter Proporção (Bordas)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              ) : activeTab === 'layout' ? (
+                <div className="animate-fade-in">
+                  <div className="input-group">
+                    <label>Layout</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <button className={`btn ${layout === 'fullscreen' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setLayout('fullscreen')}>Tela Cheia</button>
+                      <button className={`btn ${layout === 'with_footer' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setLayout('with_footer')}>Com Rodapé</button>
+                    </div>
+                  </div>
+                  <div className="input-group">
+                    <label>Texto do Rodapé (Ticker)</label>
+                    <input value={footerText} onChange={e => setFooterText(e.target.value)} placeholder="Promoção do dia..." />
+                  </div>
+                  <div className="input-group">
+                    <label>Widgets</label>
+                    <div style={{ display: 'flex', gap: '20px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input type="checkbox" checked={showClock} onChange={e => setShowClock(e.target.checked)} /> Relógio
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input type="checkbox" checked={showWeather} onChange={e => setShowWeather(e.target.checked)} /> Clima
+                      </label>
+                    </div>
+                  </div>
+                  <div className="input-group">
+                    <label>Cor do Tema</label>
+                    <input type="color" value={themeColor} onChange={e => setThemeColor(e.target.value)} style={{ width: '100%', height: '40px' }} />
+                  </div>
+                </div>
+              ) : (
+                <div className="animate-fade-in">
+                  <div style={{ marginBottom: '24px' }}>
+                    <h4 style={{ fontSize: '0.875rem', marginBottom: '12px' }}>Ordem de Reprodução</h4>
+                    {selectedItems.map((item, idx) => (
+                      <div key={item.media_id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', background: 'var(--bg-input)', borderRadius: '8px', marginBottom: '8px' }}>
+                        <span style={{ width: '20px' }}>{idx+1}</span>
+                        <span style={{ flex: 1, fontSize: '0.875rem' }}>{item.media?.name}</span>
+                        {item.media?.type !== 'video' && (
+                          <input type="number" value={item.duration} onChange={e => updateDuration(item.media_id, e.target.value)} style={{ width: '60px', padding: '4px' }} />
+                        )}
+                        <button onClick={() => toggleMedia(item.media)} style={{ color: 'var(--error)' }}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                  <h4 style={{ fontSize: '0.875rem', marginBottom: '12px' }}>Biblioteca</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '8px' }}>
+                    {medias.map(m => (
+                      <div key={m.id} onClick={() => toggleMedia(m)} style={{ 
+                        cursor: 'pointer', borderRadius: '8px', overflow: 'hidden', border: selectedItems.some(i => i.media_id === m.id) ? '2px solid var(--primary)' : '2px solid transparent'
+                      }}>
+                        <div style={{ height: '70px', background: '#000' }}>
+                          {m.type === 'video' ? <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>▶</div> : <img src={m.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-          {activeTab === 'info' ? (
-            <div className="animate-fade-in">
-              {user?.role === 'admin' && (
-                <div className="input-group">
-                  <label>Empresa (Cliente) *</label>
-                  <select value={clientId} onChange={e => setClientId(e.target.value)} style={{ border: '1px solid var(--border)', background: 'var(--bg-input)' }}>
-                    <option value="">— Selecione uma Empresa —</option>
-                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-              )}
-              <div className="input-group">
-                <label>Nome da Playlist *</label>
-                <input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Cardápio Digital Loja 1" style={{ border: '1px solid var(--border)', background: 'var(--bg-input)' }} />
-              </div>
-              <div className="input-group">
-                <label>Descrição</label>
-                <textarea value={description} onChange={e => setDescription(e.target.value)}
-                  placeholder="Descrição opcional..." rows={3}
-                  style={{ resize: 'vertical', fontFamily: 'inherit' }} />
-              </div>
-              {selectedItems.length > 0 && (
-                <div className="card" style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.2)' }}>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                    📊 <strong style={{ color: 'var(--primary)' }}>{selectedItems.length}</strong> mídias selecionadas • Duração total: <strong style={{ color: 'var(--primary)' }}>{totalDuration}s</strong>
-                  </p>
-                </div>
-              )}
-            </div>
-          ) : activeTab === 'layout' ? (
-            <div className="animate-fade-in">
-              <div className="input-group">
-                <label>Layout da Tela</label>
-                <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <button onClick={() => setLayout('fullscreen')} style={{
-                    padding: '16px', borderRadius: 'var(--radius-md)', border: layout === 'fullscreen' ? '2px solid var(--primary)' : '2px solid var(--border)',
-                    background: layout === 'fullscreen' ? 'rgba(99,102,241,0.1)' : 'var(--bg-input)', cursor: 'pointer'
-                  }}>
-                    <div style={{ height: '40px', background: '#444', marginBottom: '8px' }} />
-                    Tela Cheia
-                  </button>
-                  <button onClick={() => setLayout('with_footer')} style={{
-                    padding: '16px', borderRadius: 'var(--radius-md)', border: layout === 'with_footer' ? '2px solid var(--primary)' : '2px solid var(--border)',
-                    background: layout === 'with_footer' ? 'rgba(99,102,241,0.1)' : 'var(--bg-input)', cursor: 'pointer'
-                  }}>
-                    <div style={{ height: '30px', background: '#444', marginBottom: '2px' }} />
-                    <div style={{ height: '8px', background: 'var(--primary)' }} />
-                    Com Rodapé (Ticker)
-                  </button>
-                </div>
-              </div>
 
-              <div className="input-group">
-                <label>Texto da Barra de Promoções</label>
-                <input value={footerText} onChange={e => setFooterText(e.target.value)} placeholder="Ex: Promoção do Dia: Picanha R$ 49,90 • Feliz Natal! • " />
-              </div>
-
-              <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-                <div className="input-group">
-                  <label>Cor do Tema</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <input type="color" value={themeColor} onChange={e => setThemeColor(e.target.value)} style={{ width: '50px', height: '40px', padding: '2px' }} />
-                    <input value={themeColor} onChange={e => setThemeColor(e.target.value)} style={{ flex: 1 }} />
+          {/* Preview Panel */}
+          <div style={{ padding: '28px', background: 'var(--bg-dark)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <h4 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Visualização</h4>
+            <div style={{ 
+              flex: 1, position: 'relative', background: '#000', borderRadius: '12px', border: '4px solid #222', overflow: 'hidden',
+              display: 'flex', flexDirection: orientation === 'portrait' ? 'row' : 'column',
+              aspectRatio: orientation === 'portrait' ? '9/16' : '16/9'
+            }}>
+              <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {selectedItems.length > 0 ? (
+                  <div style={{ width: '100%', height: '100%' }}>
+                    {selectedItems[0].media?.type === 'image' ? (
+                      <img src={selectedItems[0].media?.url} style={{ width: '100%', height: '100%', objectFit: scaleMode }} />
+                    ) : (
+                      <div style={{ color: '#fff' }}>▶ Vídeo</div>
+                    )}
                   </div>
-                </div>
-                <div className="input-group">
-                  <label>Widgets Ativos</label>
-                  <div style={{ display: 'flex', gap: '20px', marginTop: '10px', flexWrap: 'wrap' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                      <input type="checkbox" checked={showClock} onChange={e => setShowClock(e.target.checked)} /> Relógio
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                      <input type="checkbox" checked={showWeather} onChange={e => setShowWeather(e.target.checked)} /> Clima (24°C)
-                    </label>
+                ) : <div style={{ color: '#444' }}>Vazio</div>}
+                {(showClock || showWeather) && (
+                  <div style={{ position: 'absolute', top: '5%', right: '5%', padding: '4px', background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '0.5rem', borderRadius: '4px', border: `1px solid ${themeColor}` }}>
+                    14:50 {showWeather && '⛅'}
                   </div>
-                </div>
+                )}
               </div>
-            </div>
-          ) : (
-            <div>
-              {selectedItems.length > 0 && (
-                <div style={{ marginBottom: '28px' }}>
-                  <h4 style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Ordem de Reprodução</h4>
-                  {selectedItems.map((item, index) => (
-                    <div key={item.media_id} style={{
-                      display: 'flex', alignItems: 'center', gap: '12px',
-                      padding: '12px', borderRadius: 'var(--radius-md)',
-                      backgroundColor: 'var(--bg-input)', marginBottom: '8px'
-                    }}>
-                      <span style={{ color: 'var(--text-dim)', fontSize: '0.875rem', minWidth: '20px' }}>{index + 1}</span>
-                      <div style={{
-                        width: '40px', height: '40px', borderRadius: '8px',
-                        backgroundColor: '#000', overflow: 'hidden', flexShrink: 0
-                      }}>
-                        {item.media?.type === 'video'
-                          ? <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-dim)' }}>▶</span>
-                          : <img src={item.media?.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                      </div>
-                      <span style={{ flex: 1, fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.media?.name}</span>
-                      {item.media?.type !== 'video' && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Duração(s):</span>
-                          <input type="number" value={item.duration} min="10" max="3600"
-                            onChange={e => updateDuration(item.media_id, e.target.value)}
-                            style={{ width: '70px', padding: '6px 10px', fontSize: '0.875rem' }} />
-                        </div>
-                      )}
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        <button onClick={() => moveItem(index, -1)} disabled={index === 0}
-                          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', opacity: index === 0 ? 0.3 : 1 }}>↑</button>
-                        <button onClick={() => moveItem(index, 1)} disabled={index === selectedItems.length - 1}
-                          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', opacity: index === selectedItems.length - 1 ? 0.3 : 1 }}>↓</button>
-                        <button onClick={() => toggleMedia(item.media)}
-                          style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '4px' }}>×</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <h4 style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Biblioteca de Mídias</h4>
-              {medias.length === 0 ? (
-                <p style={{ color: 'var(--text-dim)', textAlign: 'center', padding: '40px' }}>Nenhuma mídia disponível. Faça upload primeiro.</p>
-              ) : (
-                <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px' }}>
-                  {medias.map(media => {
-                    const isSelected = selectedItems.some(i => i.media_id === media.id);
-                    return (
-                      <div key={media.id} onClick={() => toggleMedia(media)}
-                        style={{
-                          borderRadius: 'var(--radius-md)', overflow: 'hidden', cursor: 'pointer',
-                          border: isSelected ? '2px solid var(--primary)' : '2px solid var(--border)',
-                          transition: 'all 0.2s', transform: isSelected ? 'scale(0.97)' : 'scale(1)',
-                          position: 'relative'
-                        }}>
-                        <div style={{ height: '90px', backgroundColor: '#000' }}>
-                          {media.type === 'video'
-                            ? <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', fontSize: '1.5rem' }}>▶</div>
-                            : <img src={media.url} alt={media.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                        </div>
-                        {isSelected && (
-                          <div style={{
-                            position: 'absolute', top: '6px', right: '6px',
-                            backgroundColor: 'var(--primary)', borderRadius: '50%',
-                            width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '0.75rem', color: 'white', fontWeight: '700'
-                          }}>✓</div>
-                        )}
-                        <p style={{ padding: '6px 8px', fontSize: '0.7rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{media.name}</p>
-                      </div>
-                    );
-                  })}
+              {(layout === 'with_footer' || footerText) && (
+                <div style={{ height: orientation === 'portrait' ? '100%' : '40px', width: orientation === 'portrait' ? '40px' : '100%', background: themeColor, color: '#fff', fontSize: '0.5rem', padding: '5px', overflow: 'hidden' }}>
+                  {footerText || 'RODAPÉ...'}
                 </div>
               )}
             </div>
-          )}
+            <div className="card" style={{ padding: '12px', textAlign: 'center' }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Duração Total: <strong>{totalDuration}s</strong></p>
+            </div>
+          </div>
         </div>
 
         <div className="modal-footer">
           <button className="btn btn-outline" onClick={onClose}>Cancelar</button>
           <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? 'Salvando...' : (playlist?.id ? 'Salvar Alterações' : 'Criar Playlist')}
+            {saving ? 'Salvando...' : 'Salvar Alterações'}
           </button>
         </div>
-      </div>
     </div>
   );
 };

@@ -212,6 +212,12 @@ async function runMigrations() {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='theme_color') THEN 
           ALTER TABLE playlists ADD COLUMN theme_color VARCHAR(20) DEFAULT '#818cf8'; 
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='orientation') THEN 
+          ALTER TABLE playlists ADD COLUMN orientation VARCHAR(20) DEFAULT 'horizontal'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='scale_mode') THEN 
+          ALTER TABLE playlists ADD COLUMN scale_mode VARCHAR(20) DEFAULT 'cover'; 
+        END IF;
       END $$;
     `);
     // --- END NEW MIGRATIONS ---
