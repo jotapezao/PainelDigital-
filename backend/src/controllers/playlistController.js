@@ -186,20 +186,22 @@ async function setItems(req, res) {
 async function getActive(req, res) {
   try {
     const clientId = req.user.client_id;
-    if (!clientId) return res.status(401).json({ error: 'Cliente não identificado' });
+    if (!clientId) {
+      console.error('[Player] Erro: Usuário sem client_id');
+      return res.status(401).json({ error: 'Cliente não identificado' });
+    }
 
     const now = new Date();
-    const currentTime = now.toTimeString().split(' ')[0]; // HH:MM:SS
-    const currentDay = now.getDay(); // 0-6
+    const currentTime = now.toTimeString().split(' ')[0];
+    const currentDay = now.getDay();
 
-    console.log(`[Player] Buscando playlist para cliente ${clientId}. Hora: ${currentTime}, Dia: ${currentDay}`);
+    console.log(`[Player] Tentando carregar para Cliente: ${clientId}`);
 
-    // 1. Check for Active Schedules
-    const { rows: schedules } = await pool.query(
-      `SELECT p.*, c.name as client_name 
+    // Passo 1: Tentar encontrar uma playlist através de AGENDAMENTO ATIVO
+    const { rows: scheduled } = await pool.query(
+      `SELECT p.* 
        FROM schedules s
        JOIN playlists p ON s.playlist_id = p.id
-       LEFT JOIN clients c ON p.client_id = c.id
        WHERE p.client_id = $1 
          AND p.active = true 
          AND s.active = true
@@ -212,40 +214,43 @@ async function getActive(req, res) {
 
     let playlist;
 
-    if (schedules.length > 0) {
-      console.log(`[Player] Agendamento encontrado: ${schedules[0].name}`);
-      playlist = schedules[0];
+    if (scheduled.length > 0) {
+      console.log(`[Player] Sucesso: Playlist agendada encontrada (${scheduled[0].name})`);
+      playlist = scheduled[0];
     } else {
-      // 2. Fallback: Get the FIRST active playlist for this client that has items
-      const { rows: playlists } = await pool.query(
-        `SELECT p.*, c.name as client_name 
+      console.log(`[Player] Nenhum agendamento para agora. Buscando qualquer playlist ativa...`);
+      // Passo 2: Fallback para QUALQUER playlist ativa deste cliente que tenha itens
+      const { rows: fallbacks } = await pool.query(
+        `SELECT p.* 
          FROM playlists p 
-         LEFT JOIN clients c ON p.client_id = c.id
          WHERE p.client_id = $1 AND p.active = true 
          AND (SELECT COUNT(*) FROM playlist_items WHERE playlist_id = p.id) > 0
-         ORDER BY p.created_at ASC LIMIT 1`,
+         ORDER BY p.updated_at DESC LIMIT 1`,
         [clientId]
       );
       
-      if (playlists.length === 0) {
-        console.log(`[Player] Nenhuma playlist ativa encontrada para o cliente ${clientId}`);
-        return res.status(404).json({ error: 'Nenhuma playlist ativa' });
+      if (fallbacks.length === 0) {
+        console.log(`[Player] Crítico: Cliente ${clientId} não tem NENHUMA playlist ativa com mídias.`);
+        return res.status(404).json({ error: 'Nenhuma mídia programada para este cliente.' });
       }
-      playlist = playlists[0];
+      playlist = fallbacks[0];
+      console.log(`[Player] Sucesso: Usando playlist padrão/ativa (${playlist.name})`);
     }
 
-    // Fetch items
+    // Passo 3: Carregar os itens da playlist escolhida
     const { rows: items } = await pool.query(
-      `SELECT pi.*, m.type, m.filename 
-       FROM playlist_items pi JOIN medias m ON pi.media_id = m.id
+      `SELECT pi.*, m.type, m.filename, m.name as media_name
+       FROM playlist_items pi 
+       JOIN medias m ON pi.media_id = m.id
        WHERE pi.playlist_id = $1 
-         AND (pi.valid_from IS NULL OR pi.valid_from <= NOW())
-         AND (pi.valid_until IS NULL OR pi.valid_until >= NOW())
        ORDER BY pi.position ASC`,
       [playlist.id]
     );
 
-    console.log(`[Player] Playlist: ${playlist.name}, Itens carregados: ${items.length}`);
+    if (items.length === 0) {
+      console.log(`[Player] Erro: A playlist ${playlist.name} está vazia no banco.`);
+      return res.status(404).json({ error: 'Playlist sem mídias.' });
+    }
 
     const publicUrl = (process.env.R2_PUBLIC_URL || '').endsWith('/') 
       ? process.env.R2_PUBLIC_URL 
@@ -256,10 +261,11 @@ async function getActive(req, res) {
       url: item.type === 'widget' ? item.filename : `${publicUrl}${item.filename}`,
     }));
     
+    console.log(`[Player] OK! Enviando ${items.length} mídias para o player.`);
     res.json(playlist);
   } catch (err) {
-    console.error('[Player] Erro em getActive:', err);
-    res.status(500).json({ error: 'Erro interno' });
+    console.error('[Player] Erro fatal em getActive:', err);
+    res.status(500).json({ error: 'Erro interno no servidor' });
   }
 }
 
