@@ -24,8 +24,20 @@ const UserModal = ({ isOpen, user, clients, onClose, onSave }) => {
   }, [user, isOpen]);
 
   const handleSave = async () => {
-    if (!form.name || !form.email || (!user && !form.password)) {
-      addToast('warning', 'Atenção', 'Preencha todos os campos obrigatórios.');
+    if (!form.name.trim()) {
+      addToast('warning', 'Atenção', 'O campo Nome Completo é obrigatório.');
+      return;
+    }
+    if (!form.email.trim()) {
+      addToast('warning', 'Atenção', 'O campo E-mail é obrigatório.');
+      return;
+    }
+    if (!user && !form.password.trim()) {
+      addToast('warning', 'Atenção', 'A Senha Provisória é obrigatória.');
+      return;
+    }
+    if (form.role !== 'admin' && !form.client_id) {
+      addToast('warning', 'Atenção', 'Vincule este usuário a uma Empresa (Cliente).');
       return;
     }
     setSaving(true);

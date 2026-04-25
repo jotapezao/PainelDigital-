@@ -84,8 +84,8 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
         theme_color: themeColor,
         items: selectedItems.map((item, i) => ({
           media_id: item.media_id,
-          duration: item.duration,
-          order: i
+          duration_seconds: item.duration,
+          position: i
         }))
       };
       if (playlist?.id) {

@@ -77,7 +77,21 @@ async function create(req, res) {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
       [effectiveClientId, name, description || null, layout || 'fullscreen', footer_text || null, show_clock || false, show_weather || false, theme_color || '#818cf8']
     );
-    res.status(201).json({ ...rows[0], items: [] });
+    const playlist = rows[0];
+
+    // Save items if provided
+    if (req.body.items && req.body.items.length > 0) {
+      for (let i = 0; i < req.body.items.length; i++) {
+        const item = req.body.items[i];
+        await pool.query(
+          `INSERT INTO playlist_items (playlist_id, media_id, position, duration_seconds)
+           VALUES ($1, $2, $3, $4)`,
+          [playlist.id, item.media_id, i, item.duration_seconds || 10]
+        );
+      }
+    }
+
+    res.status(201).json({ ...playlist, items: req.body.items || [] });
   } catch (err) {
     res.status(500).json({ error: 'Erro interno' });
   }
@@ -93,7 +107,22 @@ async function update(req, res) {
       [name, description || null, active !== false, layout, footer_text, show_clock, show_weather, theme_color, req.params.id]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Playlist não encontrada' });
-    res.json(rows[0]);
+    const playlist = rows[0];
+
+    // Update items (clear and re-insert)
+    if (req.body.items) {
+      await pool.query('DELETE FROM playlist_items WHERE playlist_id = $1', [playlist.id]);
+      for (let i = 0; i < req.body.items.length; i++) {
+        const item = req.body.items[i];
+        await pool.query(
+          `INSERT INTO playlist_items (playlist_id, media_id, position, duration_seconds)
+           VALUES ($1, $2, $3, $4)`,
+          [playlist.id, item.media_id, i, item.duration_seconds || 10]
+        );
+      }
+    }
+
+    res.json(playlist);
   } catch (err) {
     res.status(500).json({ error: 'Erro interno' });
   }
