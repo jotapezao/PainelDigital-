@@ -8,6 +8,11 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
   const [description, setDescription] = useState('');
   const [selectedItems, setSelectedItems] = useState([]);
   const [activeTab, setActiveTab] = useState('info');
+  const [layout, setLayout] = useState('fullscreen');
+  const [footerText, setFooterText] = useState('');
+  const [showClock, setShowClock] = useState(false);
+  const [showWeather, setShowWeather] = useState(false);
+  const [themeColor, setThemeColor] = useState('#818cf8');
   const [saving, setSaving] = useState(false);
   const { addToast } = useToast();
 
@@ -16,10 +21,20 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
       setName(playlist.name || '');
       setDescription(playlist.description || '');
       setSelectedItems(playlist.items || []);
+      setLayout(playlist.layout || 'fullscreen');
+      setFooterText(playlist.footer_text || '');
+      setShowClock(playlist.show_clock || false);
+      setShowWeather(playlist.show_weather || false);
+      setThemeColor(playlist.theme_color || '#818cf8');
     } else {
       setName('');
       setDescription('');
       setSelectedItems([]);
+      setLayout('fullscreen');
+      setFooterText('');
+      setShowClock(false);
+      setShowWeather(false);
+      setThemeColor('#818cf8');
     }
     setActiveTab('info');
   }, [playlist, isOpen]);
@@ -62,6 +77,11 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
       const payload = {
         name,
         description,
+        layout,
+        footer_text: footerText,
+        show_clock: showClock,
+        show_weather: showWeather,
+        theme_color: themeColor,
         items: selectedItems.map((item, i) => ({
           media_id: item.media_id,
           duration: item.duration,
@@ -107,14 +127,18 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
 
         {/* Tabs */}
         <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', padding: '0 28px' }}>
-          {['info', 'medias'].map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)} style={{
+          {[
+            { id: 'info', label: 'Informações' },
+            { id: 'medias', label: `Mídias (${selectedItems.length})` },
+            { id: 'layout', label: '🎨 Visual & Widgets' }
+          ].map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
               padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer',
-              color: activeTab === tab ? 'var(--primary)' : 'var(--text-muted)',
-              borderBottom: activeTab === tab ? '2px solid var(--primary)' : '2px solid transparent',
-              fontWeight: '600', textTransform: 'capitalize', transition: 'all 0.2s'
+              color: activeTab === tab.id ? 'var(--primary)' : 'var(--text-muted)',
+              borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent',
+              fontWeight: '600', transition: 'all 0.2s'
             }}>
-              {tab === 'info' ? 'Informações' : `Mídias (${selectedItems.length})`}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -140,6 +164,55 @@ const PlaylistModal = ({ isOpen, playlist, medias, onClose, onSave }) => {
                   </p>
                 </div>
               )}
+            </div>
+          ) : activeTab === 'layout' ? (
+            <div className="animate-fade-in">
+              <div className="input-group">
+                <label>Layout da Tela</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <button onClick={() => setLayout('fullscreen')} style={{
+                    padding: '16px', borderRadius: 'var(--radius-md)', border: layout === 'fullscreen' ? '2px solid var(--primary)' : '2px solid var(--border)',
+                    background: layout === 'fullscreen' ? 'rgba(99,102,241,0.1)' : 'var(--bg-input)', cursor: 'pointer'
+                  }}>
+                    <div style={{ height: '40px', background: '#444', marginBottom: '8px' }} />
+                    Tela Cheia
+                  </button>
+                  <button onClick={() => setLayout('with_footer')} style={{
+                    padding: '16px', borderRadius: 'var(--radius-md)', border: layout === 'with_footer' ? '2px solid var(--primary)' : '2px solid var(--border)',
+                    background: layout === 'with_footer' ? 'rgba(99,102,241,0.1)' : 'var(--bg-input)', cursor: 'pointer'
+                  }}>
+                    <div style={{ height: '30px', background: '#444', marginBottom: '2px' }} />
+                    <div style={{ height: '8px', background: 'var(--primary)' }} />
+                    Com Rodapé (Ticker)
+                  </button>
+                </div>
+              </div>
+
+              <div className="input-group">
+                <label>Texto da Barra de Promoções</label>
+                <input value={footerText} onChange={e => setFooterText(e.target.value)} placeholder="Ex: Promoção do Dia: Picanha R$ 49,90 • Feliz Natal! • " />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                <div className="input-group">
+                  <label>Cor do Tema</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input type="color" value={themeColor} onChange={e => setThemeColor(e.target.value)} style={{ width: '50px', height: '40px', padding: '2px' }} />
+                    <input value={themeColor} onChange={e => setThemeColor(e.target.value)} style={{ flex: 1 }} />
+                  </div>
+                </div>
+                <div className="input-group">
+                  <label>Widgets Ativos</label>
+                  <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={showClock} onChange={e => setShowClock(e.target.checked)} /> Relógio
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={showWeather} onChange={e => setShowWeather(e.target.checked)} /> Clima (24°C)
+                    </label>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             <div>

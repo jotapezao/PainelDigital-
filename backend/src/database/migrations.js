@@ -186,6 +186,34 @@ async function runMigrations() {
         UNIQUE(group_id, playlist_id)
       );
     `);
+
+    // 6. Update user role constraint for 'estagiario'
+    await client.query(`
+      ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+      ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('admin', 'client', 'estagiario', 'viewer'));
+    `);
+
+    // 7. Add Layout columns to playlists
+    await client.query(`
+      DO $$ 
+      BEGIN 
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='layout') THEN 
+          ALTER TABLE playlists ADD COLUMN layout VARCHAR(50) DEFAULT 'fullscreen'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='footer_text') THEN 
+          ALTER TABLE playlists ADD COLUMN footer_text TEXT; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='show_clock') THEN 
+          ALTER TABLE playlists ADD COLUMN show_clock BOOLEAN DEFAULT false; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='show_weather') THEN 
+          ALTER TABLE playlists ADD COLUMN show_weather BOOLEAN DEFAULT false; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='theme_color') THEN 
+          ALTER TABLE playlists ADD COLUMN theme_color VARCHAR(20) DEFAULT '#818cf8'; 
+        END IF;
+      END $$;
+    `);
     // --- END NEW MIGRATIONS ---
 
     // Create default admin if not exists

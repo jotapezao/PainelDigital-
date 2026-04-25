@@ -67,14 +67,15 @@ async function getById(req, res) {
 
 // POST /api/playlists
 async function create(req, res) {
-  const { name, description, client_id } = req.body;
+  const { name, description, client_id, layout, footer_text, show_clock, show_weather, theme_color } = req.body;
   if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
   const isRestricted = req.user.role === 'client' || req.user.role === 'estagiario';
   const effectiveClientId = isRestricted ? req.user.client_id : (client_id || req.user.client_id);
   try {
     const { rows } = await pool.query(
-      `INSERT INTO playlists (client_id, name, description) VALUES ($1, $2, $3) RETURNING *`,
-      [effectiveClientId, name, description || null]
+      `INSERT INTO playlists (client_id, name, description, layout, footer_text, show_clock, show_weather, theme_color)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [effectiveClientId, name, description || null, layout || 'fullscreen', footer_text || null, show_clock || false, show_weather || false, theme_color || '#818cf8']
     );
     res.status(201).json({ ...rows[0], items: [] });
   } catch (err) {
@@ -84,12 +85,12 @@ async function create(req, res) {
 
 // PUT /api/playlists/:id
 async function update(req, res) {
-  const { name, description, active } = req.body;
+  const { name, description, active, layout, footer_text, show_clock, show_weather, theme_color } = req.body;
   try {
     const { rows } = await pool.query(
-      `UPDATE playlists SET name=$1, description=$2, active=$3, updated_at=NOW()
-       WHERE id=$4 RETURNING *`,
-      [name, description || null, active !== false, req.params.id]
+      `UPDATE playlists SET name=$1, description=$2, active=$3, layout=$4, footer_text=$5, show_clock=$6, show_weather=$7, theme_color=$8, updated_at=NOW()
+       WHERE id=$9 RETURNING *`,
+      [name, description || null, active !== false, layout, footer_text, show_clock, show_weather, theme_color, req.params.id]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Playlist não encontrada' });
     res.json(rows[0]);
