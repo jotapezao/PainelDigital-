@@ -9,22 +9,7 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Organize by type: uploads/videos/ and uploads/images/
-    const isVideo = file.mimetype.startsWith('video/');
-    const subDir = path.join(uploadDir, isVideo ? 'videos' : 'images');
-    if (!fs.existsSync(subDir)) {
-      fs.mkdirSync(subDir, { recursive: true });
-    }
-    cb(null, subDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const uniqueName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}${ext}`;
-    cb(null, uniqueName);
-  },
-});
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
   const allowedMimes = [
@@ -41,7 +26,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB max
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
 });
 
 module.exports = upload;

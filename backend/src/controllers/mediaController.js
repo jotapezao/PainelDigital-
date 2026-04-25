@@ -1,13 +1,5 @@
 const { pool } = require('../database/db');
-const { v4: uuidv4 } = require('uuid');
-const path = require('path');
-const fs = require('fs');
-
-const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '../../../uploads');
-
-function getClientFilter(user) {
-  return user.role === 'admin' ? {} : { client_id: user.client_id };
-}
+const { uploadFile, deleteFile, listFiles } = require('../services/r2Service');
 
 // GET /api/medias
 async function list(req, res) {
@@ -41,12 +33,15 @@ async function list(req, res) {
       params
     );
 
-    // Build full URL for each media
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    // No R2, as URLs já estão salvas ou podem ser geradas via R2_PUBLIC_URL
+    const publicUrl = process.env.R2_PUBLIC_URL.endsWith('/') 
+      ? process.env.R2_PUBLIC_URL 
+      : `${process.env.R2_PUBLIC_URL}/`;
+
     const medias = rows.map(m => ({
       ...m,
-      url: `${baseUrl}/uploads/${m.type === 'video' ? 'videos' : 'images'}/${m.filename}`,
-      thumbnail_url: m.thumbnail ? `${baseUrl}/uploads/thumbnails/${m.thumbnail}` : null,
+      url: m.type === 'widget' ? m.filename : `${publicUrl}${m.filename}`,
+      thumbnail_url: m.thumbnail ? `${publicUrl}thumbnails/${m.thumbnail}` : null,
     }));
 
     res.json(medias);
@@ -66,6 +61,9 @@ async function upload(req, res) {
       ? req.body.client_id
       : req.user.client_id;
 
+    // Upload to R2
+    const { fileName, url } = await uploadFile(req.file);
+
     const { rows } = await pool.query(
       `INSERT INTO medias (client_id, name, type, filename, original_name, mime_type, size_bytes)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
@@ -73,22 +71,20 @@ async function upload(req, res) {
         clientId,
         req.body.name || req.file.originalname.replace(/\.[^/.]+$/, ''),
         type,
-        req.file.filename,
+        fileName,
         req.file.originalname,
         req.file.mimetype,
         req.file.size,
       ]
     );
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const media = rows[0];
     res.status(201).json({
-      ...media,
-      url: `${baseUrl}/uploads/${type === 'video' ? 'videos' : 'images'}/${media.filename}`,
+      ...rows[0],
+      url: url
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Erro no upload' });
+    res.status(500).json({ error: 'Erro no upload para o R2' });
   }
 }
 
@@ -105,18 +101,16 @@ async function remove(req, res) {
       return res.status(403).json({ error: 'Acesso não autorizado' });
     }
 
-    // Delete file from disk
-    const subDir = media.type === 'video' ? 'videos' : 'images';
-    const filePath = path.join(uploadDir, subDir, media.filename);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    // Delete from R2 (if not widget)
+    if (media.type !== 'widget') {
+      await deleteFile(media.filename);
     }
 
     await pool.query('DELETE FROM medias WHERE id = $1', [req.params.id]);
     res.json({ message: 'Mídia removida com sucesso' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Erro interno' });
+    res.status(500).json({ error: 'Erro ao remover mídia do R2' });
   }
 }
 
