@@ -62,63 +62,66 @@ const UserModal = ({ isOpen, user, clients, onClose, onSave }) => {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 1000,
-      backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+      backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)',
+      display: 'flex', justifyContent: 'center', padding: '40px 20px',
+      overflowY: 'auto', // Permite rolar a tela toda se o modal for grande
+      alignItems: 'flex-start' // Garante que o topo nunca suma
     }}>
       <div className="card animate-fade-in" style={{ 
         width: '100%', maxWidth: '500px', padding: 0, 
-        overflow: 'hidden', display: 'flex', flexDirection: 'column',
-        maxHeight: '90vh', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+        overflow: 'visible', display: 'flex', flexDirection: 'column',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+        marginBottom: '40px' // Espaço no final ao rolar
       }}>
         {/* Header */}
-        <div style={{ padding: '24px 30px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
           <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#fff' }}>{user?.id ? '✏️ Editar Usuário' : '👤 Novo Usuário'}</h2>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>Preencha as informações de acesso.</p>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#fff' }}>{user?.id ? '✏️ Editar Usuário' : '👤 Novo Usuário'}</h2>
+            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Informações de acesso ao sistema.</p>
           </div>
-          <button onClick={onClose} style={{ background: 'var(--bg-input)', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.2rem', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+          <button onClick={onClose} style={{ background: 'var(--bg-input)', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
         </div>
 
-        {/* Scrollable Content */}
-        <div style={{ padding: '30px', overflowY: 'auto', flex: 1 }}>
-          <div className="input-group">
-            <label style={{ color: 'var(--text-main)', fontWeight: '600' }}>Nome Completo *</label>
+        {/* Content */}
+        <div style={{ padding: '24px' }}>
+          <div className="input-group" style={{ marginBottom: '16px' }}>
+            <label style={{ color: 'var(--text-main)', fontWeight: '600', fontSize: '0.85rem', marginBottom: '6px' }}>Nome Completo *</label>
             <input 
               value={form.name} 
               onChange={e => setForm(p => ({ ...p, name: e.target.value }))} 
               placeholder="Ex: João Paulo Fernandes" 
-              style={{ border: '1px solid var(--border)', background: 'var(--bg-input)' }}
+              style={{ border: '1px solid var(--border)', background: 'var(--bg-input)', padding: '10px 14px' }}
             />
           </div>
 
-          <div className="input-group">
-            <label style={{ color: 'var(--text-main)', fontWeight: '600' }}>E-mail (Login) *</label>
+          <div className="input-group" style={{ marginBottom: '16px' }}>
+            <label style={{ color: 'var(--text-main)', fontWeight: '600', fontSize: '0.85rem', marginBottom: '6px' }}>E-mail (Login) *</label>
             <input 
               type="email" 
               value={form.email} 
               onChange={e => setForm(p => ({ ...p, email: e.target.value }))} 
               placeholder="joao@empresa.com" 
-              style={{ border: '1px solid var(--border)', background: 'var(--bg-input)' }}
+              style={{ border: '1px solid var(--border)', background: 'var(--bg-input)', padding: '10px 14px' }}
             />
           </div>
 
           {!user && (
-            <div className="input-group">
-              <label style={{ color: 'var(--text-main)', fontWeight: '600' }}>Senha Provisória *</label>
+            <div className="input-group" style={{ marginBottom: '16px' }}>
+              <label style={{ color: 'var(--text-main)', fontWeight: '600', fontSize: '0.85rem', marginBottom: '6px' }}>Senha Provisória *</label>
               <input 
                 type="password" 
                 value={form.password} 
                 onChange={e => setForm(p => ({ ...p, password: e.target.value }))} 
                 placeholder="••••••••" 
-                style={{ border: '1px solid var(--border)', background: 'var(--bg-input)' }}
+                style={{ border: '1px solid var(--border)', background: 'var(--bg-input)', padding: '10px 14px' }}
               />
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: '16px' }}>
             <div className="input-group">
-              <label style={{ color: 'var(--text-main)', fontWeight: '600' }}>Nível de Acesso</label>
-              <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))} style={{ border: '1px solid var(--border)', background: 'var(--bg-input)' }}>
+              <label style={{ color: 'var(--text-main)', fontWeight: '600', fontSize: '0.85rem', marginBottom: '6px' }}>Nível de Acesso</label>
+              <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))} style={{ border: '1px solid var(--border)', background: 'var(--bg-input)', padding: '10px 14px' }}>
                 <option value="client">👤 Cliente (Acesso ao Player)</option>
                 <option value="estagiario">📝 Estagiário (Gestor)</option>
                 <option value="admin">👑 Administrador (Total)</option>
@@ -127,8 +130,8 @@ const UserModal = ({ isOpen, user, clients, onClose, onSave }) => {
             
             {form.role !== 'admin' && (
               <div className="input-group animate-fade-in">
-                <label style={{ color: 'var(--text-main)', fontWeight: '600' }}>Vincular a uma Empresa *</label>
-                <select value={form.client_id} onChange={e => setForm(p => ({ ...p, client_id: e.target.value }))} style={{ border: '1px solid var(--border)', background: 'var(--bg-input)' }}>
+                <label style={{ color: 'var(--text-main)', fontWeight: '600', fontSize: '0.85rem', marginBottom: '6px' }}>Vincular a uma Empresa *</label>
+                <select value={form.client_id} onChange={e => setForm(p => ({ ...p, client_id: e.target.value }))} style={{ border: '1px solid var(--border)', background: 'var(--bg-input)', padding: '10px 14px' }}>
                   <option value="">— Selecione uma Empresa —</option>
                   {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
@@ -138,22 +141,22 @@ const UserModal = ({ isOpen, user, clients, onClose, onSave }) => {
 
           <div style={{ 
             display: 'flex', alignItems: 'center', gap: '12px', 
-            padding: '16px', backgroundColor: 'rgba(255,255,255,0.03)', 
-            borderRadius: 'var(--radius-md)', marginTop: '10px', border: '1px solid var(--border)'
+            padding: '12px 16px', backgroundColor: 'rgba(255,255,255,0.03)', 
+            borderRadius: 'var(--radius-md)', border: '1px solid var(--border)'
           }}>
             <input 
               type="checkbox" id="user-active" checked={form.active} 
               onChange={e => setForm(p => ({ ...p, active: e.target.checked }))} 
-              style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
             />
-            <label htmlFor="user-active" style={{ cursor: 'pointer', marginBottom: 0, fontWeight: '600' }}>Usuário Ativo</label>
+            <label htmlFor="user-active" style={{ cursor: 'pointer', marginBottom: 0, fontWeight: '600', fontSize: '0.85rem' }}>Usuário Ativo</label>
           </div>
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '20px 30px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '12px', background: 'rgba(255,255,255,0.02)' }}>
-          <button className="btn btn-outline" onClick={onClose} style={{ minWidth: '100px' }}>Cancelar</button>
-          <button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ minWidth: '140px' }}>
+        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '12px', background: 'rgba(255,255,255,0.02)' }}>
+          <button className="btn btn-outline" onClick={onClose} style={{ padding: '8px 16px', fontSize: '0.85rem' }}>Cancelar</button>
+          <button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ padding: '8px 24px', fontSize: '0.85rem' }}>
             {saving ? 'Salvando...' : (user?.id ? 'Salvar' : 'Cadastrar Usuário')}
           </button>
         </div>
