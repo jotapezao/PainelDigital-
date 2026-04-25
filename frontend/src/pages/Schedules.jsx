@@ -90,7 +90,7 @@ const ScheduleModal = ({ isOpen, schedule, devices, playlists, onClose, onSave }
               </select>
             </div>
             <div className="input-group">
-              <label>Playlist *</label>
+              <label>Plano *</label>
               <select value={form.playlist_id} onChange={e => setForm(p => ({ ...p, playlist_id: e.target.value }))}>
                 <option value="">— Selecione —</option>
                 {playlists.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -198,7 +198,7 @@ const Schedules = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
         <div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Agendamentos</h2>
-          <p style={{ color: 'var(--text-muted)' }}>Programe a exibição de playlists por horário e dia da semana.</p>
+          <p style={{ color: 'var(--text-muted)' }}>Programe a exibição de planos por horário e dia da semana.</p>
         </div>
         <button className="btn btn-primary" onClick={() => { setEditingSchedule(null); setModalOpen(true); }}>
           + Novo Agendamento
@@ -211,7 +211,7 @@ const Schedules = () => {
         <div className="card" style={{ textAlign: 'center', padding: '80px', borderStyle: 'dashed' }}>
           <div style={{ fontSize: '3rem', marginBottom: '16px' }}>📅</div>
           <h3 style={{ marginBottom: '8px' }}>Nenhum agendamento criado</h3>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>Programe o horário de exibição das suas playlists em cada TV.</p>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>Programe o horário de exibição dos seus planos em cada TV.</p>
           <button className="btn btn-outline" onClick={() => { setEditingSchedule(null); setModalOpen(true); }}>Criar Primeiro Agendamento</button>
         </div>
       ) : (

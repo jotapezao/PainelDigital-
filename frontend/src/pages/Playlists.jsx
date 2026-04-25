@@ -128,25 +128,25 @@ const PlaylistModal = ({ isOpen, playlist, medias, clients, onClose, onSave }) =
     <div className="modal-overlay">
       <div className="modal-container" style={{ maxWidth: '1100px', height: '90vh' }}>
         <div className="modal-header">
-          <h2>{playlist?.id ? '✏️ Editar Playlist' : '🎬 Nova Playlist'}</h2>
+          <h2>{playlist?.id ? '✏️ Editar Plano' : '🎬 Novo Plano'}</h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.5rem', lineHeight: 1 }}>×</button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', height: 'calc(90vh - 140px)', overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', height: 'calc(90vh - 140px)', overflow: 'hidden' }}>
           {/* Main Controls Area */}
           <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div className="table-container" style={{ borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-              <div style={{ display: 'flex' }}>
+            <div className="table-container" style={{ borderBottom: '1px solid var(--border)', flexShrink: 0, padding: '0 28px' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
                 {[
                   { id: 'info', label: 'Informações' },
                   { id: 'medias', label: `Mídias (${selectedItems.length})` },
-                  { id: 'layout', label: '🎨 Visual & Widgets' }
+                  { id: 'layout', label: '🎨 Design & Widgets' }
                 ].map(tab => (
                   <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-                    padding: '14px 24px', background: 'none', border: 'none', cursor: 'pointer',
+                    padding: '16px 12px', background: 'none', border: 'none', cursor: 'pointer',
                     color: activeTab === tab.id ? 'var(--primary)' : 'var(--text-muted)',
-                    borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent',
-                    fontWeight: '600', transition: 'all 0.2s'
+                    borderBottom: activeTab === tab.id ? '3px solid var(--primary)' : '3px solid transparent',
+                    fontWeight: '700', fontSize: '0.875rem', transition: 'all 0.2s', textTransform: 'uppercase', letterSpacing: '0.5px'
                   }}>{tab.label}</button>
                 ))}
               </div>
@@ -165,8 +165,8 @@ const PlaylistModal = ({ isOpen, playlist, medias, clients, onClose, onSave }) =
                     </div>
                   )}
                   <div className="input-group">
-                    <label>Nome da Playlist *</label>
-                    <input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Cardápio Digital Loja 1" />
+                    <label>Nome do Plano *</label>
+                    <input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Promoções de Verão" />
                   </div>
                   <div className="input-group">
                     <label>Descrição</label>
@@ -250,11 +250,10 @@ const PlaylistModal = ({ isOpen, playlist, medias, clients, onClose, onSave }) =
             </div>
           </div>
 
-          {/* Preview Panel */}
-          <div style={{ padding: '28px', background: 'var(--bg-dark)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ padding: '28px', background: 'var(--bg-dark)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto' }}>
             <h4 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Visualização</h4>
             <div style={{ 
-              flex: 1, position: 'relative', background: '#000', borderRadius: '12px', border: '4px solid #222', overflow: 'hidden',
+              position: 'relative', background: '#000', borderRadius: '12px', border: '4px solid #222', overflow: 'hidden',
               display: 'flex', flexDirection: orientation === 'portrait' ? 'row' : 'column',
               aspectRatio: orientation === 'portrait' ? '9/16' : '16/9'
             }}>
@@ -286,10 +285,10 @@ const PlaylistModal = ({ isOpen, playlist, medias, clients, onClose, onSave }) =
           </div>
         </div>
 
-        <div className="modal-footer">
+        <div className="modal-footer" style={{ borderTop: '1px solid var(--border)', padding: '16px 28px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
           <button className="btn btn-outline" onClick={onClose}>Cancelar</button>
           <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? 'Salvando...' : 'Salvar Alterações'}
+            {saving ? 'Salvando...' : 'Salvar Plano'}
           </button>
         </div>
       </div>
@@ -329,7 +328,7 @@ const Playlists = () => {
       const res = await api.get('/playlists');
       setPlaylists(res.data);
     } catch {
-      addToast('error', 'Erro', 'Não foi possível carregar as playlists.');
+      addToast('error', 'Erro', 'Não foi possível carregar os planos.');
     } finally {
       setLoading(false);
     }
@@ -357,10 +356,10 @@ const Playlists = () => {
   const handleDelete = async () => {
     try {
       await api.delete(`/playlists/${deleteModal.playlist.id}`);
-      addToast('success', 'Sucesso', 'Playlist removida!');
+      addToast('success', 'Sucesso', 'Plano removido!');
       setPlaylists(prev => prev.filter(p => p.id !== deleteModal.playlist.id));
     } catch {
-      addToast('error', 'Erro', 'Não foi possível remover a playlist.');
+      addToast('error', 'Erro', 'Não foi possível remover o plano.');
     } finally {
       setDeleteModal({ open: false, playlist: null });
     }
@@ -370,22 +369,22 @@ const Playlists = () => {
     <div className="animate-fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Playlists</h2>
-          <p style={{ color: 'var(--text-muted)' }}>Organize e sequencie suas mídias para exibição.</p>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Planos de Exibição</h2>
+          <p style={{ color: 'var(--text-muted)' }}>Gerencie os planos e sequências de mídias.</p>
         </div>
         <button className="btn btn-primary" onClick={() => { setEditingPlaylist(null); setModalOpen(true); }}>
-          + Nova Playlist
+          + Novo Plano
         </button>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '100px', color: 'var(--text-muted)' }}>Carregando playlists...</div>
+        <div style={{ textAlign: 'center', padding: '100px', color: 'var(--text-muted)' }}>Carregando planos...</div>
       ) : playlists.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '80px', borderStyle: 'dashed' }}>
           <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🎬</div>
-          <h3 style={{ marginBottom: '8px' }}>Nenhuma playlist criada</h3>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>Crie sua primeira playlist e organize o conteúdo das suas TVs.</p>
-          <button className="btn btn-outline" onClick={() => { setEditingPlaylist(null); setModalOpen(true); }}>Criar Primeira Playlist</button>
+          <h3 style={{ marginBottom: '8px' }}>Nenhum plano criado</h3>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>Crie seu primeiro plano e organize o conteúdo das suas TVs.</p>
+          <button className="btn btn-outline" onClick={() => { setEditingPlaylist(null); setModalOpen(true); }}>Criar Primeiro Plano</button>
         </div>
       ) : (
         <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
@@ -404,6 +403,9 @@ const Playlists = () => {
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{playlist.description || 'Sem descrição'}</p>
               </div>
               <div style={{ display: 'flex', gap: '8px', paddingTop: '8px', borderTop: '1px solid var(--border)', marginTop: 'auto' }}>
+                <button className="btn btn-primary" style={{ flex: 1.5, padding: '8px', fontSize: '0.8125rem' }} onClick={() => handleEdit(playlist)}>
+                  👁️ Visualizar Plano
+                </button>
                 <button className="btn btn-outline" style={{ flex: 1, padding: '8px', fontSize: '0.8125rem' }} onClick={() => handleEdit(playlist)}>
                   ✏️ Editar
                 </button>

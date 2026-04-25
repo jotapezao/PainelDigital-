@@ -89,9 +89,9 @@ const DeviceModal = ({ isOpen, device, playlists, clients, onClose, onSave }) =>
             <input value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} placeholder="Ex: Andar 2, Sala de Espera" />
           </div>
           <div className="input-group">
-            <label>Playlist Padrão</label>
+            <label>Plano Padrão</label>
             <select value={form.playlist_id} onChange={e => setForm(p => ({ ...p, playlist_id: e.target.value }))}>
-              <option value="">— Nenhuma —</option>
+              <option value="">— Nenhum —</option>
               {playlists.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
@@ -244,9 +244,9 @@ const Devices = () => {
               </div>
 
               <div style={{ backgroundColor: 'var(--bg-input)', borderRadius: 'var(--radius-md)', padding: '12px', marginBottom: '16px' }}>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginBottom: '4px' }}>Playlist Atual</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginBottom: '4px' }}>Plano Atual</p>
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: '500' }}>
-                  {device.playlist_name || '— Nenhuma —'}
+                  {device.playlist_name || '— Nenhum —'}
                 </p>
               </div>
 

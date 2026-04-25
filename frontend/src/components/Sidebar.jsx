@@ -21,7 +21,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const menuItems = [
     { name: 'Dashboard', path: '/', icon: 'dashboard' },
     { name: 'Mídias', path: '/medias', icon: 'media' },
-    { name: 'Playlists', path: '/playlists', icon: 'playlist' },
+    { name: 'Planos', path: '/playlists', icon: 'playlist' },
     { name: 'Dispositivos', path: '/devices', icon: 'devices' },
     { name: 'Agendamentos', path: '/schedules', icon: 'calendar' },
     { name: 'Logs', path: '/logs', icon: 'logs' },
