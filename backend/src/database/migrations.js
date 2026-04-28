@@ -285,6 +285,21 @@ async function runMigrations() {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='ticker_blur') THEN 
           ALTER TABLE playlists ADD COLUMN ticker_blur BOOLEAN DEFAULT true; 
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='show_social') THEN 
+          ALTER TABLE playlists ADD COLUMN show_social BOOLEAN DEFAULT false; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='social_handle') THEN 
+          ALTER TABLE playlists ADD COLUMN social_handle VARCHAR(100); 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='social_platform') THEN 
+          ALTER TABLE playlists ADD COLUMN social_platform VARCHAR(50) DEFAULT 'instagram'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='card_transparency') THEN 
+          ALTER TABLE playlists ADD COLUMN card_transparency DECIMAL DEFAULT 0.4; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='ticker_label') THEN 
+          ALTER TABLE playlists ADD COLUMN ticker_label VARCHAR(50) DEFAULT 'NOTÍCIAS'; 
+        END IF;
 
         -- Add theme_color to clients
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='theme_color') THEN 

@@ -24,13 +24,15 @@ const Player = () => {
     // Skip heartbeat if in preview mode
     let heartbeat;
     if (!previewId) {
-      heartbeat = setInterval(async () => {
+      const sendHeartbeat = async () => {
         try {
           await api.post('/devices/heartbeat');
         } catch (e) {
           console.error('Falha no sinal de vida');
         }
-      }, 30000);
+      };
+      sendHeartbeat(); // Immediate heartbeat
+      heartbeat = setInterval(sendHeartbeat, 30000);
     }
 
     const interval = setInterval(fetchPlaylist, 2 * 60 * 1000);
@@ -266,19 +268,49 @@ const Player = () => {
             />
           )}
 
-          {/* Clock overlay (only if not in split/header layout to avoid clutter) */}
+          {/* Clock/Weather overlay (only if not in split/header layout to avoid clutter) */}
           {playlist.layout !== 'split' && playlist.layout !== 'with_header' && (playlist.show_clock || playlist.show_weather) && (
-            <div style={{
-              position: 'absolute', top: '40px', right: '40px', padding: '20px 30px',
-              background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', borderRadius: '24px',
-              color: '#fff', border: `1px solid rgba(255,255,255,0.1)`, boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-              textAlign: 'right', zIndex: 10
+            <div className="player-widget" style={{
+              position: 'absolute', top: '40px', right: '40px', padding: '24px 32px',
+              background: `rgba(0,0,0,${playlist.card_transparency ?? 0.4})`, backdropFilter: 'blur(16px)', borderRadius: '24px',
+              color: '#fff', border: `1px solid rgba(255,255,255,0.05)`, boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+              textAlign: 'right', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '16px'
             }}>
-              <div style={{ fontSize: '3rem', fontWeight: '800', lineHeight: 1 }}>
-                {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-              </div>
-              <div style={{ fontSize: '1.2rem', opacity: 0.8, marginTop: '5px' }}>
-                {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+              {playlist.show_clock && (
+                <div style={{ borderBottom: playlist.show_weather ? '1px solid rgba(255,255,255,0.1)' : 'none', paddingBottom: playlist.show_weather ? '16px' : '0' }}>
+                  <div className="player-widget-clock" style={{ fontSize: '3.5rem', fontWeight: '800', lineHeight: 1, fontFamily: 'Outfit' }}>
+                    {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                  <div style={{ fontSize: '1.2rem', opacity: 0.8, marginTop: '8px' }}>
+                    {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}
+                  </div>
+                </div>
+              )}
+              {playlist.show_weather && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '16px', paddingTop: playlist.show_clock ? '8px' : '0' }}>
+                  <span className="player-widget-weather" style={{ fontSize: '2.5rem' }}>⛅</span>
+                  <span className="player-widget-weather" style={{ fontSize: '2.5rem', fontWeight: '700', fontFamily: 'Outfit' }}>24°C</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Social Media Overlay */}
+          {playlist.layout !== 'split' && playlist.show_social && (
+            <div className="player-social-widget" style={{
+              position: 'absolute', bottom: playlist.footer_text || playlist.layout === 'with_footer' ? `${(playlist.ticker_height || 80) + 40}px` : '40px', 
+              right: '40px', padding: '20px 30px',
+              background: `rgba(255,255,255,0.1)`, backdropFilter: 'blur(16px)', borderRadius: '20px',
+              color: '#fff', border: `1px solid rgba(255,255,255,0.1)`, boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+              zIndex: 10, display: 'flex', flexDirection: 'column', gap: '8px'
+            }}>
+              <div style={{ fontSize: '1.1rem', opacity: 0.9 }}>Siga nossas redes</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {playlist.social_platform === 'instagram' && <span style={{ fontSize: '1.5rem' }}>📸</span>}
+                {playlist.social_platform === 'twitter' && <span style={{ fontSize: '1.5rem' }}>🐦</span>}
+                {playlist.social_platform === 'facebook' && <span style={{ fontSize: '1.5rem' }}>📘</span>}
+                {playlist.social_platform === 'tiktok' && <span style={{ fontSize: '1.5rem' }}>🎵</span>}
+                <span className="player-social-text" style={{ fontSize: '1.3rem', fontWeight: '700' }}>{playlist.social_handle || '@sua_empresa'}</span>
               </div>
             </div>
           )}
@@ -340,7 +372,7 @@ const Player = () => {
           backdropFilter: playlist.ticker_blur !== false ? 'blur(10px)' : 'none',
           boxShadow: playlist.footer_position === 'top' ? '0 10px 30px rgba(0,0,0,0.3)' : '0 -10px 30px rgba(0,0,0,0.3)'
         }}>
-          <div style={{
+          <div className="player-ticker-label" style={{
             padding: '0 30px',
             background: 'rgba(0,0,0,0.2)',
             height: '100%',
@@ -353,7 +385,7 @@ const Player = () => {
             borderRight: '1px solid rgba(255,255,255,0.1)',
             zIndex: 21
           }}>
-            NOTÍCIAS
+            {playlist.ticker_label || 'NOTÍCIAS'}
           </div>
           <div style={{
             display: 'inline-block',
@@ -371,8 +403,8 @@ const Player = () => {
         </div>
       )}
       
-      <div style={{ position: 'absolute', bottom: (playlist.footer_text || playlist.layout === 'with_footer') ? `${(playlist.ticker_height || 80) + 20}px` : '30px', left: '40px', opacity: 0.4, zIndex: 5 }}>
-        <h2 style={{ color: '#fff', fontSize: '1.2rem', margin: 0, fontWeight: '500' }}>{playlist.client_name}</h2>
+      <div className="player-client-name" style={{ position: 'absolute', bottom: (playlist.footer_text || playlist.layout === 'with_footer') ? `${(playlist.ticker_height || 80) + 30}px` : '30px', left: '40px', zIndex: 5 }}>
+        <h2 style={{ color: '#fff', opacity: 0.8, fontSize: '1.8rem', margin: 0, fontWeight: '800', fontFamily: 'Outfit' }}>{playlist.client_name}</h2>
       </div>
     </div>
   );

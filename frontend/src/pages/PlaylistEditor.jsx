@@ -35,6 +35,13 @@ const PlaylistEditor = () => {
   const [tickerBlur, setTickerBlur] = useState(true);
   const [tickerFontWeight, setTickerFontWeight] = useState('600');
   
+  // Novas funcionalidades de Widget e Transparência
+  const [showSocial, setShowSocial] = useState(false);
+  const [socialHandle, setSocialHandle] = useState('');
+  const [socialPlatform, setSocialPlatform] = useState('instagram');
+  const [cardTransparency, setCardTransparency] = useState(0.4);
+  const [tickerLabel, setTickerLabel] = useState('NOTÍCIAS');
+  
   const [medias, setMedias] = useState([]);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -76,6 +83,11 @@ const PlaylistEditor = () => {
           setTickerHeight(p.ticker_height || 80);
           setTickerBlur(p.ticker_blur !== false);
           setTickerFontWeight(p.ticker_font_weight || '600');
+          setShowSocial(p.show_social || false);
+          setSocialHandle(p.social_handle || '');
+          setSocialPlatform(p.social_platform || 'instagram');
+          setCardTransparency(p.card_transparency !== undefined && p.card_transparency !== null ? parseFloat(p.card_transparency) : 0.4);
+          setTickerLabel(p.ticker_label || 'NOTÍCIAS');
         }
       } catch (err) {
         addToast('error', 'Erro', 'Falha ao carregar dados do plano.');
@@ -144,6 +156,11 @@ const PlaylistEditor = () => {
         ticker_height: parseInt(tickerHeight) || 80,
         ticker_blur: tickerBlur,
         ticker_font_weight: tickerFontWeight,
+        show_social: showSocial,
+        social_handle: socialHandle,
+        social_platform: socialPlatform,
+        card_transparency: parseFloat(cardTransparency),
+        ticker_label: tickerLabel,
         items: selectedItems.map((item, i) => ({
           media_id: item.media_id,
           duration_seconds: item.media?.type === 'video' ? 0 : (item.duration || 10),
@@ -316,9 +333,15 @@ const PlaylistEditor = () => {
                     <input value={rssUrl} onChange={e => setRssUrl(e.target.value)} placeholder="Ex: https://g1.globo.com/rss/g1/" />
                     <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '4px' }}>Deixe em branco para usar o texto manual abaixo.</p>
                   </div>
-                  <div className="input-group">
-                    <label>Texto do Rodapé (Manual)</label>
-                    <textarea value={footerText} onChange={e => setFooterText(e.target.value)} placeholder="Digite aqui as notícias..." rows={2} />
+                  <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px' }}>
+                    <div className="input-group">
+                      <label>Label Notícias</label>
+                      <input value={tickerLabel} onChange={e => setTickerLabel(e.target.value)} placeholder="Ex: AVISOS" />
+                    </div>
+                    <div className="input-group">
+                      <label>Texto do Rodapé (Manual)</label>
+                      <textarea value={footerText} onChange={e => setFooterText(e.target.value)} placeholder="Digite aqui as notícias..." rows={2} />
+                    </div>
                   </div>
 
                   <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -350,14 +373,44 @@ const PlaylistEditor = () => {
                     </div>
                   </div>
                   <div className="input-group">
-                    <label>Widgets Auxiliares</label>
-                    <div style={{ display: 'flex', gap: '32px', padding: '16px', background: 'var(--bg-input)', borderRadius: 'var(--radius-md)' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={showClock} onChange={e => setShowClock(e.target.checked)} style={{ width: '20px', height: '20px' }} /> Relógio
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={showWeather} onChange={e => setShowWeather(e.target.checked)} style={{ width: '20px', height: '20px' }} /> Clima
-                      </label>
+                    <label>Widgets e Cards Informativos</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', background: 'var(--bg-input)', borderRadius: 'var(--radius-md)' }}>
+                      <div style={{ display: 'flex', gap: '32px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={showClock} onChange={e => setShowClock(e.target.checked)} style={{ width: '20px', height: '20px' }} /> Relógio e Data
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={showWeather} onChange={e => setShowWeather(e.target.checked)} style={{ width: '20px', height: '20px' }} /> Clima
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={showSocial} onChange={e => setShowSocial(e.target.checked)} style={{ width: '20px', height: '20px' }} /> Redes Sociais
+                        </label>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px' }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Transparência dos Cards (0.1 a 1.0)</label>
+                          <input type="range" min="0.1" max="1" step="0.1" value={cardTransparency} onChange={e => setCardTransparency(e.target.value)} style={{ width: '100%' }} />
+                        </div>
+                      </div>
+
+                      {showSocial && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px' }}>
+                          <div>
+                            <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Rede Social</label>
+                            <select value={socialPlatform} onChange={e => setSocialPlatform(e.target.value)}>
+                              <option value="instagram">Instagram</option>
+                              <option value="twitter">Twitter / X</option>
+                              <option value="facebook">Facebook</option>
+                              <option value="tiktok">TikTok</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Seu @ (Handle)</label>
+                            <input value={socialHandle} onChange={e => setSocialHandle(e.target.value)} placeholder="@sua_empresa" />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
