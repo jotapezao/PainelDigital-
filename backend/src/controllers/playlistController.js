@@ -86,9 +86,9 @@ async function create(req, res) {
         footer_font_color, footer_position, footer_font_family, rss_url, transition_effect,
         ticker_speed, ticker_direction, ticker_height, ticker_blur,
         show_social, social_handle, social_platform, card_transparency, ticker_label,
-        social_qrcode, widget_position, social_position, show_progress_bar
+        social_qrcode, widget_position, social_position, show_progress_bar, social_card_style
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30) RETURNING *`,
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31) RETURNING *`,
       [
         effectiveClientId, name, description || null, layout || 'fullscreen', footer_text || null, 
         show_clock || false, show_weather || false, theme_color || '#818cf8', orientation || 'horizontal', 
@@ -97,7 +97,7 @@ async function create(req, res) {
         footer_font_family || 'Inter', rss_url || null, transition_effect || 'fade',
         ticker_speed || 'medium', ticker_direction || 'ltr', ticker_height || 80, ticker_blur !== false,
         show_social || false, social_handle || null, social_platform || 'instagram', card_transparency ?? 0.4, ticker_label || 'NOTÍCIAS',
-        social_qrcode || false, widget_position || 'top-right', social_position || 'bottom-right', show_progress_bar !== false
+        social_qrcode || false, widget_position || 'top-right', social_position || 'bottom-right', show_progress_bar !== false, social_card_style || 'style1'
       ]
     );
     const playlist = rows[0];
@@ -142,7 +142,7 @@ async function update(req, res) {
       rss_url=$16, transition_effect=$17, ticker_speed=$18, ticker_direction=$19, 
       ticker_height=$20, ticker_blur=$21, show_social=$22, social_handle=$23, 
       social_platform=$24, card_transparency=$25, ticker_label=$26, 
-      social_qrcode=$27, widget_position=$28, social_position=$29, show_progress_bar=$30, updated_at=NOW()`;
+      social_qrcode=$27, widget_position=$28, social_position=$29, show_progress_bar=$30, social_card_style=$31, updated_at=NOW()`;
     let params = [
       name, description || null, active !== false, layout, footer_text, 
       show_clock, show_weather, theme_color, orientation || 'horizontal', 
@@ -151,9 +151,9 @@ async function update(req, res) {
       footer_font_family || 'Inter', rss_url || null, transition_effect || 'fade',
       ticker_speed || 'medium', ticker_direction || 'ltr', ticker_height || 80, ticker_blur !== false,
       show_social || false, social_handle || null, social_platform || 'instagram', card_transparency ?? 0.4, ticker_label || 'NOTÍCIAS',
-      req.body.social_qrcode || false, req.body.widget_position || 'top-right', req.body.social_position || 'bottom-right', req.body.show_progress_bar !== false
+      req.body.social_qrcode || false, req.body.widget_position || 'top-right', req.body.social_position || 'bottom-right', req.body.show_progress_bar !== false, req.body.social_card_style || 'style1'
     ];
-    let idx = 31;
+    let idx = 32;
 
     if (effectiveClientId) {
       query += `, client_id=$${idx++}`;

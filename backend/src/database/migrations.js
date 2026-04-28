@@ -312,6 +312,9 @@ async function runMigrations() {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='show_progress_bar') THEN 
           ALTER TABLE playlists ADD COLUMN show_progress_bar BOOLEAN DEFAULT true; 
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='social_card_style') THEN 
+          ALTER TABLE playlists ADD COLUMN social_card_style VARCHAR(20) DEFAULT 'style1'; 
+        END IF;
 
         -- Add theme_color to clients
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='theme_color') THEN 

@@ -137,8 +137,10 @@ const Player = () => {
   })();
 
   const autoStart = searchParams.get('autoStart') === 'true';
+  const isClient = user?.role === 'client';
 
-  if (!isStarted && !previewId && !autoStart) {
+  // Se for preview, tem que apertar o botão, ou se não for client e não tiver autoStart
+  if (!isStarted && !previewId && !autoStart && !isClient) {
     return (
       <div style={{
         background: '#000', height: '100vh', display: 'flex', flexDirection: 'column',
@@ -197,6 +199,54 @@ const Player = () => {
       case 'tiktok': return `https://tiktok.com/@${handle}`;
       case 'youtube': return `https://youtube.com/${playlist.social_handle}`;
       default: return playlist.social_handle;
+    }
+  };
+
+  const getSocialStyle = (styleType, platform) => {
+    const base = {
+      ...getPositionStyles(playlist.social_position || 'bottom-right'), 
+      padding: '20px 30px',
+      zIndex: 10, display: 'flex', gap: '20px', alignItems: 'center',
+      color: '#fff', transition: 'all 0.3s ease'
+    };
+    
+    switch (styleType) {
+      case 'style2': // Escuro Minimalista
+        return { ...base, background: 'rgba(0,0,0,0.85)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' };
+      case 'style3': // Vibrante
+        const bg = platform === 'instagram' ? 'linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)' :
+                   platform === 'youtube' ? 'linear-gradient(135deg, #ff0000, #cc0000)' :
+                   platform === 'twitter' ? 'linear-gradient(135deg, #1da1f2, #0d8bd9)' :
+                   platform === 'facebook' ? 'linear-gradient(135deg, #1877f2, #145dbf)' :
+                   platform === 'tiktok' ? 'linear-gradient(135deg, #000000, #333333)' :
+                   `linear-gradient(135deg, ${playlist.theme_color || '#818cf8'}, #ec4899)`;
+        return { ...base, background: bg, borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.4)' };
+      case 'style4': // Claro
+        return { ...base, background: 'rgba(255,255,255,0.95)', color: '#111', borderRadius: '16px', boxShadow: '0 8px 30px rgba(0,0,0,0.15)' };
+      case 'style5': // Pílula
+        return { ...base, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)', borderRadius: '50px', padding: '12px 30px', border: '1px solid rgba(255,255,255,0.15)' };
+      case 'style1': // Vidro Moderno (Default)
+      default:
+        return { ...base, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(20px)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' };
+    }
+  };
+
+  const getSocialIcon = (platform, styleType) => {
+    const size = 32;
+    const color = styleType === 'style4' ? '#111' : '#fff';
+    switch (platform) {
+      case 'instagram':
+        return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>;
+      case 'twitter':
+        return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>;
+      case 'facebook':
+        return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg>;
+      case 'youtube':
+        return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.5 12 3.5 12 3.5s-7.505 0-9.377.55a3.016 3.016 0 0 0-2.122 2.136C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.55 9.376.55 9.376.55s7.505 0 9.377-.55a3.016 3.016 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>;
+      case 'tiktok':
+        return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.95v7.4c-.01 2.98-1.73 5.82-4.5 6.94-2.77 1.13-6.1.48-8.19-1.57-2.1-2.05-2.7-5.46-1.4-8.16 1.3-2.7 4.54-4.25 7.49-3.55v4.07c-1.3-.12-2.65.34-3.48 1.34-.84 1.01-.98 2.5-.32 3.65.65 1.15 2.16 1.7 3.44 1.25 1.28-.46 2.06-1.8 2.05-3.16V.02z"/></svg>;
+      default:
+        return null;
     }
   };
 
@@ -323,25 +373,23 @@ const Player = () => {
 
           {/* Social Media Overlay */}
           {playlist.layout !== 'split' && playlist.show_social && (
-            <div className="player-social-widget" style={{
-              ...getPositionStyles(playlist.social_position || 'bottom-right'), padding: '20px 30px',
-              background: `rgba(255,255,255,0.1)`, backdropFilter: 'blur(16px)', borderRadius: '20px',
-              color: '#fff', border: `1px solid rgba(255,255,255,0.1)`, boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-              zIndex: 10, display: 'flex', gap: '20px', alignItems: 'center'
-            }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ fontSize: '1.1rem', opacity: 0.9 }}>Siga nossas redes sociais</div>
+            <div className="player-social-widget" style={getSocialStyle(playlist.social_card_style, playlist.social_platform)}>
+              <div style={{ display: 'flex', flexDirection: playlist.social_card_style === 'style5' ? 'row' : 'column', gap: '8px', alignItems: playlist.social_card_style === 'style5' ? 'center' : 'flex-start' }}>
+                {playlist.social_card_style !== 'style5' && (
+                  <div style={{ fontSize: '1.05rem', opacity: 0.9, fontWeight: '500' }}>Siga nossas redes sociais</div>
+                )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  {playlist.social_platform === 'instagram' && <span style={{ fontSize: '1.5rem' }}>📸</span>}
-                  {playlist.social_platform === 'twitter' && <span style={{ fontSize: '1.5rem' }}>🐦</span>}
-                  {playlist.social_platform === 'facebook' && <span style={{ fontSize: '1.5rem' }}>📘</span>}
-                  {playlist.social_platform === 'tiktok' && <span style={{ fontSize: '1.5rem' }}>🎵</span>}
-                  {playlist.social_platform === 'youtube' && <span style={{ fontSize: '1.5rem' }}>▶️</span>}
-                  <span className="player-social-text" style={{ fontSize: '1.3rem', fontWeight: '700' }}>{playlist.social_handle || '@sua_empresa'}</span>
+                  {getSocialIcon(playlist.social_platform, playlist.social_card_style)}
+                  <span className="player-social-text" style={{ fontSize: '1.4rem', fontWeight: '800', fontFamily: 'Outfit' }}>
+                    {playlist.social_handle || '@sua_empresa'}
+                  </span>
                 </div>
               </div>
               {playlist.social_qrcode && (
-                <div style={{ padding: '6px', background: '#fff', borderRadius: '12px' }}>
+                <div style={{ 
+                  padding: '6px', background: '#fff', borderRadius: '12px', 
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)', marginLeft: playlist.social_card_style === 'style5' ? '12px' : '0' 
+                }}>
                   <img src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(getSocialUrl())}`} alt="QR Code" style={{ width: '80px', height: '80px', display: 'block' }} />
                 </div>
               )}

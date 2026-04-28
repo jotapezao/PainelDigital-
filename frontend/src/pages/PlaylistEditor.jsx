@@ -46,6 +46,7 @@ const PlaylistEditor = () => {
   const [socialQrcode, setSocialQrcode] = useState(false);
   const [widgetPosition, setWidgetPosition] = useState('top-right');
   const [socialPosition, setSocialPosition] = useState('bottom-right');
+  const [socialCardStyle, setSocialCardStyle] = useState('style1');
   const [showProgressBar, setShowProgressBar] = useState(true);
   
   const [medias, setMedias] = useState([]);
@@ -97,6 +98,7 @@ const PlaylistEditor = () => {
           setSocialQrcode(p.social_qrcode || false);
           setWidgetPosition(p.widget_position || 'top-right');
           setSocialPosition(p.social_position || 'bottom-right');
+          setSocialCardStyle(p.social_card_style || 'style1');
           setShowProgressBar(p.show_progress_bar !== false);
         }
       } catch (err) {
@@ -174,6 +176,7 @@ const PlaylistEditor = () => {
         social_qrcode: socialQrcode,
         widget_position: widgetPosition,
         social_position: socialPosition,
+        social_card_style: socialCardStyle,
         show_progress_bar: showProgressBar,
         items: selectedItems.map((item, i) => ({
           media_id: item.media_id,
@@ -441,7 +444,7 @@ const PlaylistEditor = () => {
                               </div>
                             </div>
                             
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
                               <div>
                                 <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Posição do Card Social</label>
                                 <select value={socialPosition} onChange={e => setSocialPosition(e.target.value)}>
@@ -449,6 +452,16 @@ const PlaylistEditor = () => {
                                   <option value="bottom-left">Canto Inferior Esquerdo</option>
                                   <option value="top-right">Canto Superior Direito</option>
                                   <option value="top-left">Canto Superior Esquerdo</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Estilo do Card</label>
+                                <select value={socialCardStyle} onChange={e => setSocialCardStyle(e.target.value)}>
+                                  <option value="style1">Estilo 1 - Vidro Moderno</option>
+                                  <option value="style2">Estilo 2 - Escuro Minimalista</option>
+                                  <option value="style3">Estilo 3 - Vibrante e Chamativo</option>
+                                  <option value="style4">Estilo 4 - Claro / Branco</option>
+                                  <option value="style5">Estilo 5 - Arredondado (Pílula)</option>
                                 </select>
                               </div>
                               <div style={{ display: 'flex', alignItems: 'center', paddingTop: '20px' }}>

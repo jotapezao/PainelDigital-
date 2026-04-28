@@ -62,6 +62,18 @@ async function upload(req, res) {
       ? req.user.client_id
       : (req.body.client_id || req.user.client_id);
 
+    // Validate 10GB limit per client
+    const { rows: sizeRows } = await pool.query(
+      `SELECT SUM(size_bytes) as total_size FROM medias WHERE client_id = $1`,
+      [clientId]
+    );
+    const currentSize = parseInt(sizeRows[0].total_size || '0');
+    const maxSize = 10 * 1024 * 1024 * 1024; // 10GB
+    
+    if (currentSize + req.file.size > maxSize) {
+      return res.status(400).json({ error: 'Limite de armazenamento de 10GB excedido para esta empresa.' });
+    }
+
     // Upload to R2
     const { fileName, url } = await uploadFile(req.file);
 
