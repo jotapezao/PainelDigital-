@@ -64,7 +64,7 @@ function App() {
               <Route path=":id" element={<DeviceEditor />} />
             </Route>
 
-            <Route path="/clients" element={<PrivateRoute adminOnly><Layout title="Clientes" /></PrivateRoute>}>
+            <Route path="/clients" element={<PrivateRoute adminOnly><Layout title="Empresas" /></PrivateRoute>}>
               <Route index element={<Clients />} />
               <Route path="new" element={<ClientEditor />} />
               <Route path=":id" element={<ClientEditor />} />

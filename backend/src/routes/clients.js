@@ -4,6 +4,7 @@ const { authMiddleware, requireAdmin } = require('../middleware/auth');
 
 router.use(authMiddleware);
 router.get('/', ctrl.list);
+router.get('/:id/users', requireAdmin, ctrl.getUsers);
 router.get('/:id', ctrl.getById);
 router.post('/', requireAdmin, ctrl.create);
 router.put('/:id', requireAdmin, ctrl.update);

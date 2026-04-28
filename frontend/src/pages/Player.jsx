@@ -3,14 +3,17 @@ import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
+
 const Player = () => {
   const [searchParams] = useSearchParams();
   const previewId = searchParams.get('preview');
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [playlist, setPlaylist] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isStarted, setIsStarted] = useState(false);
+  const [showLogout, setShowLogout] = useState(false);
+  const logoutTimerRef = useRef(null);
   const videoRef = useRef(null);
   const timerRef = useRef(null);
   const containerRef = useRef(null);
@@ -114,19 +117,45 @@ const Player = () => {
     }
   };
 
+  // Show logout hint on triple-click anywhere on the player
+  const handleTripleClick = (() => {
+    let clicks = 0;
+    let timer;
+    return () => {
+      clicks++;
+      clearTimeout(timer);
+      timer = setTimeout(() => { clicks = 0; }, 600);
+      if (clicks >= 3) {
+        clicks = 0;
+        setShowLogout(true);
+        clearTimeout(logoutTimerRef.current);
+        logoutTimerRef.current = setTimeout(() => setShowLogout(false), 6000);
+      }
+    };
+  })();
+
   if (!isStarted && !previewId) {
     return (
-      <div style={{ 
+      <div style={{
         background: '#000', height: '100vh', display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center', color: '#fff', textAlign: 'center'
       }}>
-        <h1 style={{ marginBottom: '20px', fontFamily: 'Outfit, sans-serif' }}>Painel Digital</h1>
-        <button 
+        <h1 style={{ marginBottom: '8px', fontFamily: 'Outfit, sans-serif', fontSize: '2.5rem' }}>Painel Digital</h1>
+        <p style={{ color: 'rgba(255,255,255,0.4)', marginBottom: '40px', fontSize: '0.95rem' }}>
+          {user?.name} &mdash; {user?.client_name || 'Cliente'}
+        </p>
+        <button
           onClick={handleStart}
           className="btn btn-primary"
-          style={{ padding: '20px 40px', fontSize: '1.25rem' }}
+          style={{ padding: '20px 48px', fontSize: '1.25rem', borderRadius: '16px' }}
         >
           🚀 Iniciar Exibição em Tela Cheia
+        </button>
+        <button
+          onClick={logout}
+          style={{ marginTop: '24px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}
+        >
+          Sair da conta
         </button>
       </div>
     );
@@ -144,114 +173,154 @@ const Player = () => {
   const mediaUrl = currentItem.url || currentItem.filename;
 
   return (
-    <div 
+    <div
       ref={containerRef}
-      style={{ 
-        background: '#000', 
-        height: '100vh', 
-        width: '100vw', 
-        overflow: 'hidden', 
+      onClick={handleTripleClick}
+      style={{
+        background: '#000',
+        height: '100vh',
+        width: '100vw',
+        overflow: 'hidden',
         position: 'relative',
         display: 'flex',
-        flexDirection: playlist?.footer_position === 'top' ? 'column-reverse' : 'column',
-        fontFamily: `${playlist?.footer_font_family || 'Inter'}, sans-serif`
+        flexDirection: playlist?.layout === 'with_header' ? 'column' : (playlist?.footer_position === 'top' ? 'column-reverse' : 'column'),
+        fontFamily: `${playlist?.footer_font_family || 'Inter'}, sans-serif`,
+        cursor: 'default',
       }}
     >
-      {/* Preload hidden container */}
-      <div style={{ display: 'none' }}>
-        {playlist.items.map((item, idx) => {
-          const nextIdx = (idx + 1) % playlist.items.length;
-          const nextItem = playlist.items[nextIdx];
-          const nextUrl = nextItem.url || nextItem.filename;
-          return nextItem.type === 'image' ? (
-            <img key={`preload-${idx}`} src={nextUrl} />
-          ) : (
-            <video key={`preload-${idx}`} src={nextUrl} preload="auto" muted />
-          );
-        })}
-      </div>
-
-      {/* Hidden Logout Button (Top Right) */}
-      {!previewId && (
-        <button 
-          onClick={() => { if(window.confirm('Deseja sair do player?')) { localStorage.clear(); sessionStorage.clear(); window.location.href = '/login'; } }}
-          style={{
-            position: 'absolute', top: 0, right: 0, width: '50px', height: '50px',
-            background: 'transparent', border: 'none', cursor: 'pointer', zIndex: 1000,
-            opacity: 0
-          }}
-          title="Sair"
-        />
+      {/* Floating logout button — revealed on triple-click */}
+      {showLogout && (
+        <div style={{
+          position: 'fixed', top: '20px', right: '20px', zIndex: 9999,
+          display: 'flex', gap: '8px', alignItems: 'center',
+          animation: 'fadeIn 0.3s ease',
+        }}>
+          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>Clique 3x para sair</span>
+          <button
+            onClick={e => { e.stopPropagation(); logout(); }}
+            style={{
+              background: 'rgba(239,68,68,0.9)', border: 'none', borderRadius: '10px',
+              color: '#fff', padding: '10px 18px', fontWeight: '700', cursor: 'pointer',
+              fontSize: '0.875rem', backdropFilter: 'blur(8px)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+            }}
+          >
+            🚪 Sair
+          </button>
+        </div>
       )}
-      
-      <style>{`
-        @keyframes scrollTextLTR {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-        @keyframes scrollTextRTL {
-          0% { transform: translateX(100%); }
-          100% { transform: translateX(-100%); }
-        }
-        .transition-fade { animation: fadeEffect 1000ms forwards; }
-        .transition-slide-left { animation: slideLeftEffect 800ms ease-out forwards; }
-        .transition-slide-right { animation: slideRightEffect 800ms ease-out forwards; }
-        .transition-zoom { animation: zoomEffect 1000ms ease-out forwards; }
+      {/* Header Layout Component */}
+      {playlist.layout === 'with_header' && (
+        <div style={{
+          height: '100px',
+          background: `linear-gradient(90deg, ${playlist.theme_color || '#818cf8'}, var(--accent))`,
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 40px',
+          color: '#fff',
+          zIndex: 30,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+        }}>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', margin: 0, fontFamily: 'Outfit' }}>{playlist.name}</h1>
+          <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+            <div style={{ fontSize: '1.8rem', fontWeight: '700' }}>{new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+            <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>{new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}</div>
+          </div>
+        </div>
+      )}
 
-        @keyframes fadeEffect { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideLeftEffect { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        @keyframes slideRightEffect { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-        @keyframes zoomEffect { from { transform: scale(1.1); opacity: 0.5; } to { transform: scale(1); opacity: 1; } }
-      `}</style>
-
+      {/* Main Container for Media and Optional Side Content */}
       <div style={{ 
         flex: 1, 
-        position: 'relative', 
-        overflow: 'hidden',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
+        display: 'flex', 
+        flexDirection: playlist.layout === 'split' ? 'row' : 'column',
+        position: 'relative' 
       }}>
-        {currentItem.type === 'image' ? (
-          <img 
-            key={`${currentItem.id}-${currentIndex}`}
-            src={mediaUrl} 
-            className={`transition-${playlist.transition_effect || 'fade'}`}
-            style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode || 'cover' }}
-          />
-        ) : (
-          <video
-            key={`${currentItem.id}-${currentIndex}`}
-            ref={videoRef}
-            src={mediaUrl}
-            autoPlay
-            muted
-            onEnded={handleVideoEnd}
-            className={`transition-${playlist.transition_effect || 'fade'}`}
-            style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode || 'cover' }}
-          />
-        )}
+        {/* MEDIA AREA */}
+        <div style={{ 
+          flex: playlist.layout === 'split' ? 0.7 : 1, 
+          position: 'relative', 
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#000'
+        }}>
+          {currentItem.type === 'image' ? (
+            <img 
+              key={`${currentItem.id}-${currentIndex}`}
+              src={mediaUrl} 
+              className={`transition-${playlist.transition_effect || 'fade'}`}
+              style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode || 'cover' }}
+            />
+          ) : (
+            <video
+              key={`${currentItem.id}-${currentIndex}`}
+              ref={videoRef}
+              src={mediaUrl}
+              autoPlay
+              muted
+              onEnded={handleVideoEnd}
+              className={`transition-${playlist.transition_effect || 'fade'}`}
+              style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode || 'cover' }}
+            />
+          )}
 
-        {(playlist.show_clock || playlist.show_weather) && (
+          {/* Clock overlay (only if not in split/header layout to avoid clutter) */}
+          {playlist.layout !== 'split' && playlist.layout !== 'with_header' && (playlist.show_clock || playlist.show_weather) && (
+            <div style={{
+              position: 'absolute', top: '40px', right: '40px', padding: '20px 30px',
+              background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', borderRadius: '24px',
+              color: '#fff', border: `1px solid rgba(255,255,255,0.1)`, boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+              textAlign: 'right', zIndex: 10
+            }}>
+              <div style={{ fontSize: '3rem', fontWeight: '800', lineHeight: 1 }}>
+                {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+              </div>
+              <div style={{ fontSize: '1.2rem', opacity: 0.8, marginTop: '5px' }}>
+                {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* SIDE CONTENT (Split Layout) */}
+        {playlist.layout === 'split' && (
           <div style={{
-            position: 'absolute',
-            top: '40px',
-            right: '40px',
-            padding: '20px 30px',
-            background: 'rgba(0,0,0,0.4)',
-            backdropFilter: 'blur(12px)',
-            borderRadius: '24px',
+            flex: 0.3,
+            background: 'var(--bg-input)',
+            borderLeft: `4px solid ${playlist.theme_color || '#818cf8'}`,
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '40px',
             color: '#fff',
-            border: `1px solid rgba(255,255,255,0.1)`,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-            textAlign: 'right',
             zIndex: 10
           }}>
-            <div style={{ fontSize: '3rem', fontWeight: '800', lineHeight: 1 }}>
-              {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+            <div style={{ marginBottom: '40px', textAlign: 'center' }}>
+              <div style={{ fontSize: '4.5rem', fontWeight: '800', fontFamily: 'Outfit' }}>
+                {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+              </div>
+              <div style={{ fontSize: '1.5rem', opacity: 0.7 }}>
+                {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </div>
             </div>
-            <div style={{ fontSize: '1.2rem', opacity: 0.8, marginTop: '5px' }}>
-              {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '30px', justifyContent: 'center' }}>
+              <div className="card" style={{ background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <h3 style={{ color: playlist.theme_color, marginBottom: '10px' }}>Próxima Mídia</h3>
+                <p style={{ fontSize: '1.2rem', fontWeight: '600' }}>
+                  {playlist.items[(currentIndex + 1) % playlist.items.length]?.media_name}
+                </p>
+              </div>
+              
+              <div className="card" style={{ background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <h3 style={{ color: playlist.theme_color, marginBottom: '10px' }}>Informações</h3>
+                <p style={{ opacity: 0.8 }}>{playlist.description || 'Confira nosso conteúdo especial preparado para você.'}</p>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 'auto', textAlign: 'center' }}>
+              <h2 style={{ fontSize: '1.5rem', margin: 0 }}>{playlist.client_name}</h2>
             </div>
           </div>
         )}

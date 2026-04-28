@@ -102,6 +102,22 @@ async function changePassword(req, res) {
   }
 }
 
+// GET /api/auth/users/:id (admin only)
+async function getUser(req, res) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT u.id, u.name, u.email, u.role, u.active, u.client_id, u.avatar_url, u.created_at, c.name as client_name
+       FROM users u LEFT JOIN clients c ON u.client_id = c.id
+       WHERE u.id = $1`,
+      [req.params.id]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'Usuário não encontrado' });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro interno' });
+  }
+}
+
 // GET /api/auth/users (admin only)
 async function listUsers(req, res) {
   try {
@@ -118,8 +134,14 @@ async function listUsers(req, res) {
 
 // PUT /api/auth/users/:id (admin only)
 async function updateUser(req, res) {
-  const { name, email, role, client_id, active, avatar_url } = req.body;
+  const { name, email, role, client_id, active, avatar_url, password } = req.body;
   try {
+    // If a new password is provided, update it separately
+    if (password && password.trim()) {
+      const hash = await bcrypt.hash(password, 10);
+      await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, req.params.id]);
+    }
+
     const { rows } = await pool.query(
       `UPDATE users SET name=$1, email=$2, role=$3, client_id=$4, active=$5, avatar_url=$6, updated_at=NOW()
        WHERE id=$7 RETURNING id, name, email, role, client_id, active, avatar_url`,
@@ -128,6 +150,7 @@ async function updateUser(req, res) {
     if (rows.length === 0) return res.status(404).json({ error: 'Usuário não encontrado' });
     res.json(rows[0]);
   } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'Email já em uso' });
     res.status(500).json({ error: 'Erro interno' });
   }
 }
@@ -143,4 +166,4 @@ async function deleteUser(req, res) {
   }
 }
 
-module.exports = { login, me, register, changePassword, listUsers, updateUser, deleteUser };
+module.exports = { login, me, register, changePassword, getUser, listUsers, updateUser, deleteUser };

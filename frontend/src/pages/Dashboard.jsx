@@ -88,6 +88,11 @@ const Dashboard = () => {
         <StatCard icon="📅" label="Agendamentos" value={loading ? '...' : stats?.active_schedules ?? 0}
           sub={stats?.active_schedules ? 'ativos' : undefined}
           color="var(--warning)" onClick={() => navigate('/schedules')} />
+        {user?.role === 'admin' && (
+          <StatCard icon="🏢" label="Empresas Cadastradas" value={loading ? '...' : stats?.total_clients ?? 0}
+            sub={stats?.active_clients ? `${stats.active_clients} ativas` : undefined}
+            color="var(--secondary)" onClick={() => navigate('/clients')} />
+        )}
       </div>
 
       {/* Bottom row */}

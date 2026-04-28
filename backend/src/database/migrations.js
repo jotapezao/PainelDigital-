@@ -10,6 +10,7 @@ async function runMigrations() {
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         name VARCHAR(255) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
+        company VARCHAR(255),
         phone VARCHAR(50),
         plan VARCHAR(50) DEFAULT 'basic',
         active BOOLEAN DEFAULT true,
@@ -289,7 +290,26 @@ async function runMigrations() {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='theme_color') THEN 
           ALTER TABLE clients ADD COLUMN theme_color VARCHAR(20) DEFAULT '#6366f1'; 
         END IF;
+
+        -- Add company to clients
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='company') THEN 
+          ALTER TABLE clients ADD COLUMN company VARCHAR(255); 
+        END IF;
+
+        -- Add notes to clients
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='notes') THEN 
+          ALTER TABLE clients ADD COLUMN notes TEXT; 
+        END IF;
       END $$;
+    `);
+
+    // Ensure role constraint is fully up-to-date (update any legacy 'viewer' rows first)
+    await client.query(`
+      UPDATE users SET role = 'estagiario' WHERE role = 'viewer';
+    `);
+    await client.query(`
+      ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+      ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('admin', 'client', 'estagiario'));
     `);
     // --- END NEW MIGRATIONS ---
 

@@ -9,9 +9,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Opcional: deslogar usuário se o token expirar
-      // localStorage.removeItem('@DigitalSignage:token');
-      // window.location.href = '/login';
+      localStorage.removeItem('@DigitalSignage:token');
+      localStorage.removeItem('@DigitalSignage:user');
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
