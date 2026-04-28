@@ -136,7 +136,9 @@ const Player = () => {
     };
   })();
 
-  if (!isStarted && !previewId) {
+  const autoStart = searchParams.get('autoStart') === 'true';
+
+  if (!isStarted && !previewId && !autoStart) {
     return (
       <div style={{
         background: '#000', height: '100vh', display: 'flex', flexDirection: 'column',
@@ -173,6 +175,30 @@ const Player = () => {
 
   const currentItem = playlist.items[currentIndex];
   const mediaUrl = currentItem.url || currentItem.filename;
+
+  const bottomOffset = (playlist.footer_text || playlist.layout === 'with_footer') ? `${(playlist.ticker_height || 80) + 40}px` : '40px';
+
+  const getPositionStyles = (posStr, offset = '40px', bOffset = bottomOffset) => {
+    const styles = { position: 'absolute' };
+    if (!posStr) posStr = 'top-right';
+    if (posStr.includes('top')) styles.top = offset;
+    if (posStr.includes('bottom')) styles.bottom = bOffset;
+    if (posStr.includes('left')) styles.left = offset;
+    if (posStr.includes('right')) styles.right = offset;
+    return styles;
+  };
+
+  const getSocialUrl = () => {
+    let handle = playlist.social_handle?.replace('@', '');
+    switch(playlist.social_platform) {
+      case 'instagram': return `https://instagram.com/${handle}`;
+      case 'twitter': return `https://twitter.com/${handle}`;
+      case 'facebook': return `https://facebook.com/${playlist.social_handle}`;
+      case 'tiktok': return `https://tiktok.com/@${handle}`;
+      case 'youtube': return `https://youtube.com/${playlist.social_handle}`;
+      default: return playlist.social_handle;
+    }
+  };
 
   return (
     <div
@@ -271,10 +297,10 @@ const Player = () => {
           {/* Clock/Weather overlay (only if not in split/header layout to avoid clutter) */}
           {playlist.layout !== 'split' && playlist.layout !== 'with_header' && (playlist.show_clock || playlist.show_weather) && (
             <div className="player-widget" style={{
-              position: 'absolute', top: '40px', right: '40px', padding: '24px 32px',
+              ...getPositionStyles(playlist.widget_position || 'top-right'), padding: '24px 32px',
               background: `rgba(0,0,0,${playlist.card_transparency ?? 0.4})`, backdropFilter: 'blur(16px)', borderRadius: '24px',
               color: '#fff', border: `1px solid rgba(255,255,255,0.05)`, boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-              textAlign: 'right', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '16px'
+              textAlign: (playlist.widget_position || 'top-right').includes('right') ? 'right' : 'left', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '16px'
             }}>
               {playlist.show_clock && (
                 <div style={{ borderBottom: playlist.show_weather ? '1px solid rgba(255,255,255,0.1)' : 'none', paddingBottom: playlist.show_weather ? '16px' : '0' }}>
@@ -298,20 +324,40 @@ const Player = () => {
           {/* Social Media Overlay */}
           {playlist.layout !== 'split' && playlist.show_social && (
             <div className="player-social-widget" style={{
-              position: 'absolute', bottom: playlist.footer_text || playlist.layout === 'with_footer' ? `${(playlist.ticker_height || 80) + 40}px` : '40px', 
-              right: '40px', padding: '20px 30px',
+              ...getPositionStyles(playlist.social_position || 'bottom-right'), padding: '20px 30px',
               background: `rgba(255,255,255,0.1)`, backdropFilter: 'blur(16px)', borderRadius: '20px',
               color: '#fff', border: `1px solid rgba(255,255,255,0.1)`, boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-              zIndex: 10, display: 'flex', flexDirection: 'column', gap: '8px'
+              zIndex: 10, display: 'flex', gap: '20px', alignItems: 'center'
             }}>
-              <div style={{ fontSize: '1.1rem', opacity: 0.9 }}>Siga nossas redes</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                {playlist.social_platform === 'instagram' && <span style={{ fontSize: '1.5rem' }}>📸</span>}
-                {playlist.social_platform === 'twitter' && <span style={{ fontSize: '1.5rem' }}>🐦</span>}
-                {playlist.social_platform === 'facebook' && <span style={{ fontSize: '1.5rem' }}>📘</span>}
-                {playlist.social_platform === 'tiktok' && <span style={{ fontSize: '1.5rem' }}>🎵</span>}
-                <span className="player-social-text" style={{ fontSize: '1.3rem', fontWeight: '700' }}>{playlist.social_handle || '@sua_empresa'}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '1.1rem', opacity: 0.9 }}>Siga nossas redes sociais</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  {playlist.social_platform === 'instagram' && <span style={{ fontSize: '1.5rem' }}>📸</span>}
+                  {playlist.social_platform === 'twitter' && <span style={{ fontSize: '1.5rem' }}>🐦</span>}
+                  {playlist.social_platform === 'facebook' && <span style={{ fontSize: '1.5rem' }}>📘</span>}
+                  {playlist.social_platform === 'tiktok' && <span style={{ fontSize: '1.5rem' }}>🎵</span>}
+                  {playlist.social_platform === 'youtube' && <span style={{ fontSize: '1.5rem' }}>▶️</span>}
+                  <span className="player-social-text" style={{ fontSize: '1.3rem', fontWeight: '700' }}>{playlist.social_handle || '@sua_empresa'}</span>
+                </div>
               </div>
+              {playlist.social_qrcode && (
+                <div style={{ padding: '6px', background: '#fff', borderRadius: '12px' }}>
+                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(getSocialUrl())}`} alt="QR Code" style={{ width: '80px', height: '80px', display: 'block' }} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Progress Bar (Media Time) */}
+          {playlist.show_progress_bar !== false && (
+            <div style={{ position: 'absolute', bottom: 0, left: 0, height: '6px', background: 'rgba(255,255,255,0.15)', width: '100%', zIndex: 15 }}>
+              <div 
+                key={`${currentItem.id}-${currentIndex}`} // Forces re-render of animation on new item
+                style={{ 
+                  height: '100%', background: playlist.theme_color || '#818cf8', width: '100%', 
+                  animation: `progressAnim ${currentItem.duration_seconds || 10}s linear forwards` 
+                }} 
+              />
             </div>
           )}
         </div>
@@ -403,8 +449,8 @@ const Player = () => {
         </div>
       )}
       
-      <div className="player-client-name" style={{ position: 'absolute', bottom: (playlist.footer_text || playlist.layout === 'with_footer') ? `${(playlist.ticker_height || 80) + 30}px` : '30px', left: '40px', zIndex: 5 }}>
-        <h2 style={{ color: '#fff', opacity: 0.8, fontSize: '1.8rem', margin: 0, fontWeight: '800', fontFamily: 'Outfit' }}>{playlist.client_name}</h2>
+      <div className="player-client-name" style={{ position: 'absolute', top: playlist.layout === 'with_header' ? '120px' : '30px', left: '40px', zIndex: 5 }}>
+        <h2 style={{ color: '#fff', opacity: 0.8, fontSize: '1.8rem', margin: 0, fontWeight: '800', fontFamily: 'Outfit', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{playlist.client_name}</h2>
       </div>
     </div>
   );

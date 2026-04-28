@@ -22,7 +22,7 @@ const Login = () => {
     if (result.success) {
       // O result.user virá do AuthContext atualizado
       if (result.user?.role === 'client') {
-        navigate('/player');
+        navigate('/player?autoStart=true');
       } else {
         navigate('/');
       }

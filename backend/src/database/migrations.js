@@ -300,6 +300,18 @@ async function runMigrations() {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='ticker_label') THEN 
           ALTER TABLE playlists ADD COLUMN ticker_label VARCHAR(50) DEFAULT 'NOTÍCIAS'; 
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='social_qrcode') THEN 
+          ALTER TABLE playlists ADD COLUMN social_qrcode BOOLEAN DEFAULT false; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='widget_position') THEN 
+          ALTER TABLE playlists ADD COLUMN widget_position VARCHAR(20) DEFAULT 'top-right'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='social_position') THEN 
+          ALTER TABLE playlists ADD COLUMN social_position VARCHAR(20) DEFAULT 'bottom-right'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='show_progress_bar') THEN 
+          ALTER TABLE playlists ADD COLUMN show_progress_bar BOOLEAN DEFAULT true; 
+        END IF;
 
         -- Add theme_color to clients
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='theme_color') THEN 

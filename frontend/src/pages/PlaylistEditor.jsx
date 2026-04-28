@@ -42,6 +42,12 @@ const PlaylistEditor = () => {
   const [cardTransparency, setCardTransparency] = useState(0.4);
   const [tickerLabel, setTickerLabel] = useState('NOTÍCIAS');
   
+  // Novidades Extras
+  const [socialQrcode, setSocialQrcode] = useState(false);
+  const [widgetPosition, setWidgetPosition] = useState('top-right');
+  const [socialPosition, setSocialPosition] = useState('bottom-right');
+  const [showProgressBar, setShowProgressBar] = useState(true);
+  
   const [medias, setMedias] = useState([]);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -88,6 +94,10 @@ const PlaylistEditor = () => {
           setSocialPlatform(p.social_platform || 'instagram');
           setCardTransparency(p.card_transparency !== undefined && p.card_transparency !== null ? parseFloat(p.card_transparency) : 0.4);
           setTickerLabel(p.ticker_label || 'NOTÍCIAS');
+          setSocialQrcode(p.social_qrcode || false);
+          setWidgetPosition(p.widget_position || 'top-right');
+          setSocialPosition(p.social_position || 'bottom-right');
+          setShowProgressBar(p.show_progress_bar !== false);
         }
       } catch (err) {
         addToast('error', 'Erro', 'Falha ao carregar dados do plano.');
@@ -161,6 +171,10 @@ const PlaylistEditor = () => {
         social_platform: socialPlatform,
         card_transparency: parseFloat(cardTransparency),
         ticker_label: tickerLabel,
+        social_qrcode: socialQrcode,
+        widget_position: widgetPosition,
+        social_position: socialPosition,
+        show_progress_bar: showProgressBar,
         items: selectedItems.map((item, i) => ({
           media_id: item.media_id,
           duration_seconds: item.media?.type === 'video' ? 0 : (item.duration || 10),
@@ -373,9 +387,9 @@ const PlaylistEditor = () => {
                     </div>
                   </div>
                   <div className="input-group">
-                    <label>Widgets e Cards Informativos</label>
+                    <label>Posicionamento e Cards Informativos</label>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', background: 'var(--bg-input)', borderRadius: 'var(--radius-md)' }}>
-                      <div style={{ display: 'flex', gap: '32px' }}>
+                      <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
                           <input type="checkbox" checked={showClock} onChange={e => setShowClock(e.target.checked)} style={{ width: '20px', height: '20px' }} /> Relógio e Data
                         </label>
@@ -383,34 +397,70 @@ const PlaylistEditor = () => {
                           <input type="checkbox" checked={showWeather} onChange={e => setShowWeather(e.target.checked)} style={{ width: '20px', height: '20px' }} /> Clima
                         </label>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={showSocial} onChange={e => setShowSocial(e.target.checked)} style={{ width: '20px', height: '20px' }} /> Redes Sociais
+                          <input type="checkbox" checked={showProgressBar} onChange={e => setShowProgressBar(e.target.checked)} style={{ width: '20px', height: '20px' }} /> Barra de Progresso (Tempo)
                         </label>
                       </div>
 
-                      <div style={{ display: 'flex', gap: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px' }}>
-                        <div style={{ flex: 1 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px' }}>
+                        <div>
                           <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Transparência dos Cards (0.1 a 1.0)</label>
                           <input type="range" min="0.1" max="1" step="0.1" value={cardTransparency} onChange={e => setCardTransparency(e.target.value)} style={{ width: '100%' }} />
                         </div>
-                      </div>
-
-                      {showSocial && (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px' }}>
-                          <div>
-                            <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Rede Social</label>
-                            <select value={socialPlatform} onChange={e => setSocialPlatform(e.target.value)}>
-                              <option value="instagram">Instagram</option>
-                              <option value="twitter">Twitter / X</option>
-                              <option value="facebook">Facebook</option>
-                              <option value="tiktok">TikTok</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Seu @ (Handle)</label>
-                            <input value={socialHandle} onChange={e => setSocialHandle(e.target.value)} placeholder="@sua_empresa" />
-                          </div>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Posição (Relógio/Clima)</label>
+                          <select value={widgetPosition} onChange={e => setWidgetPosition(e.target.value)}>
+                            <option value="top-right">Canto Superior Direito</option>
+                            <option value="top-left">Canto Superior Esquerdo</option>
+                            <option value="bottom-right">Canto Inferior Direito</option>
+                            <option value="bottom-left">Canto Inferior Esquerdo</option>
+                          </select>
                         </div>
-                      )}
+                      </div>
+                      
+                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px', marginTop: '8px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '16px' }}>
+                          <input type="checkbox" checked={showSocial} onChange={e => setShowSocial(e.target.checked)} style={{ width: '20px', height: '20px' }} /> Ativar Card de Redes Sociais
+                        </label>
+                        
+                        {showSocial && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px' }}>
+                              <div>
+                                <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Rede Social</label>
+                                <select value={socialPlatform} onChange={e => setSocialPlatform(e.target.value)}>
+                                  <option value="instagram">Instagram</option>
+                                  <option value="twitter">Twitter / X</option>
+                                  <option value="facebook">Facebook</option>
+                                  <option value="tiktok">TikTok</option>
+                                  <option value="youtube">YouTube</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Seu @ (Handle ou link)</label>
+                                <input value={socialHandle} onChange={e => setSocialHandle(e.target.value)} placeholder="@sua_empresa" />
+                              </div>
+                            </div>
+                            
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                              <div>
+                                <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Posição do Card Social</label>
+                                <select value={socialPosition} onChange={e => setSocialPosition(e.target.value)}>
+                                  <option value="bottom-right">Canto Inferior Direito</option>
+                                  <option value="bottom-left">Canto Inferior Esquerdo</option>
+                                  <option value="top-right">Canto Superior Direito</option>
+                                  <option value="top-left">Canto Superior Esquerdo</option>
+                                </select>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', paddingTop: '20px' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.875rem' }}>
+                                  <input type="checkbox" checked={socialQrcode} onChange={e => setSocialQrcode(e.target.checked)} /> 
+                                  Exibir QR Code da Rede
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
