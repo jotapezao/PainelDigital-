@@ -62,11 +62,14 @@ const Player = () => {
             // Using a public RSS to JSON proxy for demonstration
             const rssRes = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(data.rss_url)}`);
             const rssData = await rssRes.json();
-            if (rssData.items) {
+            if (rssData.items && rssData.items.length > 0) {
               data.footer_text = rssData.items.map(item => item.title).join(' • ');
+            } else {
+              data.footer_text = 'Nenhuma notícia disponível no momento.';
             }
           } catch (e) {
             console.error('RSS fetch error:', e);
+            data.footer_text = 'Erro ao carregar notícias (Feed indisponível).';
           }
         }
         
@@ -324,12 +327,21 @@ const Player = () => {
           justifyContent: 'center',
           background: '#000'
         }}>
+          {/* Blurred Background for Blur Fill Mode */}
+          {playlist.scale_mode === 'blur-fill' && (
+            currentItem.type === 'image' ? (
+              <img src={mediaUrl} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(30px)', opacity: 0.5, transform: 'scale(1.1)', zIndex: 0 }} />
+            ) : (
+              <video src={mediaUrl} muted autoPlay loop style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(30px)', opacity: 0.5, transform: 'scale(1.1)', zIndex: 0 }} />
+            )
+          )}
+
           {currentItem.type === 'image' ? (
             <img 
               key={`${currentItem.id}-${currentIndex}`}
               src={mediaUrl} 
               className={`transition-${playlist.transition_effect || 'fade'}`}
-              style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode || 'cover' }}
+              style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'), zIndex: 1, position: 'relative' }}
             />
           ) : (
             <video
@@ -340,7 +352,7 @@ const Player = () => {
               muted
               onEnded={handleVideoEnd}
               className={`transition-${playlist.transition_effect || 'fade'}`}
-              style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode || 'cover' }}
+              style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'), zIndex: 1, position: 'relative' }}
             />
           )}
 
@@ -452,7 +464,7 @@ const Player = () => {
         )}
       </div>
 
-      {(playlist.layout === 'with_footer' || playlist.footer_text) && (
+      {(playlist.layout === 'with_footer' || playlist.footer_text || playlist.rss_url) && (
         <div style={{
           height: `${playlist.ticker_height || 80}px`,
           backgroundColor: `rgba(${hexToRgb(playlist.theme_color || '#818cf8')}, ${playlist.footer_opacity ?? 0.8})`,

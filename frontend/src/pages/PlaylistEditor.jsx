@@ -269,7 +269,8 @@ const PlaylistEditor = () => {
                   <label>Modo de Escala</label>
                   <select value={scaleMode} onChange={e => setScaleMode(e.target.value)}>
                     <option value="cover">Preencher Tela (Corte Inteligente)</option>
-                    <option value="contain">Ajustar à Tela (Bordas Laterais)</option>
+                    <option value="contain">Ajustar à Tela (Bordas Negras)</option>
+                    <option value="blur-fill">Preenchimento Desfocado (Blur Fill)</option>
                   </select>
                 </div>
               </div>
