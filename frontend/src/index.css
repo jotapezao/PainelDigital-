@@ -217,13 +217,25 @@ select option {
 .badge-secondary { background: rgba(236, 72, 153, 0.12);  color: var(--secondary); }
 .badge-outline   { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
 
-/* Responsive Utilities */
 .table-container {
   width: 100%;
   overflow-x: auto;
   border-radius: var(--radius-lg);
   background: var(--bg-card);
   border: 1px solid var(--border);
+}
+
+.main-content {
+  margin-left: var(--sidebar-width);
+  transition: margin-left 0.3s ease;
+}
+
+.main-padding {
+  padding: 40px;
+}
+
+.tab-content-padding {
+  padding: 40px;
 }
 
 table {
@@ -384,6 +396,18 @@ tr:last-child td {
 
   .sidebar-text {
     display: inline !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+  }
+
+  .main-padding {
+    padding: 16px !important;
+  }
+
+  .tab-content-padding {
+    padding: 16px !important;
   }
 
   /* Player responsiveness */

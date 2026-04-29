@@ -25,12 +25,10 @@ const Layout = ({ title }) => {
         flex: 1, 
         display: 'flex', 
         flexDirection: 'column',
-        marginLeft: 'var(--sidebar-width)',
-        transition: 'margin-left 0.3s ease',
         minWidth: 0
       }} className="main-content">
         <TopBar title={title} onMenuClick={() => setSidebarOpen(true)} />
-        <main style={{ padding: '40px', flex: 1, overflowX: 'hidden' }}>
+        <main className="main-padding" style={{ flex: 1, overflowX: 'hidden' }}>
           <Outlet />
         </main>
       </div>

@@ -221,7 +221,7 @@ const PlaylistEditor = () => {
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div className="table-container" style={{ borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.02)' }}>
-          <div style={{ display: 'flex', gap: '32px', padding: '0 32px' }}>
+          <div style={{ display: 'flex', gap: '32px', padding: '0 16px', overflowX: 'auto', whiteSpace: 'nowrap' }}>
             {[
               { id: 'info', label: '1. Informações Básicas' },
               { id: 'medias', label: `2. Seleção de Mídias (${selectedItems.length})` },
@@ -237,7 +237,7 @@ const PlaylistEditor = () => {
           </div>
         </div>
 
-        <div style={{ padding: '40px' }}>
+        <div className="tab-content-padding">
           {activeTab === 'info' && (
             <div className="animate-fade-in" style={{ maxWidth: '800px' }}>
               {user?.role === 'admin' && (
@@ -278,7 +278,7 @@ const PlaylistEditor = () => {
 
           {activeTab === 'layout' && (
             <div className="animate-fade-in">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
+              <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
                 <div>
                   <div className="input-group">
                     <label>Efeito de Transição (entre mídias)</label>
@@ -293,7 +293,7 @@ const PlaylistEditor = () => {
 
                   <div className="input-group">
                     <label>Layout Estrutural</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                       <button className={`btn ${layout === 'fullscreen' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setLayout('fullscreen')} style={{ height: '80px' }}>
                         Tela Cheia
                       </button>
@@ -313,7 +313,7 @@ const PlaylistEditor = () => {
                   <div className="input-group">
                     <label>Configurações do Ticker (Rodapé)</label>
                     <div style={{ background: 'var(--bg-input)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                         <div>
                           <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Velocidade</label>
                           <select value={tickerSpeed} onChange={e => setTickerSpeed(e.target.value)}>
@@ -330,7 +330,7 @@ const PlaylistEditor = () => {
                           </select>
                         </div>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                         <div>
                           <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Altura (px)</label>
                           <input type="number" value={tickerHeight} onChange={e => setTickerHeight(e.target.value)} />
@@ -404,7 +404,7 @@ const PlaylistEditor = () => {
                         </label>
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px' }}>
+                      <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px' }}>
                         <div>
                           <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Transparência dos Cards (0.1 a 1.0)</label>
                           <input type="range" min="0.1" max="1" step="0.1" value={cardTransparency} onChange={e => setCardTransparency(e.target.value)} style={{ width: '100%' }} />
@@ -427,7 +427,7 @@ const PlaylistEditor = () => {
                         
                         {showSocial && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px' }}>
+                            <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px' }}>
                               <div>
                                 <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Rede Social</label>
                                 <select value={socialPlatform} onChange={e => setSocialPlatform(e.target.value)}>
@@ -444,7 +444,7 @@ const PlaylistEditor = () => {
                               </div>
                             </div>
                             
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                            <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
                               <div>
                                 <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Posição do Card Social</label>
                                 <select value={socialPosition} onChange={e => setSocialPosition(e.target.value)}>
@@ -483,7 +483,7 @@ const PlaylistEditor = () => {
 
           {activeTab === 'medias' && (
             <div className="animate-fade-in">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '32px' }}>
+              <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '32px' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <h4 style={{ color: 'var(--text-muted)' }}>Mídias Selecionadas ({selectedItems.length})</h4>
