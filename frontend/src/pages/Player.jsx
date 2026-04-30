@@ -512,7 +512,7 @@ const Player = () => {
       )}
 
       {/* News/Ticker Styles */}
-      {((playlist.layout === 'with_footer' || playlist.footer_text || playlist.rss_url) && playlist.layout !== 'split') && (() => {
+      {(playlist.footer_text || playlist.rss_url || playlist.layout === 'with_footer') && playlist.layout !== 'split' && (() => {
         const style = playlist.news_style || 'ticker-classic';
         const textContent = playlist.footer_text || 'Painel Digital • Sua comunicação em outro nível';
         const text = ` ${textContent} • ${textContent} • ${textContent} `; // Tripled for seamless loop
@@ -604,14 +604,21 @@ const Player = () => {
           );
         }
 
+        const isFullscreen = playlist.layout === 'fullscreen';
+
         // Default: ticker-classic
         return (
           <div style={{
             height: `${height}px`,
+            width: '100%',
             backgroundColor: `rgba(${hexToRgb(color)}, ${playlist.footer_opacity ?? 0.8})`,
             color: fontColor,
             display: 'flex', alignItems: 'center', overflow: 'hidden',
-            whiteSpace: 'nowrap', position: 'relative', zIndex: 100,
+            whiteSpace: 'nowrap', 
+            position: isFullscreen ? 'absolute' : 'relative',
+            bottom: isFullscreen ? (playlist.footer_position === 'top' ? 'auto' : 0) : 'auto',
+            top: isFullscreen ? (playlist.footer_position === 'top' ? 0 : 'auto') : 'auto',
+            zIndex: 100,
             backdropFilter: blur ? 'blur(10px)' : 'none',
             boxShadow: playlist.footer_position === 'top' ? '0 10px 30px rgba(0,0,0,0.3)' : '0 -10px 30px rgba(0,0,0,0.3)'
           }}>
