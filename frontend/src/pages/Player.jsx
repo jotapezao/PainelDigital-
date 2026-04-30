@@ -192,41 +192,54 @@ const Player = () => {
   const currentItem = playlist.items[currentIndex];
   const mediaUrl = currentItem.url || currentItem.filename;
 
-  const bottomOffset = (playlist.footer_text || playlist.layout === 'with_footer') ? `${(playlist.ticker_height || 80) + 40}px` : '40px';
-
-  const getPositionStyles = (posStr, offset = '40px', bOffset = bottomOffset) => {
-    const styles = { position: 'absolute' };
+  const bottomOffset = (playlist.footer_text || playlist.layout === 'with_footer') ? `${(playlist.ticker_height || 80) + 40}  const getPositionStyles = (posStr, offset = '40px', bOffset = bottomOffset) => {
+    const styles = { position: 'absolute', zIndex: 10 };
     if (!posStr) posStr = 'top-right';
+    
     if (posStr.includes('top')) styles.top = offset;
     if (posStr.includes('bottom')) styles.bottom = bOffset;
+    
     if (posStr.includes('left')) styles.left = offset;
     if (posStr.includes('right')) styles.right = offset;
+    
+    if (posStr.includes('center')) {
+      styles.left = '50%';
+      styles.transform = 'translateX(-50%)';
+    }
+    
     return styles;
   };
 
   const getSocialUrl = () => {
+    if (!playlist.social_handle) return 'https://seusite.com.br';
+    if (playlist.social_handle.startsWith('http')) return playlist.social_handle;
+    
     let handle = playlist.social_handle?.replace('@', '');
     switch(playlist.social_platform) {
       case 'instagram': return `https://instagram.com/${handle}`;
       case 'twitter': return `https://twitter.com/${handle}`;
-      case 'facebook': return `https://facebook.com/${playlist.social_handle}`;
+      case 'facebook': return `https://facebook.com/${handle}`;
       case 'tiktok': return `https://tiktok.com/@${handle}`;
-      case 'youtube': return `https://youtube.com/${playlist.social_handle}`;
-      default: return playlist.social_handle;
+      case 'youtube': return `https://youtube.com/${handle}`;
+      case 'website': return playlist.social_handle.includes('.') ? `https://${playlist.social_handle}` : `https://google.com/search?q=${playlist.social_handle}`;
+      default: return `https://${playlist.social_handle}`;
     }
   };
 
   const getSocialStyle = (styleType, platform) => {
+    const transparency = playlist.card_transparency ?? 0.4;
     const base = {
       ...getPositionStyles(playlist.social_position || 'bottom-right'), 
-      padding: '20px 30px',
-      zIndex: 10, display: 'flex', gap: '20px', alignItems: 'center',
-      color: '#fff', transition: 'all 0.3s ease'
+      padding: '16px 24px',
+      zIndex: 20, display: 'flex', gap: '15px', alignItems: 'center',
+      color: '#fff', transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+      backdropFilter: 'blur(16px)',
+      boxShadow: '0 15px 35px rgba(0,0,0,0.3)',
     };
     
     switch (styleType) {
-      case 'style2': // Escuro Minimalista
-        return { ...base, background: 'rgba(0,0,0,0.85)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' };
+      case 'style2': // Escuro
+        return { ...base, background: `rgba(0,0,0,${transparency + 0.3})`, borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)' };
       case 'style3': // Vibrante
         const bg = platform === 'instagram' ? 'linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)' :
                    platform === 'youtube' ? 'linear-gradient(135deg, #ff0000, #cc0000)' :
@@ -234,19 +247,17 @@ const Player = () => {
                    platform === 'facebook' ? 'linear-gradient(135deg, #1877f2, #145dbf)' :
                    platform === 'tiktok' ? 'linear-gradient(135deg, #000000, #333333)' :
                    `linear-gradient(135deg, ${playlist.theme_color || '#818cf8'}, #ec4899)`;
-        return { ...base, background: bg, borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.4)' };
+        return { ...base, background: bg, borderRadius: '24px', opacity: transparency + 0.2 };
       case 'style4': // Claro
-        return { ...base, background: 'rgba(255,255,255,0.95)', color: '#111', borderRadius: '16px', boxShadow: '0 8px 30px rgba(0,0,0,0.15)' };
-      case 'style5': // Pílula
-        return { ...base, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)', borderRadius: '50px', padding: '12px 30px', border: '1px solid rgba(255,255,255,0.15)' };
-      case 'style1': // Vidro Moderno (Default)
+        return { ...base, background: `rgba(255,255,255,${transparency + 0.4})`, color: '#111', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.4)' };
+      case 'style1': // Vidro
       default:
-        return { ...base, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(20px)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' };
+        return { ...base, background: `rgba(255,255,255,${transparency * 0.4})`, borderRadius: '20px', border: '1px solid rgba(255,255,255,0.2)' };
     }
   };
 
   const getSocialIcon = (platform, styleType) => {
-    const size = 32;
+    const size = 34;
     const color = styleType === 'style4' ? '#111' : '#fff';
     switch (platform) {
       case 'instagram':
@@ -259,6 +270,8 @@ const Player = () => {
         return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.5 12 3.5 12 3.5s-7.505 0-9.377.55a3.016 3.016 0 0 0-2.122 2.136C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.55 9.376.55 9.376.55s7.505 0 9.377-.55a3.016 3.016 0 0 0 2.122 2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>;
       case 'tiktok':
         return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.95v7.4c-.01 2.98-1.73 5.82-4.5 6.94-2.77 1.13-6.1.48-8.19-1.57-2.1-2.05-2.7-5.46-1.4-8.16 1.3-2.7 4.54-4.25 7.49-3.55v4.07c-1.3-.12-2.65.34-3.48 1.34-.84 1.01-.98 2.5-.32 3.65.65 1.15 2.16 1.7 3.44 1.25 1.28-.46 2.06-1.8 2.05-3.16V.02z"/></svg>;
+      case 'website':
+        return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>;
       default:
         return null;
     }
@@ -267,7 +280,6 @@ const Player = () => {
   const isPortrait = playlist?.orientation === 'portrait';
   const rotation = playlist?.rotation || 0;
 
-  // Estilos de rotação se a TV estiver de pé mas o sistema operacional estiver horizontal
   const rotationStyles = rotation !== 0 ? {
     width: (rotation === 90 || rotation === 270) ? '100vh' : '100vw',
     height: (rotation === 90 || rotation === 270) ? '100vw' : '100vh',
@@ -297,70 +309,58 @@ const Player = () => {
         cursor: 'none',
       }}
     >
-      {/* Floating logout button — revealed on triple-click */}
+      {/* Botão de Logout — triplo clique */}
       {showLogout && (
         <div style={{
-          position: 'fixed', top: '20px', right: '20px', zIndex: 9999,
-          display: 'flex', gap: '8px', alignItems: 'center',
+          position: 'fixed', top: '30px', right: '30px', zIndex: 9999,
+          display: 'flex', gap: '12px', alignItems: 'center',
           animation: 'fadeIn 0.3s ease',
         }}>
-          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>Clique 3x para sair</span>
           <button
             onClick={e => { e.stopPropagation(); logout(); }}
             style={{
-              background: 'rgba(239,68,68,0.9)', border: 'none', borderRadius: '10px',
-              color: '#fff', padding: '10px 18px', fontWeight: '700', cursor: 'pointer',
-              fontSize: '0.875rem', backdropFilter: 'blur(8px)',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+              background: 'rgba(239,68,68,0.95)', border: 'none', borderRadius: '14px',
+              color: '#fff', padding: '14px 24px', fontWeight: '800', cursor: 'pointer',
+              fontSize: '1rem', backdropFilter: 'blur(10px)',
+              boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
             }}
           >
-            🚪 Sair
+            🚪 Sair do Sistema
           </button>
         </div>
       )}
-      {/* Header Layout Component */}
+
       {playlist.layout === 'with_header' && (
         <div style={{
-          height: '100px',
+          height: '120px',
           background: `linear-gradient(90deg, ${playlist.theme_color || '#818cf8'}, var(--accent))`,
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 40px',
-          color: '#fff',
-          zIndex: 30,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+          display: 'flex', alignItems: 'center', padding: '0 50px',
+          color: '#fff', zIndex: 30, boxShadow: '0 5px 30px rgba(0,0,0,0.6)'
         }}>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', margin: 0, fontFamily: 'Outfit' }}>{playlist.name}</h1>
+          <h1 style={{ fontSize: '3rem', fontWeight: '900', margin: 0, fontFamily: 'Outfit' }}>{playlist.name}</h1>
           <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-            <div style={{ fontSize: '1.8rem', fontWeight: '700' }}>{new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
-            <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>{new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}</div>
+            <div style={{ fontSize: '2.5rem', fontWeight: '800' }}>{new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+            <div style={{ fontSize: '1.2rem', opacity: 0.9 }}>{new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
           </div>
         </div>
       )}
 
-      {/* Main Container for Media and Optional Side Content */}
       <div style={{ 
-        flex: 1, 
-        display: 'flex', 
+        flex: 1, display: 'flex', 
         flexDirection: playlist.layout === 'split' ? 'row' : 'column',
         position: 'relative' 
       }}>
-        {/* MEDIA AREA */}
+        {/* ÁREA DE MÍDIA */}
         <div style={{ 
           flex: playlist.layout === 'split' ? 0.7 : 1, 
-          position: 'relative', 
-          overflow: 'hidden',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#000'
+          position: 'relative', overflow: 'hidden',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000'
         }}>
-          {/* Blurred Background for Blur Fill Mode */}
           {playlist.scale_mode === 'blur-fill' && (
             currentItem.type === 'image' ? (
-              <img src={mediaUrl} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(30px)', opacity: 0.5, transform: 'scale(1.1)', zIndex: 0 }} />
+              <img src={mediaUrl} style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
             ) : (
-              <video src={mediaUrl} muted autoPlay loop style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(30px)', opacity: 0.5, transform: 'scale(1.1)', zIndex: 0 }} />
+              <video src={mediaUrl} muted autoPlay loop style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
             )
           )}
 
@@ -376,71 +376,70 @@ const Player = () => {
               key={`${currentItem.id}-${currentIndex}-${mediaNonce}`}
               ref={videoRef}
               src={mediaUrl}
-              autoPlay
-              muted
-              onEnded={handleVideoEnd}
+              autoPlay muted onEnded={handleVideoEnd}
               className={`transition-${playlist.transition_effect || 'fade'}`}
               style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'), zIndex: 1, position: 'relative' }}
             />
           )}
 
-          {/* Clock/Weather overlay (only if not in split/header layout to avoid clutter) */}
+          {/* Relógio / Clima */}
           {playlist.layout !== 'split' && playlist.layout !== 'with_header' && (playlist.show_clock || playlist.show_weather) && (
             <div className="player-widget" style={{
-              ...getPositionStyles(playlist.widget_position || 'top-right'), padding: '24px 32px',
-              background: `rgba(0,0,0,${playlist.card_transparency ?? 0.4})`, backdropFilter: 'blur(16px)', borderRadius: '24px',
-              color: '#fff', border: `1px solid rgba(255,255,255,0.05)`, boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-              textAlign: (playlist.widget_position || 'top-right').includes('right') ? 'right' : 'left', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '16px'
+              ...getPositionStyles(playlist.widget_position || 'top-right'), padding: '24px 36px',
+              background: `rgba(0,0,0,${playlist.card_transparency ?? 0.4})`, backdropFilter: 'blur(16px)', borderRadius: '28px',
+              color: '#fff', border: `1px solid rgba(255,255,255,0.1)`, boxShadow: '0 15px 45px rgba(0,0,0,0.4)',
+              textAlign: (playlist.widget_position || 'top-right').includes('right') ? 'right' : (playlist.widget_position || 'top-right').includes('center') ? 'center' : 'left',
+              zIndex: 25, display: 'flex', flexDirection: 'column', gap: '12px'
             }}>
               {playlist.show_clock && (
-                <div style={{ borderBottom: playlist.show_weather ? '1px solid rgba(255,255,255,0.1)' : 'none', paddingBottom: playlist.show_weather ? '16px' : '0' }}>
-                  <div className="player-widget-clock" style={{ fontSize: '3.5rem', fontWeight: '800', lineHeight: 1, fontFamily: 'Outfit' }}>
+                <div style={{ borderBottom: playlist.show_weather ? '1px solid rgba(255,255,255,0.1)' : 'none', paddingBottom: playlist.show_weather ? '12px' : '0' }}>
+                  <div style={{ fontSize: '4rem', fontWeight: '900', lineHeight: 1, fontFamily: 'Outfit', letterSpacing: '-2px' }}>
                     {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                   </div>
-                  <div style={{ fontSize: '1.2rem', opacity: 0.8, marginTop: '8px' }}>
-                    {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}
+                  <div style={{ fontSize: '1.25rem', opacity: 0.8, marginTop: '6px', fontWeight: '600' }}>
+                    {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
                   </div>
                 </div>
               )}
               {playlist.show_weather && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '16px', paddingTop: playlist.show_clock ? '8px' : '0' }}>
-                  <span className="player-widget-weather" style={{ fontSize: '2.5rem' }}>⛅</span>
-                  <span className="player-widget-weather" style={{ fontSize: '2.5rem', fontWeight: '700', fontFamily: 'Outfit' }}>24°C</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: (playlist.widget_position || 'top-right').includes('right') ? 'flex-end' : (playlist.widget_position || 'top-right').includes('center') ? 'center' : 'flex-start', gap: '16px' }}>
+                  <span style={{ fontSize: '2.8rem' }}>⛅</span>
+                  <span style={{ fontSize: '2.8rem', fontWeight: '800', fontFamily: 'Outfit' }}>26°C</span>
                 </div>
               )}
             </div>
           )}
 
-          {/* Social Media Overlay */}
+          {/* Card de Redes Sociais */}
           {playlist.layout !== 'split' && playlist.show_social && (
             <div className="player-social-widget" style={getSocialStyle(playlist.social_card_style, playlist.social_platform)}>
-              <div style={{ display: 'flex', flexDirection: playlist.social_card_style === 'style5' ? 'row' : 'column', gap: '8px', alignItems: playlist.social_card_style === 'style5' ? 'center' : 'flex-start' }}>
-                {playlist.social_card_style !== 'style5' && (
-                  <div style={{ fontSize: '1.05rem', opacity: 0.9, fontWeight: '500' }}>Siga nossas redes sociais</div>
-                )}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
+                <div style={{ fontSize: '1.1rem', opacity: 0.8, fontWeight: '700', letterSpacing: '0.5px' }}>Conecte-se conosco:</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                   {getSocialIcon(playlist.social_platform, playlist.social_card_style)}
-                  <span className="player-social-text" style={{ fontSize: '1.4rem', fontWeight: '800', fontFamily: 'Outfit' }}>
-                    {playlist.social_handle || '@sua_empresa'}
+                  <span style={{ fontSize: '1.6rem', fontWeight: '900', fontFamily: 'Outfit', letterSpacing: '0.5px' }}>
+                    {playlist.social_handle || '@seu_negocio'}
                   </span>
                 </div>
               </div>
               {playlist.social_qrcode && (
                 <div style={{ 
-                  padding: '6px', background: '#fff', borderRadius: '12px', 
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)', marginLeft: playlist.social_card_style === 'style5' ? '12px' : '0' 
+                  padding: '8px', background: '#fff', borderRadius: '16px', 
+                  boxShadow: '0 8px 25px rgba(0,0,0,0.2)', marginLeft: '10px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: `3px solid ${playlist.theme_color || '#818cf8'}22`
                 }}>
-                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(getSocialUrl())}`} alt="QR Code" style={{ width: '80px', height: '80px', display: 'block' }} />
+                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(getSocialUrl())}&margin=4`} alt="QR Code" style={{ width: '110px', height: '110px', display: 'block' }} />
                 </div>
               )}
             </div>
           )}
 
-          {/* Progress Bar (Media Time) */}
+          {/* Barra de Progresso */}
           {playlist.show_progress_bar !== false && (
-            <div style={{ position: 'absolute', bottom: 0, left: 0, height: '6px', background: 'rgba(255,255,255,0.15)', width: '100%', zIndex: 15 }}>
+            <div style={{ position: 'absolute', bottom: 0, left: 0, height: '8px', background: 'rgba(255,255,255,0.1)', width: '100%', zIndex: 15 }}>
               <div 
-                key={`${currentItem.id}-${currentIndex}-${mediaNonce}`} // Forces re-render of animation on new item
+                key={`${currentIndex}-${mediaNonce}`}
                 style={{ 
                   height: '100%', background: playlist.theme_color || '#818cf8', width: '100%', 
                   animation: `progressAnim ${currentItem.duration_seconds || 10}s linear forwards` 
@@ -450,194 +449,89 @@ const Player = () => {
           )}
         </div>
 
-        {/* SIDE CONTENT (Split Layout) */}
+        {/* CONTEÚDO LATERAL (Split) */}
         {playlist.layout === 'split' && (
           <div style={{
-            flex: 0.3,
-            background: 'var(--bg-input)',
-            borderLeft: `4px solid ${playlist.theme_color || '#818cf8'}`,
-            display: 'flex',
-            flexDirection: 'column',
-            padding: '40px',
-            color: '#fff',
-            zIndex: 10
+            flex: 0.3, background: 'var(--bg-sidebar)', borderLeft: `6px solid ${playlist.theme_color || '#818cf8'}`,
+            display: 'flex', flexDirection: 'column', padding: '50px 40px', color: '#fff', zIndex: 10, boxShadow: '-10px 0 40px rgba(0,0,0,0.4)'
           }}>
-            <div style={{ marginBottom: '40px', textAlign: 'center' }}>
-              <div style={{ fontSize: '4.5rem', fontWeight: '800', fontFamily: 'Outfit' }}>
+            <div style={{ marginBottom: '50px', textAlign: 'center' }}>
+              <div style={{ fontSize: '5rem', fontWeight: '900', fontFamily: 'Outfit', letterSpacing: '-3px' }}>
                 {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
               </div>
-              <div style={{ fontSize: '1.5rem', opacity: 0.7 }}>
+              <div style={{ fontSize: '1.6rem', opacity: 0.7, fontWeight: '600' }}>
                 {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
               </div>
             </div>
             
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '30px', justifyContent: 'center' }}>
-              <div className="card" style={{ background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <h3 style={{ color: playlist.theme_color, marginBottom: '10px' }}>Próxima Mídia</h3>
-                <p style={{ fontSize: '1.2rem', fontWeight: '600' }}>
-                  {playlist.items[(currentIndex + 1) % playlist.items.length]?.media_name}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '35px', justifyContent: 'center' }}>
+              <div style={{ background: 'rgba(255,255,255,0.04)', padding: '30px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <h3 style={{ color: playlist.theme_color, marginBottom: '12px', textTransform: 'uppercase', fontSize: '0.9rem', letterSpacing: '2px' }}>Próxima Atração</h3>
+                <p style={{ fontSize: '1.5rem', fontWeight: '800', margin: 0 }}>
+                  {playlist.items[(currentIndex + 1) % playlist.items.length]?.media_name || 'Reiniciando playlist'}
                 </p>
               </div>
               
-              <div className="card" style={{ background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <h3 style={{ color: playlist.theme_color, marginBottom: '10px' }}>Informações</h3>
-                <p style={{ opacity: 0.8 }}>{playlist.description || 'Confira nosso conteúdo especial preparado para você.'}</p>
+              <div style={{ background: 'rgba(255,255,255,0.04)', padding: '30px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <h3 style={{ color: playlist.theme_color, marginBottom: '12px', textTransform: 'uppercase', fontSize: '0.9rem', letterSpacing: '2px' }}>Avisos</h3>
+                <p style={{ fontSize: '1.2rem', opacity: 0.9, lineHeight: 1.5 }}>{playlist.description || 'Bem-vindo ao nosso sistema de sinalização digital.'}</p>
               </div>
             </div>
 
-            <div style={{ marginTop: 'auto', textAlign: 'center' }}>
-              <h2 style={{ fontSize: '1.5rem', margin: 0 }}>{playlist.client_name}</h2>
+            <div style={{ marginTop: 'auto', textAlign: 'center', padding: '20px', background: `${playlist.theme_color}11`, borderRadius: '16px' }}>
+              <h2 style={{ fontSize: '1.8rem', margin: 0, fontWeight: '900' }}>{playlist.client_name}</h2>
             </div>
           </div>
         )}
       </div>
 
-      {/* Persistent Logo Overlay */}
+      {/* Logomarca Flutuante */}
       {playlist.logo_url && (
-        <img
-          src={playlist.logo_url}
-          alt="Logo"
-          style={{
-            ...getPositionStyles(playlist.logo_position || 'bottom-right', '32px'),
-            width: `${playlist.logo_size_px || 80}px`,
-            height: 'auto',
-            opacity: playlist.logo_opacity ?? 0.85,
-            objectFit: 'contain',
-            zIndex: 12,
-            filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.4))',
-            transition: 'opacity 0.3s',
-          }}
-          onError={e => e.target.style.display = 'none'}
-        />
+        <img src={playlist.logo_url} alt="Logo" style={{
+          ...getPositionStyles(playlist.logo_position || 'bottom-right', '40px'),
+          width: `${playlist.logo_size_px || 100}px`, height: 'auto',
+          opacity: playlist.logo_opacity ?? 0.85, objectFit: 'contain', zIndex: 12,
+          filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.5))'
+        }} onError={e => e.target.style.display = 'none'} />
       )}
 
-      {/* News/Ticker Styles */}
+      {/* Faixa de Notícias / Ticker */}
       {(playlist.footer_text || playlist.rss_url || playlist.layout === 'with_footer') && playlist.layout !== 'split' && (() => {
         const style = playlist.news_style || 'ticker-classic';
-        const textContent = playlist.footer_text || 'Painel Digital • Sua comunicação em outro nível';
-        const text = ` ${textContent} • ${textContent} • ${textContent} `; // Tripled for seamless loop
+        const textContent = playlist.footer_text || 'Painel Digital • Inovação e Tecnologia • Siga-nos para mais novidades!';
+        const text = ` ${textContent} • ${textContent} • ${textContent} `;
         const label = playlist.ticker_label || 'NOTÍCIAS';
         const speed = playlist.ticker_speed === 'slow' ? '45s' : playlist.ticker_speed === 'fast' ? '15s' : '30s';
         const direction = playlist.ticker_direction || 'rtl';
         const color = playlist.theme_color || '#818cf8';
         const fontColor = playlist.footer_font_color || '#fff';
-        const height = playlist.ticker_height || 80;
-        const blur = playlist.ticker_blur !== false;
-
-        if (style === 'glassmorphism-bar') {
-          return (
-            <div style={{
-              position: 'absolute',
-              [playlist.footer_position === 'top' ? 'top' : 'bottom']: 0,
-              left: 0, right: 0,
-              height: `${height}px`,
-              background: 'rgba(255,255,255,0.08)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              borderTop: playlist.footer_position !== 'top' ? '1px solid rgba(255,255,255,0.12)' : 'none',
-              borderBottom: playlist.footer_position === 'top' ? '1px solid rgba(255,255,255,0.12)' : 'none',
-              display: 'flex', alignItems: 'center', overflow: 'hidden', zIndex: 20,
-            }}>
-              <div style={{ padding: '0 24px', fontWeight: '800', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px', color, flexShrink: 0 }}>{label}</div>
-              <div style={{ flex: 1, overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                <span style={{ display: 'inline-block', animation: `scrollText${direction.toUpperCase()} ${speed} linear infinite`, fontSize: playlist.footer_font_size || '1.1rem', color: fontColor, fontWeight: playlist.ticker_font_weight || '600' }}>
-                  {text}
-                </span>
-              </div>
-            </div>
-          );
-        }
-
-        if (style === 'floating-card') {
-          return (
-            <div style={{
-              position: 'absolute', bottom: '80px', right: '40px',
-              maxWidth: '380px', background: 'rgba(0,0,0,0.75)',
-              backdropFilter: 'blur(16px)', borderRadius: '20px',
-              padding: '20px 24px', zIndex: 20,
-              border: `1px solid ${color}40`,
-              boxShadow: `0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px ${color}20`,
-            }}>
-              <div style={{ fontSize: '0.7rem', fontWeight: '800', color, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>{label}</div>
-              <div style={{ fontSize: '0.9rem', color: fontColor, lineHeight: 1.5, maxHeight: '80px', overflow: 'hidden' }}>{textContent.split('•')[0].trim()}</div>
-            </div>
-          );
-        }
-
-        if (style === 'vertical-lateral') {
-          const news = textContent.split('•').filter(Boolean);
-          return (
-            <div style={{
-              position: 'absolute', top: 0, right: 0, bottom: 0,
-              width: '280px', background: 'rgba(0,0,0,0.80)',
-              backdropFilter: 'blur(12px)', zIndex: 20,
-              borderLeft: `3px solid ${color}`,
-              display: 'flex', flexDirection: 'column', padding: '24px 20px', gap: '16px',
-            }}>
-              <div style={{ fontSize: '0.7rem', fontWeight: '800', color, textTransform: 'uppercase', letterSpacing: '2px', borderBottom: `1px solid ${color}30`, paddingBottom: '12px' }}>{label}</div>
-              {news.slice(0, 6).map((n, i) => (
-                <div key={i} style={{ fontSize: '0.8rem', color: fontColor, lineHeight: 1.4, opacity: i === 0 ? 1 : 0.7, borderLeft: i === 0 ? `3px solid ${color}` : '3px solid transparent', paddingLeft: '10px' }}>
-                  {n.trim()}
-                </div>
-              ))}
-            </div>
-          );
-        }
-
-        if (style === 'breaking-center') {
-          return (
-            <div style={{
-              position: 'absolute', top: '50%', left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 20, textAlign: 'center',
-              background: 'rgba(0,0,0,0.82)',
-              backdropFilter: 'blur(20px)',
-              borderRadius: '24px', padding: '32px 48px',
-              border: `2px solid ${color}`,
-              boxShadow: `0 0 60px ${color}40`,
-              maxWidth: '70%',
-              animation: 'fadeIn 0.5s ease',
-            }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: '900', color, textTransform: 'uppercase', letterSpacing: '4px', marginBottom: '16px' }}>🔴 {label}</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: '700', color: fontColor, lineHeight: 1.4 }}>{textContent.split('•')[0].trim()}</div>
-            </div>
-          );
-        }
+        const height = playlist.ticker_height || 85;
 
         const isFullscreen = playlist.layout === 'fullscreen';
 
-        // Default: ticker-classic
         return (
           <div style={{
-            height: `${height}px`,
-            width: '100%',
-            backgroundColor: `rgba(${hexToRgb(color)}, ${playlist.footer_opacity ?? 0.8})`,
-            color: fontColor,
-            display: 'flex', alignItems: 'center', overflow: 'hidden',
-            whiteSpace: 'nowrap', 
-            position: isFullscreen ? 'absolute' : 'relative',
+            height: `${height}px`, width: '100%',
+            backgroundColor: `rgba(${hexToRgb(color)}, ${playlist.footer_opacity ?? 0.85})`,
+            color: fontColor, display: 'flex', alignItems: 'center', overflow: 'hidden',
+            whiteSpace: 'nowrap', position: isFullscreen ? 'absolute' : 'relative',
             bottom: isFullscreen ? (playlist.footer_position === 'top' ? 'auto' : 0) : 'auto',
             top: isFullscreen ? (playlist.footer_position === 'top' ? 0 : 'auto') : 'auto',
-            zIndex: 100,
-            backdropFilter: blur ? 'blur(10px)' : 'none',
-            boxShadow: playlist.footer_position === 'top' ? '0 10px 30px rgba(0,0,0,0.3)' : '0 -10px 30px rgba(0,0,0,0.3)'
+            zIndex: 100, backdropFilter: 'blur(12px)',
+            boxShadow: playlist.footer_position === 'top' ? '0 10px 40px rgba(0,0,0,0.5)' : '0 -10px 40px rgba(0,0,0,0.5)'
           }}>
-            <div className="player-ticker-label" style={{
-              padding: '0 30px', background: 'rgba(0,0,0,0.2)', height: '100%',
-              display: 'flex', alignItems: 'center', fontWeight: '800', fontSize: '1.1rem',
-              textTransform: 'uppercase', letterSpacing: '1px',
-              borderRight: '1px solid rgba(255,255,255,0.1)', zIndex: 101
+            <div style={{
+              padding: '0 35px', background: 'rgba(0,0,0,0.25)', height: '100%',
+              display: 'flex', alignItems: 'center', fontWeight: '900', fontSize: '1.2rem',
+              textTransform: 'uppercase', letterSpacing: '2px', borderRight: '2px solid rgba(255,255,255,0.1)', zIndex: 101
             }}>
               {label}
             </div>
             <div style={{
-              display: 'inline-block',
-              paddingLeft: direction === 'rtl' ? '100%' : '0',
+              display: 'inline-block', paddingLeft: direction === 'rtl' ? '100%' : '0',
               paddingRight: direction === 'ltr' ? '100%' : '0',
               animation: `scrollText${direction.toUpperCase()} ${speed} linear infinite`,
-              fontSize: playlist.footer_font_size || '2rem',
-              fontWeight: playlist.ticker_font_weight || '600',
-              fontFamily: playlist.footer_font_family || 'inherit',
+              fontSize: playlist.footer_font_size || '2.2rem', fontWeight: playlist.ticker_font_weight || '700',
               zIndex: 100
             }}>
               {text}
@@ -646,12 +540,20 @@ const Player = () => {
         );
       })()}
       
-      <div className="player-client-name" style={{ position: 'absolute', top: playlist.layout === 'with_header' ? '120px' : '30px', left: '40px', zIndex: 5 }}>
-        <h2 style={{ color: '#fff', opacity: 0.8, fontSize: '1.8rem', margin: 0, fontWeight: '800', fontFamily: 'Outfit', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{playlist.client_name}</h2>
+      <div style={{ position: 'absolute', top: playlist.layout === 'with_header' ? '140px' : '40px', left: '50px', zIndex: 5 }}>
+        <h2 style={{ color: '#fff', opacity: 0.6, fontSize: '2rem', margin: 0, fontWeight: '900', fontFamily: 'Outfit', textShadow: '0 4px 20px rgba(0,0,0,0.6)' }}>{playlist.client_name}</h2>
       </div>
     </div>
   );
 };
+
+const hexToRgb = (hex) => {
+  if (!hex) return '129, 140, 248';
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '129, 140, 248';
+};
+
+export default Player;
 
 const hexToRgb = (hex) => {
   if (!hex) return '129, 140, 248';

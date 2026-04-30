@@ -479,6 +479,11 @@ tr:last-child td {
   to   { transform: translateX(0);    opacity: 1; }
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes progressAnim {
   from { width: 0%; }
   to { width: 100%; }
