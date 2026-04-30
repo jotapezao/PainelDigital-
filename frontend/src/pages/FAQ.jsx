@@ -70,12 +70,12 @@ const FAQ_DATA = [
         a: 'O player verifica atualizações automaticamente a cada 2 minutos. Se quiser forçar, use o botão "Forçar Atualização" na tela de detalhes da empresa, ou reinicie o app na TV.'
       },
       {
-        q: 'Como funciona o emparelhamento (Pairing) da TV?',
-        a: 'Cadastre um dispositivo no painel. Um código único é gerado. Na TV, insira esse código no app para vincular a TV à sua conta. Após o emparelhamento, a TV recebe as playlists automaticamente.'
+        q: 'Como funciona o monitoramento de usuários online?',
+        a: 'O Dashboard agora exibe um Monitor de Usuários em tempo real. Você pode ver quais contas estão logadas (TVs ou computadores), o endereço IP aproximado, a localização (Bairro e Município) e o tempo total que estão em exibição desde o início da sessão atual.'
       },
       {
-        q: 'Como ver se a TV está reproduzindo corretamente?',
-        a: 'No Dashboard principal, o painel "Monitor de Dispositivos" mostra o status em tempo real de cada TV: Online/Offline, status do player (Reproduzindo/Carregando/Erro), tempo desde o último ping e o nome do plano em execução.'
+        q: 'Como a localização é obtida?',
+        a: 'O sistema utiliza o endereço IP da conexão para estimar a localização geográfica aproximada. Isso ajuda a identificar rapidamente em qual loja ou região física uma tela está operando, sem necessidade de GPS.'
       },
     ]
   },

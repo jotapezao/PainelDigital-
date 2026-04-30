@@ -2,6 +2,26 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../database/db');
 
+const https = require('https');
+
+async function resolveLocation(ip) {
+  if (!ip || ip === '127.0.0.1' || ip === '::1' || ip.includes('localhost')) return null;
+  return new Promise((resolve) => {
+    https.get(`https://ip-api.com/json/${ip}?fields=status,city,district`, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          if (json.status === 'success') {
+            resolve({ city: json.city, district: json.district });
+          } else resolve(null);
+        } catch (e) { resolve(null); }
+      });
+    }).on('error', () => resolve(null));
+  });
+}
+
 function signToken(user) {
   return jwt.sign(
     { id: user.id, email: user.email, username: user.username, role: user.role, client_id: user.client_id },
@@ -18,12 +38,20 @@ async function login(req, res) {
     return res.status(400).json({ error: 'Usuário/email e senha são obrigatórios' });
   }
   try {
+    const ip = req.ip || req.headers['x-forwarded-for'] || '127.0.0.1';
+    const loc = await resolveLocation(ip);
+
     // Tenta por username OU email
     const { rows } = await pool.query(
-      `UPDATE users SET last_seen = NOW() 
+      `UPDATE users SET 
+        last_seen = NOW(), 
+        last_ip = $2,
+        location_city = COALESCE($3, location_city),
+        location_district = COALESCE($4, location_district),
+        session_start = COALESCE(session_start, NOW())
        WHERE (username = $1 OR email = $1) AND active = true 
        RETURNING *`,
-      [identifier.toLowerCase().trim()]
+      [identifier.toLowerCase().trim(), ip, loc?.city || null, loc?.district || null]
     );
     if (rows.length === 0) {
       return res.status(401).json({ error: 'Credenciais inválidas' });
@@ -61,13 +89,27 @@ async function login(req, res) {
 // GET /api/auth/me
 async function me(req, res) {
   try {
+    const ip = req.ip || req.headers['x-forwarded-for'] || '127.0.0.1';
+    
+    // Periodically update location if missing
+    let loc = null;
+    const checkLoc = await pool.query('SELECT location_city, last_ip FROM users WHERE id = $1', [req.user.id]);
+    if (checkLoc.rows.length > 0 && !checkLoc.rows[0].location_city) {
+        loc = await resolveLocation(ip);
+    }
+
     const { rows } = await pool.query(
-      `UPDATE users SET last_seen = NOW() WHERE id = $1 RETURNING id`,
-      [req.user.id]
+      `UPDATE users SET 
+        last_seen = NOW(), 
+        last_ip = $2,
+        location_city = COALESCE($3, location_city),
+        location_district = COALESCE($4, location_district)
+       WHERE id = $1 RETURNING id`,
+      [req.user.id, ip, loc?.city || null, loc?.district || null]
     );
     
     const userRes = await pool.query(
-      `SELECT u.id, u.name, u.email, u.username, u.role, u.client_id, u.avatar_url, c.name as client_name
+      `SELECT u.id, u.name, u.email, u.username, u.role, u.client_id, u.avatar_url, u.last_ip, u.location_city, u.location_district, u.session_start, c.name as client_name
        FROM users u LEFT JOIN clients c ON u.client_id = c.id
        WHERE u.id = $1`,
       [req.user.id]

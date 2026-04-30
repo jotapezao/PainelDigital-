@@ -487,9 +487,10 @@ const Player = () => {
       )}
 
       {/* News/Ticker Styles */}
-      {(playlist.layout === 'with_footer' || playlist.footer_text || playlist.rss_url) && (() => {
+      {((playlist.layout === 'with_footer' || playlist.footer_text || playlist.rss_url) && playlist.layout !== 'split') && (() => {
         const style = playlist.news_style || 'ticker-classic';
-        const text = playlist.footer_text || 'Painel Digital • Sua comunicação em outro nível';
+        const textContent = playlist.footer_text || 'Painel Digital • Sua comunicação em outro nível';
+        const text = ` ${textContent} • ${textContent} • ${textContent} `; // Tripled for seamless loop
         const label = playlist.ticker_label || 'NOTÍCIAS';
         const speed = playlist.ticker_speed === 'slow' ? '45s' : playlist.ticker_speed === 'fast' ? '15s' : '30s';
         const direction = playlist.ticker_direction || 'rtl';
@@ -501,7 +502,7 @@ const Player = () => {
         if (style === 'glassmorphism-bar') {
           return (
             <div style={{
-              position: playlist.footer_position === 'top' ? 'absolute' : 'absolute',
+              position: 'absolute',
               [playlist.footer_position === 'top' ? 'top' : 'bottom']: 0,
               left: 0, right: 0,
               height: `${height}px`,
@@ -533,13 +534,13 @@ const Player = () => {
               boxShadow: `0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px ${color}20`,
             }}>
               <div style={{ fontSize: '0.7rem', fontWeight: '800', color, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>{label}</div>
-              <div style={{ fontSize: '0.9rem', color: fontColor, lineHeight: 1.5, maxHeight: '80px', overflow: 'hidden' }}>{text.split('•')[0].trim()}</div>
+              <div style={{ fontSize: '0.9rem', color: fontColor, lineHeight: 1.5, maxHeight: '80px', overflow: 'hidden' }}>{textContent.split('•')[0].trim()}</div>
             </div>
           );
         }
 
         if (style === 'vertical-lateral') {
-          const news = text.split('•').filter(Boolean);
+          const news = textContent.split('•').filter(Boolean);
           return (
             <div style={{
               position: 'absolute', top: 0, right: 0, bottom: 0,
@@ -573,7 +574,7 @@ const Player = () => {
               animation: 'fadeIn 0.5s ease',
             }}>
               <div style={{ fontSize: '0.75rem', fontWeight: '900', color, textTransform: 'uppercase', letterSpacing: '4px', marginBottom: '16px' }}>🔴 {label}</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: '700', color: fontColor, lineHeight: 1.4 }}>{text.split('•')[0].trim()}</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: '700', color: fontColor, lineHeight: 1.4 }}>{textContent.split('•')[0].trim()}</div>
             </div>
           );
         }

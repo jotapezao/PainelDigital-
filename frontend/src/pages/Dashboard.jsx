@@ -35,68 +35,58 @@ const timeSince = (dateStr) => {
   return `${Math.floor(diff / 86400)}d atrás`;
 };
 
-const PLAYER_STATUS_LABELS = {
-  playing: { label: 'Reproduzindo', color: '#22c55e', icon: '▶' },
-  loading: { label: 'Carregando', color: '#f59e0b', icon: '⟳' },
-  error: { label: 'Erro', color: '#ef4444', icon: '⚠' },
-  idle: { label: 'Aguardando', color: '#6b7280', icon: '⏸' },
-  offline: { label: 'Offline', color: '#ef4444', icon: '●' },
-};
-
-const DeviceMonitorCard = ({ device }) => {
-  const isOnline = device.status === 'online';
-  const lastSeen = timeSince(device.last_seen);
-  const ps = PLAYER_STATUS_LABELS[isOnline ? (device.player_status || 'idle') : 'offline'];
+const UserMonitorCard = ({ user }) => {
+  const isOnline = true; // By definition in this list
+  const displayTime = user.session_start ? timeSince(user.session_start).replace(' atrás', '') : 'Recém logado';
+  const location = (user.location_city || user.location_district) 
+    ? `${user.location_district || 'Bairro desconhecido'} - ${user.location_city || 'Cidade'}`
+    : 'Localização aproximada (capturando...)';
 
   return (
     <div style={{
       background: 'var(--bg-card)',
-      border: `1px solid ${isOnline ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.2)'}`,
-      borderLeft: `4px solid ${isOnline ? '#22c55e' : '#ef4444'}`,
+      border: '1px solid rgba(34,197,94,0.2)',
+      borderLeft: '4px solid #22c55e',
       borderRadius: '14px',
       padding: '18px 20px',
       display: 'flex',
       flexDirection: 'column',
       gap: '10px',
-      transition: 'transform 0.2s',
+      transition: 'all 0.2s ease',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontWeight: '700', fontSize: '0.9375rem', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{device.name}</p>
-          {device.location && (
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>📍 {device.location}</p>
-          )}
+          <p style={{ fontWeight: '700', fontSize: '0.9375rem', marginBottom: '2px' }}>{user.name}</p>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            📍 {location}
+          </p>
         </div>
         <div style={{
           padding: '4px 10px',
           borderRadius: '20px',
-          background: `${ps.color}20`,
-          color: ps.color,
+          background: '#22c55e1a',
+          color: '#22c55e',
           fontSize: '0.7rem',
           fontWeight: '700',
           display: 'flex',
           alignItems: 'center',
           gap: '5px',
-          whiteSpace: 'nowrap',
-          marginLeft: '8px'
         }}>
-          <span>{ps.icon}</span>
-          {ps.label}
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e' }}></span>
+          AO VIVO
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-        <span title={new Date(device.last_seen).toLocaleString()}>🕒 {lastSeen}</span>
-        {device.ip_address && <span>🌐 {device.ip_address}</span>}
-        {device.playlist_name && <span>🎬 {device.playlist_name}</span>}
-        {device.client_name && <span>🏢 {device.client_name}</span>}
-      </div>
-
-      {device.last_error && (
-        <div style={{ fontSize: '0.72rem', color: '#ef4444', background: 'rgba(239,68,68,0.08)', borderRadius: '8px', padding: '6px 10px' }}>
-          ⚠ {device.last_error}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.78rem', color: 'var(--text-muted)', paddingTop: '4px', borderTop: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <span>🏢 {user.client_name || 'Conta Própria'}</span>
+          <span>🌐 {user.last_ip || 'IP oculto'}</span>
         </div>
-      )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'right' }}>
+          <span style={{ fontWeight: '600', color: 'var(--primary)' }}>⏱️ Em exibição: {displayTime}</span>
+          <span style={{ fontSize: '0.7rem' }}>Último sinal: {timeSince(user.last_seen)}</span>
+        </div>
+      </div>
     </div>
   );
 };
@@ -201,16 +191,15 @@ const Dashboard = () => {
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '24px', marginBottom: '24px' }}>
-        {/* Device Monitor Panel */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px', marginBottom: '24px' }}>
         <div className="card" style={{ padding: '28px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
             <div>
-              <h3 style={{ fontWeight: '700', fontSize: '1.0625rem', marginBottom: '4px' }}>
-                📡 Monitor de Dispositivos
+              <h3 style={{ fontWeight: '700', fontSize: '1.25rem', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                🟢 Monitor de Usuários Online
               </h3>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                {onlineCount} telas transmitindo agora
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                Visualizando {stats?.online_users?.length || 0} contas conectadas em tempo real
               </p>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -220,45 +209,28 @@ const Dashboard = () => {
                   onChange={e => setFilterClient(e.target.value)}
                   style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '0.875rem' }}
                 >
-                  <option value="">Todas as Empresas</option>
+                  <option value="">Filtrar por Empresa</option>
                   {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               )}
             </div>
           </div>
 
-          {devicesLoading ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Carregando...</div>
-          ) : devices.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Nenhum dispositivo encontrado.</div>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>Sincronizando dados...</div>
+          ) : !stats?.online_users || stats.online_users.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px', background: 'var(--bg-input)', borderRadius: '16px', border: '2px dashed var(--border)' }}>
+              <p style={{ fontSize: '1.5rem', marginBottom: '8px' }}>😴</p>
+              <p style={{ color: 'var(--text-muted)', fontWeight: '500' }}>Nenhum usuário ou TV online neste momento.</p>
+            </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
-              {devices.map(device => <DeviceMonitorCard key={device.id} device={device} />)}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+              {stats.online_users
+                .filter(u => !filterClient || u.client_id === filterClient)
+                .map(u => <UserMonitorCard key={u.id} user={u} />)
+              }
             </div>
           )}
-        </div>
-
-        {/* Online Users List */}
-        <div className="card" style={{ padding: '24px' }}>
-          <h3 style={{ fontWeight: '700', fontSize: '1rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }}></span>
-            Usuários Online
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {stats?.online_users?.length === 0 ? (
-              <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', textAlign: 'center', padding: '20px 0' }}>Ninguém online no momento.</p>
-            ) : (
-              stats?.online_users?.map(u => (
-                <div key={u.id} style={{ padding: '10px', borderRadius: '10px', background: 'var(--bg-input)', border: '1px solid var(--border)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: '600', fontSize: '0.875rem' }}>{u.name}</span>
-                    <span style={{ fontSize: '0.7rem', color: '#22c55e', fontWeight: '700' }}>Ativo</span>
-                  </div>
-                  {u.client_name && <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '2px' }}>🏢 {u.client_name}</p>}
-                </div>
-              ))
-            )}
-          </div>
         </div>
       </div>
 
@@ -272,6 +244,7 @@ const Dashboard = () => {
               { icon: '🎬', label: 'Novo Plano', path: '/playlists/new', color: 'var(--primary)' },
               { icon: '🏢', label: 'Nova Empresa', path: '/clients', color: 'var(--secondary)' },
               { icon: '📅', label: 'Novo Agendamento', path: '/schedules', color: 'var(--warning)' },
+              { icon: '📁', label: 'Grupos', path: '/groups', color: '#10b981' },
             ].map(action => (
               <button key={action.path} onClick={() => navigate(action.path)}
                 className="btn btn-outline"

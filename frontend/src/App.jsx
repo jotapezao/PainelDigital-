@@ -72,6 +72,10 @@ function App() {
               <Route path=":id" element={<ClientEditor />} />
             </Route>
 
+            <Route path="/groups" element={<PrivateRoute adminOnly><Layout title="Grupos de Empresas" /></PrivateRoute>}>
+              <Route index element={<Groups />} />
+            </Route>
+
             <Route path="/users" element={<PrivateRoute adminOnly><Layout title="Usuários" /></PrivateRoute>}>
               <Route index element={<Users />} />
               <Route path="new" element={<UserEditor />} />

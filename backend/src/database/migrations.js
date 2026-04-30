@@ -467,6 +467,18 @@ async function runMigrations() {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='last_seen') THEN
           ALTER TABLE users ADD COLUMN last_seen TIMESTAMPTZ;
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='last_ip') THEN
+          ALTER TABLE users ADD COLUMN last_ip VARCHAR(45);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='location_city') THEN
+          ALTER TABLE users ADD COLUMN location_city VARCHAR(100);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='location_district') THEN
+          ALTER TABLE users ADD COLUMN location_district VARCHAR(100);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='session_start') THEN
+          ALTER TABLE users ADD COLUMN session_start TIMESTAMPTZ;
+        END IF;
         -- Add group_id to playlists
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='group_id') THEN
           ALTER TABLE playlists ADD COLUMN group_id UUID;

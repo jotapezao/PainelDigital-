@@ -23,11 +23,11 @@ router.get('/', authMiddleware, async (req, res) => {
 
     // Online users query (seen in last 5 minutes)
     const onlineUsersQuery = isAdmin 
-      ? `SELECT u.id, u.name, u.last_seen, c.name as client_name 
+      ? `SELECT u.id, u.name, u.last_seen, u.last_ip, u.location_city, u.location_district, u.session_start, c.name as client_name 
          FROM users u LEFT JOIN clients c ON u.client_id = c.id
          WHERE u.last_seen >= NOW() - INTERVAL '5 minutes'
          ORDER BY u.last_seen DESC`
-      : `SELECT u.id, u.name, u.last_seen 
+      : `SELECT u.id, u.name, u.last_seen, u.last_ip, u.location_city, u.location_district, u.session_start 
          FROM users u 
          WHERE u.client_id = $1 AND u.last_seen >= NOW() - INTERVAL '5 minutes'
          ORDER BY u.last_seen DESC`;
