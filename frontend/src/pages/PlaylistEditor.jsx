@@ -49,6 +49,7 @@ const PlaylistEditor = () => {
   const [socialPosition, setSocialPosition] = useState('bottom-right');
   const [socialCardStyle, setSocialCardStyle] = useState('style1');
   const [showProgressBar, setShowProgressBar] = useState(true);
+  const [rotation, setRotation] = useState(0);
   
   // V2 — Logo persistente e estilos de feed
   const [logoUrl, setLogoUrl] = useState('');
@@ -82,7 +83,21 @@ const PlaylistEditor = () => {
           setDescription(p.description || '');
           setClientId(p.client_id || '');
           setGroupId(p.group_id || '');
-          setSelectedItems(p.items || []);
+          setRotation(p.rotation || 0);
+
+          // Normalizar itens: transformar o formato "flat" do backend no formato "nested" esperado pelo editor
+          const normalizedItems = (p.items || []).map(item => ({
+            ...item,
+            duration: item.duration_seconds,
+            media: item.media || {
+              id: item.media_id,
+              name: item.media_name,
+              type: item.media_type,
+              url: item.url,
+              filename: item.media_filename
+            }
+          }));
+          setSelectedItems(normalizedItems);
           setLayout(p.layout || 'fullscreen');
           setFooterText(p.footer_text || '');
           setShowClock(p.show_clock || false);
@@ -196,6 +211,7 @@ const PlaylistEditor = () => {
         social_position: socialPosition,
         social_card_style: socialCardStyle,
         show_progress_bar: showProgressBar,
+        rotation: parseInt(rotation) || 0,
         // V2
         logo_url: logoUrl || null,
         logo_position: logoPosition,
@@ -307,13 +323,23 @@ const PlaylistEditor = () => {
                     <option value="blur-fill">Preenchimento Desfocado (Blur Fill)</option>
                   </select>
                 </div>
+                <div className="input-group">
+                  <label>Rotação da Tela (TV de pé)</label>
+                  <select value={rotation} onChange={e => setRotation(e.target.value)}>
+                    <option value="0">0° — Horizontal Padrão</option>
+                    <option value="90">90° — Vertical (Girada à direita)</option>
+                    <option value="270">270° — Vertical (Girada à esquerda)</option>
+                    <option value="180">180° — Invertida</option>
+                  </select>
+                  <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '4px' }}>Se a TV estiver fisicamente de pé, escolha 90° ou 270°.</p>
+                </div>
               </div>
             </div>
           )}
 
           {activeTab === 'layout' && (
             <div className="animate-fade-in">
-              <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
+              <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '40px' }}>
                 <div>
                   <div className="input-group">
                     <label>Estilo do Feed de Notícias / Ticker</label>
@@ -402,24 +428,96 @@ const PlaylistEditor = () => {
                     </div>
                   </div>
                 </div>
-                <div>
-                  <div className="input-group">
-                    <label>Fonte de Notícias (RSS Feed URL)</label>
-                    <input value={rssUrl} onChange={e => setRssUrl(e.target.value)} placeholder="Ex: https://g1.globo.com/rss/g1/" />
-                    <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '4px' }}>Deixe em branco para usar o texto manual abaixo.</p>
+
+                {/* PRÉ-VISUALIZAÇÃO EM TEMPO REAL */}
+                <div style={{ position: 'sticky', top: '24px' }}>
+                  <label style={{ fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '12px', fontSize: '0.8125rem', textTransform: 'uppercase' }}>👁️ Pré-visualização em tempo real</label>
+                  <div style={{ 
+                    width: '100%', height: orientation === 'horizontal' ? '225px' : '450px',
+                    background: '#000', borderRadius: '16px', overflow: 'hidden', position: 'relative',
+                    boxShadow: '0 20px 50px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)',
+                    transform: `rotate(${rotation}deg)`,
+                    transition: 'transform 0.5s ease'
+                  }}>
+                    {/* Background "Media" Mock */}
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(45deg, #1e1e1e, #000)` }}>
+                      <span style={{ fontSize: '2rem', opacity: 0.1 }}>CONTEÚDO</span>
+                    </div>
+
+                    {/* Logo Mock */}
+                    {logoUrl && (
+                      <img src={logoUrl} style={{
+                        position: 'absolute',
+                        [logoPosition.split('-')[0]]: '10px',
+                        [logoPosition.split('-')[1]]: '10px',
+                        width: `${logoSizePx / 4}px`, opacity: logoOpacity, zIndex: 10
+                      }} />
+                    )}
+
+                    {/* Widgets Mock */}
+                    {(showClock || showWeather) && (
+                      <div style={{
+                        position: 'absolute',
+                        [widgetPosition.split('-')[0]]: '10px',
+                        [widgetPosition.split('-')[1]]: '10px',
+                        background: `rgba(0,0,0,${cardTransparency})`, padding: '8px 12px', borderRadius: '8px',
+                        color: '#fff', fontSize: '0.6rem', textAlign: widgetPosition.includes('right') ? 'right' : 'left', zIndex: 10
+                      }}>
+                        {showClock && <div style={{ fontWeight: '800' }}>12:00</div>}
+                        {showWeather && <div>⛅ 24°C</div>}
+                      </div>
+                    )}
+
+                    {/* Social Mock */}
+                    {showSocial && (
+                      <div style={{
+                        position: 'absolute',
+                        [socialPosition.split('-')[0]]: '10px',
+                        [socialPosition.split('-')[1]]: '10px',
+                        background: socialCardStyle === 'style3' ? themeColor : `rgba(0,0,0,${cardTransparency})`,
+                        padding: '6px 10px', borderRadius: '8px', color: '#fff', fontSize: '0.6rem', zIndex: 10
+                      }}>
+                         {socialHandle || '@sua_rede'}
+                      </div>
+                    )}
+
+                    {/* Ticker Mock */}
+                    {(layout === 'with_footer' || footerText || rssUrl) && (
+                      <div style={{
+                        position: 'absolute',
+                        [footerPosition === 'top' ? 'top' : 'bottom']: 0,
+                        width: '100%', height: `${tickerHeight / 3}px`,
+                        background: themeColor, opacity: footerOpacity,
+                        display: 'flex', alignItems: 'center', padding: '0 10px', overflow: 'hidden', zIndex: 20
+                      }}>
+                        <span style={{ fontSize: '0.6rem', fontWeight: '800', color: footerFontColor, background: 'rgba(0,0,0,0.2)', padding: '2px 6px', marginRight: '8px' }}>{tickerLabel}</span>
+                        <span style={{ fontSize: '0.7rem', color: footerFontColor, whiteSpace: 'nowrap' }}>{footerText || 'Notícias aparecem aqui rolando...'}</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px' }}>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '12px', textAlign: 'center' }}>A escala da miniatura é aproximada para visualização rápida.</p>
+                  
+                  {/* Additional Settings (moved here to balance columns) */}
+                  <div style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     <div className="input-group">
-                      <label>Label Notícias</label>
-                      <input value={tickerLabel} onChange={e => setTickerLabel(e.target.value)} placeholder="Ex: AVISOS" />
+                      <label>Fonte de Notícias (RSS Feed URL)</label>
+                      <input value={rssUrl} onChange={e => setRssUrl(e.target.value)} placeholder="Ex: https://g1.globo.com/rss/g1/" />
                     </div>
                     <div className="input-group">
                       <label>Texto do Rodapé (Manual)</label>
                       <textarea value={footerText} onChange={e => setFooterText(e.target.value)} placeholder="Digite aqui as notícias..." rows={2} />
                     </div>
                   </div>
+                </div>
+              </div>
 
-                  <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              {/* Advanced Settings Bottom Row */}
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: '32px', marginTop: '32px' }}>
+                 <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
+                    <div className="input-group">
+                      <label>Label do Ticker</label>
+                      <input value={tickerLabel} onChange={e => setTickerLabel(e.target.value)} placeholder="Ex: NOTÍCIAS" />
+                    </div>
                     <div className="input-group">
                       <label>Posição do Rodapé</label>
                       <select value={footerPosition} onChange={e => setFooterPosition(e.target.value)}>
@@ -428,14 +526,14 @@ const PlaylistEditor = () => {
                       </select>
                     </div>
                     <div className="input-group">
-                      <label>Transparência (0.1 a 1.0)</label>
+                      <label>Transparência do Rodapé</label>
                       <input type="range" min="0.1" max="1" step="0.1" value={footerOpacity} onChange={e => setFooterOpacity(e.target.value)} />
                     </div>
-                  </div>
+                 </div>
 
-                  <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                 <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px', marginTop: '16px' }}>
                     <div className="input-group">
-                      <label>Cor da Letra</label>
+                      <label>Cor da Letra (Rodapé)</label>
                       <input type="color" value={footerFontColor} onChange={e => setFooterFontColor(e.target.value)} />
                     </div>
                     <div className="input-group">
@@ -446,125 +544,95 @@ const PlaylistEditor = () => {
                         <option value="800">Extra Bold</option>
                       </select>
                     </div>
-                  </div>
-                  <div className="input-group">
-                    <label>Posicionamento e Cards Informativos</label>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', background: 'var(--bg-input)', borderRadius: 'var(--radius-md)' }}>
-                      <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={showClock} onChange={e => setShowClock(e.target.checked)} style={{ width: '20px', height: '20px' }} /> Relógio e Data
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={showWeather} onChange={e => setShowWeather(e.target.checked)} style={{ width: '20px', height: '20px' }} /> Clima
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={showProgressBar} onChange={e => setShowProgressBar(e.target.checked)} style={{ width: '20px', height: '20px' }} /> Barra de Progresso (Tempo)
-                        </label>
-                      </div>
+                    <div className="input-group">
+                      <label>Fonte (Família)</label>
+                      <select value={footerFontFamily} onChange={e => setFooterFontFamily(e.target.value)}>
+                        <option value="Inter">Inter</option>
+                        <option value="Outfit">Outfit</option>
+                        <option value="Roboto">Roboto</option>
+                        <option value="Montserrat">Montserrat</option>
+                      </select>
+                    </div>
+                 </div>
+              </div>
 
-                      <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px' }}>
-                        <div>
-                          <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Transparência dos Cards (0.1 a 1.0)</label>
-                          <input type="range" min="0.1" max="1" step="0.1" value={cardTransparency} onChange={e => setCardTransparency(e.target.value)} style={{ width: '100%' }} />
-                        </div>
-                        <div>
-                          <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Posição (Relógio/Clima)</label>
-                          <select value={widgetPosition} onChange={e => setWidgetPosition(e.target.value)}>
-                            <option value="top-right">Canto Superior Direito</option>
-                            <option value="top-left">Canto Superior Esquerdo</option>
-                            <option value="bottom-right">Canto Inferior Direito</option>
-                            <option value="bottom-left">Canto Inferior Esquerdo</option>
-                          </select>
-                        </div>
-                      </div>
-                      
-                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px', marginTop: '8px' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '16px' }}>
-                          <input type="checkbox" checked={showSocial} onChange={e => setShowSocial(e.target.checked)} style={{ width: '20px', height: '20px' }} /> Ativar Card de Redes Sociais
-                        </label>
-                        
-                        {showSocial && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px' }}>
-                              <div>
-                                <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Rede Social</label>
-                                <select value={socialPlatform} onChange={e => setSocialPlatform(e.target.value)}>
-                                  <option value="instagram">Instagram</option>
-                                  <option value="twitter">Twitter / X</option>
-                                  <option value="facebook">Facebook</option>
-                                  <option value="tiktok">TikTok</option>
-                                  <option value="youtube">YouTube</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Seu @ (Handle ou link)</label>
-                                <input value={socialHandle} onChange={e => setSocialHandle(e.target.value)} placeholder="@sua_empresa" />
-                              </div>
-                            </div>
-                            
-                            <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-                              <div>
-                                <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Posição do Card Social</label>
-                                <select value={socialPosition} onChange={e => setSocialPosition(e.target.value)}>
-                                  <option value="bottom-right">Canto Inferior Direito</option>
-                                  <option value="bottom-left">Canto Inferior Esquerdo</option>
-                                  <option value="top-right">Canto Superior Direito</option>
-                                  <option value="top-left">Canto Superior Esquerdo</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Estilo do Card</label>
-                                <select value={socialCardStyle} onChange={e => setSocialCardStyle(e.target.value)}>
-                                  <option value="style1">Estilo 1 - Vidro Moderno</option>
-                                  <option value="style2">Estilo 2 - Escuro Minimalista</option>
-                                  <option value="style3">Estilo 3 - Vibrante e Chamativo</option>
-                                  <option value="style4">Estilo 4 - Claro / Branco</option>
-                                  <option value="style5">Estilo 5 - Arredondado (Pílula)</option>
-                                </select>
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', paddingTop: '20px' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.875rem' }}>
-                                  <input type="checkbox" checked={socialQrcode} onChange={e => setSocialQrcode(e.target.checked)} /> 
-                                  Exibir QR Code da Rede
-                                </label>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+              <div className="card" style={{ marginTop: '32px', background: 'rgba(255,255,255,0.02)' }}>
+                <h4 style={{ marginBottom: '20px', fontSize: '1rem' }}>📱 Widgets e Logo Persistente</h4>
+                <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
+                  <div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '16px' }}>
+                      <input type="checkbox" checked={showClock} onChange={e => setShowClock(e.target.checked)} /> Relógio e Data
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '16px' }}>
+                      <input type="checkbox" checked={showWeather} onChange={e => setShowWeather(e.target.checked)} /> Clima
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '16px' }}>
+                      <input type="checkbox" checked={showProgressBar} onChange={e => setShowProgressBar(e.target.checked)} /> Barra de Progresso
+                    </label>
+                    
+                    <div className="input-group" style={{ marginTop: '20px' }}>
+                      <label>Posição dos Widgets</label>
+                      <select value={widgetPosition} onChange={e => setWidgetPosition(e.target.value)}>
+                        <option value="top-right">Canto Superior Direito</option>
+                        <option value="top-left">Canto Superior Esquerdo</option>
+                        <option value="bottom-right">Canto Inferior Direito</option>
+                        <option value="bottom-left">Canto Inferior Esquerdo</option>
+                      </select>
                     </div>
                   </div>
 
-                  {/* V2 — Logo Persistente */}
-                  <div className="input-group" style={{ borderTop: '1px solid var(--border)', paddingTop: '24px', marginTop: '8px' }}>
-                    <label>🏷️ Logo Persistente (aparece em todas as mídias)</label>
-                    <div style={{ background: 'var(--bg-input)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <div>
-                        <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>URL da Logo (link da imagem)</label>
-                        <input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://suaempresa.com/logo.png" />
-                        {logoUrl && <img src={logoUrl} alt="preview" style={{ marginTop: '8px', height: '40px', objectFit: 'contain', borderRadius: '6px', background: 'rgba(255,255,255,0.1)', padding: '4px' }} onError={e => e.target.style.display = 'none'} />}
-                      </div>
-                      <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-                        <div>
-                          <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Posição</label>
+                  <div>
+                     <div className="input-group">
+                        <label>URL da Logo Persistente</label>
+                        <input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://..." />
+                     </div>
+                     <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '12px' }}>
+                        <div className="input-group">
+                          <label>Posição da Logo</label>
                           <select value={logoPosition} onChange={e => setLogoPosition(e.target.value)}>
-                            <option value="top-left">↖ Superior Esquerdo</option>
-                            <option value="top-right">↗ Superior Direito</option>
-                            <option value="bottom-left">↙ Inferior Esquerdo</option>
-                            <option value="bottom-right">↘ Inferior Direito</option>
+                            <option value="top-right">Superior Direito</option>
+                            <option value="top-left">Superior Esquerdo</option>
+                            <option value="bottom-right">Inferior Direito</option>
+                            <option value="bottom-left">Inferior Esquerdo</option>
                           </select>
                         </div>
-                        <div>
-                          <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Tamanho ({logoSizePx}px)</label>
-                          <input type="range" min="30" max="300" value={logoSizePx} onChange={e => setLogoSizePx(e.target.value)} style={{ width: '100%' }} />
+                        <div className="input-group">
+                          <label>Tamanho da Logo</label>
+                          <input type="number" value={logoSizePx} onChange={e => setLogoSizePx(e.target.value)} />
                         </div>
-                        <div>
-                          <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Opacidade ({Math.round(logoOpacity * 100)}%)</label>
-                          <input type="range" min="0.1" max="1" step="0.05" value={logoOpacity} onChange={e => setLogoOpacity(e.target.value)} style={{ width: '100%' }} />
-                        </div>
-                      </div>
-                    </div>
+                     </div>
                   </div>
+                </div>
+
+                <div style={{ borderTop: '1px solid var(--border)', marginTop: '24px', paddingTop: '24px' }}>
+                   <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '20px', fontWeight: '700' }}>
+                      <input type="checkbox" checked={showSocial} onChange={e => setShowSocial(e.target.checked)} /> Ativar Card Social
+                   </label>
+                   {showSocial && (
+                     <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                        <div className="input-group">
+                          <label>Plataforma</label>
+                          <select value={socialPlatform} onChange={e => setSocialPlatform(e.target.value)}>
+                            <option value="instagram">Instagram</option>
+                            <option value="facebook">Facebook</option>
+                            <option value="youtube">YouTube</option>
+                            <option value="twitter">X (Twitter)</option>
+                          </select>
+                        </div>
+                        <div className="input-group">
+                          <label>@Usuário</label>
+                          <input value={socialHandle} onChange={e => setSocialHandle(e.target.value)} placeholder="@sua_empresa" />
+                        </div>
+                        <div className="input-group">
+                          <label>Estilo do Card</label>
+                          <select value={socialCardStyle} onChange={e => setSocialCardStyle(e.target.value)}>
+                            <option value="style1">Vidro Moderno</option>
+                            <option value="style2">Escuro</option>
+                            <option value="style3">Vibrante</option>
+                          </select>
+                        </div>
+                     </div>
+                   )}
                 </div>
               </div>
             </div>

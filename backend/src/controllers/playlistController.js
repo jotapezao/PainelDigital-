@@ -79,7 +79,7 @@ async function create(req, res) {
     ticker_speed, ticker_direction, ticker_height, ticker_blur, ticker_font_weight,
     show_social, social_handle, social_platform, card_transparency, ticker_label,
     social_qrcode, widget_position, social_position, show_progress_bar, social_card_style,
-    logo_url, logo_position, logo_size_px, logo_opacity, news_style
+    logo_url, logo_position, logo_size_px, logo_opacity, news_style, rotation
   } = req.body;
 
   if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
@@ -95,9 +95,9 @@ async function create(req, res) {
         ticker_speed, ticker_direction, ticker_height, ticker_blur, ticker_font_weight,
         show_social, social_handle, social_platform, card_transparency, ticker_label,
         social_qrcode, widget_position, social_position, show_progress_bar, social_card_style,
-        logo_url, logo_position, logo_size_px, logo_opacity, news_style
+        logo_url, logo_position, logo_size_px, logo_opacity, news_style, rotation
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38) RETURNING *`,
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39) RETURNING *`,
       [
         effectiveClientId, group_id || null,
         name, description || null, layout || 'fullscreen',
@@ -114,7 +114,7 @@ async function create(req, res) {
         social_position || 'bottom-right', show_progress_bar !== false,
         social_card_style || 'style1',
         logo_url || null, logo_position || 'bottom-right',
-        logo_size_px || 80, logo_opacity ?? 0.85, news_style || 'ticker-classic'
+        logo_size_px || 80, logo_opacity ?? 0.85, news_style || 'ticker-classic', rotation || 0
       ]
     );
     const playlist = rows[0];
@@ -146,7 +146,7 @@ async function update(req, res) {
     ticker_speed, ticker_direction, ticker_height, ticker_blur, ticker_font_weight,
     show_social, social_handle, social_platform, card_transparency, ticker_label,
     social_qrcode, widget_position, social_position, show_progress_bar, social_card_style,
-    logo_url, logo_position, logo_size_px, logo_opacity, news_style
+    logo_url, logo_position, logo_size_px, logo_opacity, news_style, rotation
   } = req.body;
 
   try {
@@ -163,7 +163,7 @@ async function update(req, res) {
       card_transparency=$27, ticker_label=$28, social_qrcode=$29,
       widget_position=$30, social_position=$31, show_progress_bar=$32,
       social_card_style=$33, logo_url=$34, logo_position=$35,
-      logo_size_px=$36, logo_opacity=$37, news_style=$38, updated_at=NOW()`;
+      logo_size_px=$36, logo_opacity=$37, news_style=$38, rotation=$39, updated_at=NOW()`;
 
     let params = [
       name, description || null, active !== false,
@@ -181,7 +181,7 @@ async function update(req, res) {
       social_position || 'bottom-right', show_progress_bar !== false,
       social_card_style || 'style1',
       logo_url || null, logo_position || 'bottom-right',
-      logo_size_px || 80, logo_opacity ?? 0.85, news_style || 'ticker-classic'
+      logo_size_px || 80, logo_opacity ?? 0.85, news_style || 'ticker-classic', rotation || 0
     ];
 
     let idx = 39;

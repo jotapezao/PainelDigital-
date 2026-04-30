@@ -264,20 +264,37 @@ const Player = () => {
     }
   };
 
+  const isPortrait = playlist?.orientation === 'portrait';
+  const rotation = playlist?.rotation || 0;
+
+  // Estilos de rotação se a TV estiver de pé mas o sistema operacional estiver horizontal
+  const rotationStyles = rotation !== 0 ? {
+    width: (rotation === 90 || rotation === 270) ? '100vh' : '100vw',
+    height: (rotation === 90 || rotation === 270) ? '100vw' : '100vh',
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+    transformOrigin: 'center center',
+  } : {
+    height: '100vh',
+    width: '100vw',
+  };
+
   return (
     <div
       ref={containerRef}
       onClick={handleTripleClick}
       style={{
         background: '#000',
-        height: '100vh',
-        width: '100vw',
+        ...rotationStyles,
         overflow: 'hidden',
         position: 'relative',
         display: 'flex',
         flexDirection: playlist?.layout === 'with_header' ? 'column' : (playlist?.footer_position === 'top' ? 'column-reverse' : 'column'),
         fontFamily: `${playlist?.footer_font_family || 'Inter'}, sans-serif`,
-        cursor: 'default',
+        fontSize: isPortrait ? '1.25rem' : '1rem',
+        cursor: 'none',
       }}
     >
       {/* Floating logout button — revealed on triple-click */}
@@ -594,7 +611,7 @@ const Player = () => {
             backgroundColor: `rgba(${hexToRgb(color)}, ${playlist.footer_opacity ?? 0.8})`,
             color: fontColor,
             display: 'flex', alignItems: 'center', overflow: 'hidden',
-            whiteSpace: 'nowrap', position: 'relative', zIndex: 20,
+            whiteSpace: 'nowrap', position: 'relative', zIndex: 100,
             backdropFilter: blur ? 'blur(10px)' : 'none',
             boxShadow: playlist.footer_position === 'top' ? '0 10px 30px rgba(0,0,0,0.3)' : '0 -10px 30px rgba(0,0,0,0.3)'
           }}>
@@ -602,7 +619,7 @@ const Player = () => {
               padding: '0 30px', background: 'rgba(0,0,0,0.2)', height: '100%',
               display: 'flex', alignItems: 'center', fontWeight: '800', fontSize: '1.1rem',
               textTransform: 'uppercase', letterSpacing: '1px',
-              borderRight: '1px solid rgba(255,255,255,0.1)', zIndex: 21
+              borderRight: '1px solid rgba(255,255,255,0.1)', zIndex: 101
             }}>
               {label}
             </div>
@@ -613,7 +630,8 @@ const Player = () => {
               animation: `scrollText${direction.toUpperCase()} ${speed} linear infinite`,
               fontSize: playlist.footer_font_size || '2rem',
               fontWeight: playlist.ticker_font_weight || '600',
-              fontFamily: playlist.footer_font_family || 'inherit'
+              fontFamily: playlist.footer_font_family || 'inherit',
+              zIndex: 100
             }}>
               {text}
             </div>

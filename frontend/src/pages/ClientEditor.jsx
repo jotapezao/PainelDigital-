@@ -22,6 +22,7 @@ const ClientEditor = () => {
     phone: '',
     plan: 'basic',
     theme_color: '#6366f1',
+    storage_quota_gb: 10,
     notes: '',
     active: true,
   });
@@ -190,6 +191,10 @@ const ClientEditor = () => {
                   <option value="pro">Profissional (Pro)</option>
                   <option value="enterprise">Corporativo (Enterprise)</option>
                 </select>
+              </div>
+              <div className="input-group">
+                <label>Cota de Armazenamento (GB)</label>
+                <input type="number" value={form.storage_quota_gb || 10} onChange={e => set('storage_quota_gb', parseInt(e.target.value) || 0)} placeholder="Ex: 10" />
               </div>
               <div className="input-group">
                 <label>Cor do Tema</label>

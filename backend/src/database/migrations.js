@@ -410,6 +410,9 @@ async function runMigrations() {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='logo_opacity') THEN
           ALTER TABLE playlists ADD COLUMN logo_opacity NUMERIC(3,2) DEFAULT 0.85;
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='rotation') THEN
+          ALTER TABLE playlists ADD COLUMN rotation INTEGER DEFAULT 0;
+        END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='storage_quota_gb') THEN
           ALTER TABLE clients ADD COLUMN storage_quota_gb INTEGER DEFAULT 10;
         END IF;
