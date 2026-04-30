@@ -21,8 +21,25 @@ router.get('/', authMiddleware, async (req, res) => {
       queries.push(pool.query(`SELECT COUNT(*) AS total, SUM(CASE WHEN active = true THEN 1 ELSE 0 END) AS active FROM clients`));
     }
 
+    // Online users query (seen in last 5 minutes)
+    const onlineUsersQuery = isAdmin 
+      ? `SELECT u.id, u.name, u.last_seen, c.name as client_name 
+         FROM users u LEFT JOIN clients c ON u.client_id = c.id
+         WHERE u.last_seen >= NOW() - INTERVAL '5 minutes'
+         ORDER BY u.last_seen DESC`
+      : `SELECT u.id, u.name, u.last_seen 
+         FROM users u 
+         WHERE u.client_id = $1 AND u.last_seen >= NOW() - INTERVAL '5 minutes'
+         ORDER BY u.last_seen DESC`;
+    
+    queries.push(pool.query(onlineUsersQuery, clientParam));
+
     const results = await Promise.all(queries);
-    const [devicesRes, mediasRes, playlistsRes, schedulesRes, clientsRes] = results;
+    const [devicesRes, mediasRes, playlistsRes, schedulesRes, clientsRes, usersRes] = results;
+
+    // Fix indices if not admin
+    const actualUsersRes = isAdmin ? usersRes : clientsRes;
+    const actualClientsRes = isAdmin ? clientsRes : null;
 
     res.json({
       total_devices:    parseInt(devicesRes.rows[0].total)    || 0,
@@ -30,9 +47,11 @@ router.get('/', authMiddleware, async (req, res) => {
       total_medias:     parseInt(mediasRes.rows[0].total)     || 0,
       total_playlists:  parseInt(playlistsRes.rows[0].total)  || 0,
       active_schedules: parseInt(schedulesRes.rows[0].total)  || 0,
-      ...(isAdmin && clientsRes ? {
-        total_clients:  parseInt(clientsRes.rows[0].total)  || 0,
-        active_clients: parseInt(clientsRes.rows[0].active) || 0,
+      online_users_count: actualUsersRes.rows.length,
+      online_users: actualUsersRes.rows,
+      ...(isAdmin && actualClientsRes ? {
+        total_clients:  parseInt(actualClientsRes.rows[0].total)  || 0,
+        active_clients: parseInt(actualClientsRes.rows[0].active) || 0,
       } : {}),
     });
   } catch (err) {

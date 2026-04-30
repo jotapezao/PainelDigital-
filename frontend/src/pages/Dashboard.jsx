@@ -60,10 +60,9 @@ const DeviceMonitorCard = ({ device }) => {
       gap: '10px',
       transition: 'transform 0.2s',
     }}>
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <p style={{ fontWeight: '700', fontSize: '0.9375rem', marginBottom: '2px' }}>{device.name}</p>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontWeight: '700', fontSize: '0.9375rem', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{device.name}</p>
           {device.location && (
             <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>📍 {device.location}</p>
           )}
@@ -78,16 +77,16 @@ const DeviceMonitorCard = ({ device }) => {
           display: 'flex',
           alignItems: 'center',
           gap: '5px',
-          whiteSpace: 'nowrap'
+          whiteSpace: 'nowrap',
+          marginLeft: '8px'
         }}>
           <span>{ps.icon}</span>
           {ps.label}
         </div>
       </div>
 
-      {/* Details */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-        <span>🕒 {lastSeen}</span>
+        <span title={new Date(device.last_seen).toLocaleString()}>🕒 {lastSeen}</span>
         {device.ip_address && <span>🌐 {device.ip_address}</span>}
         {device.playlist_name && <span>🎬 {device.playlist_name}</span>}
         {device.client_name && <span>🏢 {device.client_name}</span>}
@@ -156,11 +155,10 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [filterClient]);
 
-  // Live clock tick for "time since" refresh
   useEffect(() => {
     const t = setInterval(() => {
       tickRef.current++;
-      setDevices(d => [...d]); // force re-render to refresh timeSince
+      setDevices(d => [...d]);
     }, 30000);
     return () => clearInterval(t);
   }, []);
@@ -175,7 +173,6 @@ const Dashboard = () => {
 
   return (
     <div className="animate-fade-in">
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '36px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h2 style={{ fontSize: '1.625rem', fontWeight: '700', marginBottom: '6px' }}>
@@ -185,138 +182,125 @@ const Dashboard = () => {
             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => navigate('/devices')}>+ Novo Dispositivo</button>
+        <button className="btn btn-primary" onClick={() => navigate('/playlists/new')}>+ Criar Novo Plano</button>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-        <StatCard icon="📺" label={<>Dispositivos Online <span className="info-icon" title="Quantidade de telas ligadas agora vs total cadastrado">?</span></>} value={loading ? '...' : `${stats?.online_devices ?? 0} / ${stats?.total_devices ?? 0}`}
+        <StatCard icon="📺" label="Telas Online" value={loading ? '...' : `${stats?.online_devices ?? 0} / ${stats?.total_devices ?? 0}`}
           sub={stats ? `${Math.round((stats.online_devices / Math.max(stats.total_devices, 1)) * 100)}%` : undefined}
           color="var(--success)" onClick={() => navigate('/devices')} />
-        <StatCard icon="🎬" label={<>Planos Ativos <span className="info-icon" title="Programações de exibição em uso">?</span></>} value={loading ? '...' : stats?.total_playlists ?? 0}
+        <StatCard icon="👤" label="Usuários Online" value={loading ? '...' : stats?.online_users_count ?? 0}
+          sub="agora" color="#0ea5e9" />
+        <StatCard icon="🎬" label="Planos Ativos" value={loading ? '...' : stats?.total_playlists ?? 0}
           color="var(--primary)" onClick={() => navigate('/playlists')} />
-        <StatCard icon="🖼️" label="Mídias na Biblioteca" value={loading ? '...' : stats?.total_medias ?? 0}
+        <StatCard icon="🖼️" label="Mídias" value={loading ? '...' : stats?.total_medias ?? 0}
           color="var(--accent)" onClick={() => navigate('/medias')} />
-        <StatCard icon="📅" label="Agendamentos" value={loading ? '...' : stats?.active_schedules ?? 0}
-          sub={stats?.active_schedules ? 'ativos' : undefined}
-          color="var(--warning)" onClick={() => navigate('/schedules')} />
         {user?.role === 'admin' && (
-          <StatCard icon="🏢" label="Empresas Cadastradas" value={loading ? '...' : stats?.total_clients ?? 0}
-            sub={stats?.active_clients ? `${stats.active_clients} ativas` : undefined}
+          <StatCard icon="🏢" label="Empresas" value={loading ? '...' : stats?.total_clients ?? 0}
             color="var(--secondary)" onClick={() => navigate('/clients')} />
         )}
       </div>
 
-      {/* Device Monitor Panel */}
-      <div className="card" style={{ marginBottom: '24px', padding: '28px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            <h3 style={{ fontWeight: '700', fontSize: '1.0625rem', marginBottom: '4px' }}>
-              📡 Monitor de Dispositivos
-            </h3>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-              Atualiza a cada 15s &nbsp;·&nbsp;
-              <span style={{ color: 'var(--success)', fontWeight: '600' }}>● {onlineCount} online</span>
-              &nbsp;·&nbsp;
-              <span style={{ color: 'var(--error)', fontWeight: '600' }}>● {offlineCount} offline</span>
-            </p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '24px', marginBottom: '24px' }}>
+        {/* Device Monitor Panel */}
+        <div className="card" style={{ padding: '28px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h3 style={{ fontWeight: '700', fontSize: '1.0625rem', marginBottom: '4px' }}>
+                📡 Monitor de Dispositivos
+              </h3>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                {onlineCount} telas transmitindo agora
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              {user?.role === 'admin' && clients.length > 0 && (
+                <select
+                  value={filterClient}
+                  onChange={e => setFilterClient(e.target.value)}
+                  style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '0.875rem' }}
+                >
+                  <option value="">Todas as Empresas</option>
+                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              )}
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-            {user?.role === 'admin' && clients.length > 0 && (
-              <select
-                value={filterClient}
-                onChange={e => setFilterClient(e.target.value)}
-                style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '0.875rem' }}
-              >
-                <option value="">Todas as Empresas</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            )}
-            <button className="btn btn-outline" style={{ padding: '8px 14px', fontSize: '0.8125rem' }}
-              onClick={fetchDevices}>
-              🔄 Atualizar
-            </button>
-            <button className="btn btn-outline" style={{ padding: '8px 14px', fontSize: '0.8125rem' }}
-              onClick={() => navigate('/devices')}>
-              Ver todos
-            </button>
-          </div>
+
+          {devicesLoading ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Carregando...</div>
+          ) : devices.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Nenhum dispositivo encontrado.</div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
+              {devices.map(device => <DeviceMonitorCard key={device.id} device={device} />)}
+            </div>
+          )}
         </div>
 
-        {devicesLoading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Carregando dispositivos...</div>
-        ) : devices.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>📺</div>
-            <p>Nenhum dispositivo cadastrado.</p>
-            <button className="btn btn-primary" style={{ marginTop: '16px' }} onClick={() => navigate('/devices/new')}>Cadastrar primeiro dispositivo</button>
+        {/* Online Users List */}
+        <div className="card" style={{ padding: '24px' }}>
+          <h3 style={{ fontWeight: '700', fontSize: '1rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }}></span>
+            Usuários Online
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {stats?.online_users?.length === 0 ? (
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', textAlign: 'center', padding: '20px 0' }}>Ninguém online no momento.</p>
+            ) : (
+              stats?.online_users?.map(u => (
+                <div key={u.id} style={{ padding: '10px', borderRadius: '10px', background: 'var(--bg-input)', border: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: '600', fontSize: '0.875rem' }}>{u.name}</span>
+                    <span style={{ fontSize: '0.7rem', color: '#22c55e', fontWeight: '700' }}>Ativo</span>
+                  </div>
+                  {u.client_name && <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '2px' }}>🏢 {u.client_name}</p>}
+                </div>
+              ))
+            )}
           </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
-            {devices.map(device => <DeviceMonitorCard key={device.id} device={device} />)}
-          </div>
-        )}
+        </div>
       </div>
 
-      {/* Bottom row */}
-      <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+      <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
         {/* Quick Actions */}
-        <div className="card">
+        <div className="card" style={{ padding: '24px' }}>
           <h3 style={{ fontWeight: '700', marginBottom: '20px', fontSize: '1rem' }}>Ações Rápidas</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             {[
-              { icon: '📤', label: 'Fazer upload de mídia', path: '/medias', color: 'var(--accent)' },
-              { icon: '🎬', label: 'Criar novo plano de exibição', path: '/playlists', color: 'var(--primary)' },
-              { icon: '📺', label: 'Cadastrar dispositivo', path: '/devices', color: 'var(--success)' },
-              { icon: '📅', label: 'Agendar exibição', path: '/schedules', color: 'var(--warning)' },
+              { icon: '📤', label: 'Upload Mídia', path: '/medias', color: 'var(--accent)' },
+              { icon: '🎬', label: 'Novo Plano', path: '/playlists/new', color: 'var(--primary)' },
+              { icon: '🏢', label: 'Nova Empresa', path: '/clients', color: 'var(--secondary)' },
+              { icon: '📅', label: 'Novo Agendamento', path: '/schedules', color: 'var(--warning)' },
             ].map(action => (
               <button key={action.path} onClick={() => navigate(action.path)}
                 className="btn btn-outline"
-                style={{ justifyContent: 'flex-start', gap: '12px', padding: '12px 16px', textAlign: 'left' }}>
-                <span style={{
-                  width: '32px', height: '32px', borderRadius: '8px',
-                  backgroundColor: `${action.color}1a`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                }}>{action.icon}</span>
-                <span style={{ fontWeight: '600', color: 'var(--text-muted)' }}>{action.label}</span>
+                style={{ justifyContent: 'flex-start', gap: '12px', padding: '12px 16px', textAlign: 'left', width: '100%' }}>
+                <span style={{ fontSize: '1.2rem' }}>{action.icon}</span>
+                <span style={{ fontWeight: '600', fontSize: '0.8125rem' }}>{action.label}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Recent Activity */}
-        <div className="card">
+        <div className="card" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ fontWeight: '700', fontSize: '1rem' }}>Atividade Recente</h3>
+            <h3 style={{ fontWeight: '700', fontSize: '1rem' }}>Atividade do Sistema</h3>
             <button className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '0.8125rem' }}
               onClick={() => navigate('/logs')}>Ver tudo</button>
           </div>
-          {loading ? (
-            <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0' }}>Carregando...</div>
-          ) : recentLogs.length === 0 ? (
-            <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📋</div>
-              <p>Nenhuma atividade registrada.</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {recentLogs.map((log, i) => (
-                <div key={log.id || i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{
-                    width: '32px', height: '32px', borderRadius: '8px',
-                    backgroundColor: 'var(--bg-input)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', flexShrink: 0
-                  }}>{LOG_ICONS[log.action] || LOG_ICONS.default}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: '0.875rem', fontWeight: '500', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{log.message || log.description}</p>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-                      {new Date(log.created_at || log.timestamp).toLocaleString('pt-BR')}
-                    </p>
-                  </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {recentLogs.slice(0, 4).map((log, i) => (
+              <div key={log.id || i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '1.1rem' }}>{LOG_ICONS[log.action] || LOG_ICONS.default}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: '0.8125rem', fontWeight: '500', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{log.message || log.description}</p>
+                  <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>{timeSince(log.created_at || log.timestamp)}</p>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

@@ -54,6 +54,7 @@ const Medias = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [deleteModal, setDeleteModal] = useState({ open: false, media: null });
+  const [editModal, setEditModal] = useState({ open: false, media: null, newName: '' });
   const [preUpload, setPreUpload] = useState(null); // { files, names, sizes }
   const [storageInfo, setStorageInfo] = useState({ used: 0, quota: 10 * 1024 * 1024 * 1024 });
   const [filterType, setFilterType] = useState('all');
@@ -65,19 +66,42 @@ const Medias = () => {
   useEffect(() => {
     fetchMedias();
     fetchStorage();
-  }, []);
+  }, [user]);
 
   const fetchStorage = async () => {
     try {
-      const res = await api.get('/clients');
-      const clientData = Array.isArray(res.data) ? res.data[0] : res.data;
-      if (clientData) {
+      // If admin, we should probably fetch the client-specific storage or total storage.
+      // For now, let's fetch the client storage for the current context.
+      const endpoint = user?.role === 'admin' ? '/clients' : `/clients/${user.client_id}`;
+      const res = await api.get(endpoint);
+      
+      // If admin, it returns an array. We'll sum all or show the first one depending on context.
+      // But user complained about "não soma as mídias existente", so let's make sure we sum all medias for the current client.
+      let data = res.data;
+      if (Array.isArray(data)) {
+        // If Admin and multiple clients, we'll sum up for a "Global" view, or just take the first if it's the only one.
+        // If Admin is managing a specific client, they should see that client's quota.
+        // For simplicity, if Admin sees multiple, let's sum them.
+        if (user?.role === 'admin') {
+          const totalUsed = data.reduce((acc, c) => acc + parseInt(c.storage_used || 0), 0);
+          const totalQuota = data.reduce((acc, c) => acc + parseInt(c.storage_quota_bytes || 0), 0);
+          setStorageInfo({ used: totalUsed, quota: totalQuota || 10 * 1024 * 1024 * 1024 });
+        } else {
+          const clientData = data[0];
+          setStorageInfo({
+            used: parseInt(clientData?.storage_used || 0),
+            quota: parseInt(clientData?.storage_quota_bytes || 10 * 1024 * 1024 * 1024)
+          });
+        }
+      } else {
         setStorageInfo({
-          used: parseInt(clientData.storage_used || 0),
-          quota: parseInt(clientData.storage_quota_bytes || 10 * 1024 * 1024 * 1024)
+          used: parseInt(data?.storage_used || 0),
+          quota: parseInt(data?.storage_quota_bytes || 10 * 1024 * 1024 * 1024)
         });
       }
-    } catch { /* silent */ }
+    } catch (e) {
+      console.error('Error fetching storage:', e);
+    }
   };
 
   const fetchMedias = async () => {
@@ -108,7 +132,6 @@ const Medias = () => {
       return;
     }
 
-    // Show pre-upload modal with names
     setPreUpload({
       files,
       names: files.map(f => f.name.replace(/\.[^/.]+$/, '')),
@@ -158,8 +181,20 @@ const Medias = () => {
     }
   };
 
-  const filteredMedias = filterType === 'all' ? medias : medias.filter(m => m.type === filterType);
+  const handleRenameMedia = async () => {
+    const { media, newName } = editModal;
+    if (!newName.trim()) return;
+    try {
+      await api.put(`/medias/${media.id}`, { name: newName });
+      addToast('success', 'Sucesso', 'Mídia renomeada!');
+      setMedias(prev => prev.map(m => m.id === media.id ? { ...m, name: newName } : m));
+      setEditModal({ open: false, media: null, newName: '' });
+    } catch {
+      addToast('error', 'Erro', 'Falha ao renomear.');
+    }
+  };
 
+  const filteredMedias = filterType === 'all' ? medias : medias.filter(m => m.type === filterType);
   const storagePercent = storageInfo.quota > 0 ? Math.min((storageInfo.used / storageInfo.quota) * 100, 100) : 0;
   const storageBlocked = storagePercent >= 100;
 
@@ -205,7 +240,24 @@ const Medias = () => {
         <StorageBar used={storageInfo.used} quota={storageInfo.quota} />
       </div>
 
-      {/* Pre-upload modal */}
+      {/* Edit Modal */}
+      {editModal.open && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="card" style={{ maxWidth: '400px', width: '100%', padding: '32px' }}>
+            <h3 style={{ fontWeight: '800', fontSize: '1.125rem', marginBottom: '16px' }}>✏️ Renomear Mídia</h3>
+            <div className="input-group">
+              <label>Novo Nome</label>
+              <input value={editModal.newName} onChange={e => setEditModal(p => ({ ...p, newName: e.target.value }))} autoFocus onKeyDown={e => e.key === 'Enter' && handleRenameMedia()} />
+            </div>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+              <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setEditModal({ open: false, media: null, newName: '' })}>Cancelar</button>
+              <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleRenameMedia}>Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pre-upload modal ... (same as before) */}
       {preUpload && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
@@ -259,6 +311,7 @@ const Medias = () => {
             <MediaCard
               key={media.id}
               media={media}
+              onRename={(m) => setEditModal({ open: true, media: m, newName: m.name })}
               onDelete={(m) => setDeleteModal({ open: true, media: m })}
             />
           ))}

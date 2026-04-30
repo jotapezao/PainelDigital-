@@ -9,6 +9,7 @@ import Medias from './pages/Medias';
 import Playlists from './pages/Playlists';
 import Devices from './pages/Devices';
 import Clients from './pages/Clients';
+import Groups from './pages/Groups';
 import Schedules from './pages/Schedules';
 import Logs from './pages/Logs';
 import Player from './pages/Player';

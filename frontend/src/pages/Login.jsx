@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-  const [email, setEmail] = useState(() => localStorage.getItem('pd_remember_email') || '');
+  const [loginIdentifier, setLoginIdentifier] = useState(() => localStorage.getItem('pd_remember_email') || '');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(() => !!localStorage.getItem('pd_remember_email'));
   const [error, setError] = useState('');
@@ -27,11 +27,11 @@ const Login = () => {
     setError('');
     setLoading(true);
     
-    const result = await login(email, password, remember);
+    const result = await login(loginIdentifier, password, remember);
     
     if (result.success) {
       if (remember) {
-        localStorage.setItem('pd_remember_email', email);
+        localStorage.setItem('pd_remember_email', loginIdentifier);
       } else {
         localStorage.removeItem('pd_remember_email');
       }
@@ -90,12 +90,12 @@ const Login = () => {
 
         <form onSubmit={handleSubmit}>
           <div className="input-group">
-            <label>E-mail</label>
+            <label>Usuário ou E-mail</label>
             <input 
-              type="email" 
-              placeholder="seu@email.com" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text" 
+              placeholder="seu_usuario ou seu@email.com" 
+              value={loginIdentifier}
+              onChange={(e) => setLoginIdentifier(e.target.value)}
               required
             />
           </div>

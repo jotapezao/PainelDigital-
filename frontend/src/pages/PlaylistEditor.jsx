@@ -13,6 +13,7 @@ const PlaylistEditor = () => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [clientId, setClientId] = useState('');
+  const [groupId, setGroupId] = useState('');
   const [selectedItems, setSelectedItems] = useState([]);
   const [activeTab, setActiveTab] = useState('info');
   const [layout, setLayout] = useState('fullscreen');
@@ -58,18 +59,21 @@ const PlaylistEditor = () => {
   
   const [medias, setMedias] = useState([]);
   const [clients, setClients] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [mediasRes, clientsRes] = await Promise.all([
+        const [mediasRes, clientsRes, groupsRes] = await Promise.all([
           api.get('/medias'),
-          user?.role === 'admin' ? api.get('/clients') : Promise.resolve({ data: [] })
+          user?.role === 'admin' ? api.get('/clients') : Promise.resolve({ data: [] }),
+          user?.role === 'admin' ? api.get('/client-groups') : Promise.resolve({ data: [] })
         ]);
         setMedias(mediasRes.data);
         setClients(clientsRes.data);
+        setGroups(groupsRes.data);
 
         if (id && id !== 'new') {
           const playlistRes = await api.get(`/playlists/${id}`);
@@ -77,6 +81,7 @@ const PlaylistEditor = () => {
           setName(p.name || '');
           setDescription(p.description || '');
           setClientId(p.client_id || '');
+          setGroupId(p.group_id || '');
           setSelectedItems(p.items || []);
           setLayout(p.layout || 'fullscreen');
           setFooterText(p.footer_text || '');
@@ -169,7 +174,7 @@ const PlaylistEditor = () => {
     setSaving(true);
     try {
       const payload = {
-        name, description, client_id: clientId, layout,
+        name, description, client_id: clientId || null, group_id: groupId || null, layout,
         footer_text: footerText, show_clock: showClock, show_weather: showWeather,
         theme_color: themeColor, orientation, scale_mode: scaleMode,
         footer_opacity: parseFloat(footerOpacity), footer_font_size: footerFontSize,
@@ -260,12 +265,22 @@ const PlaylistEditor = () => {
           {activeTab === 'info' && (
             <div className="animate-fade-in" style={{ maxWidth: '800px' }}>
               {user?.role === 'admin' && (
-                <div className="input-group">
-                  <label>Empresa (Cliente) *</label>
-                  <select value={clientId} onChange={e => setClientId(e.target.value)}>
-                    <option value="">— Selecione uma Empresa —</option>
-                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                  <div className="input-group">
+                    <label>Empresa (Cliente) *</label>
+                    <select value={clientId} onChange={e => { setClientId(e.target.value); if (e.target.value) setGroupId(''); }}>
+                      <option value="">— Selecione uma Empresa —</option>
+                      {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="input-group">
+                    <label>Ou Definir por Grupo</label>
+                    <select value={groupId} onChange={e => { setGroupId(e.target.value); if (e.target.value) setClientId(''); }}>
+                      <option value="">— Sem Grupo (Individual) —</option>
+                      {groups.map(g => <option key={g.id} value={g.id}>🏢 Grupo: {g.name}</option>)}
+                    </select>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '4px' }}>Planos de grupo são herdados por todas as empresas do grupo.</p>
+                  </div>
                 </div>
               )}
               <div className="input-group">

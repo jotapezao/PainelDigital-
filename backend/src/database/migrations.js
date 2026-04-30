@@ -457,6 +457,27 @@ async function runMigrations() {
 
     // --- END V2 MIGRATIONS ---
 
+    // V2.6 — Username login and user tracking
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='username') THEN
+          ALTER TABLE users ADD COLUMN username VARCHAR(100);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='last_seen') THEN
+          ALTER TABLE users ADD COLUMN last_seen TIMESTAMPTZ;
+        END IF;
+        -- Add group_id to playlists
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='group_id') THEN
+          ALTER TABLE playlists ADD COLUMN group_id UUID;
+        END IF;
+      END $$;
+    `);
+    // Create unique index on username where not null
+    await client.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS users_username_unique ON users(username) WHERE username IS NOT NULL;
+    `);
+
     // Create default admin if not exists
     const { rows } = await client.query(`SELECT id FROM users WHERE role = 'admin' LIMIT 1`);
     if (rows.length === 0) {

@@ -4,7 +4,7 @@ const { pool } = require('../database/db');
 async function list(req, res) {
   try {
     const isRestricted = req.user.role === 'client' || req.user.role === 'estagiario';
-    const { client_id } = req.query;
+    const { client_id, group_id } = req.query;
     let conditions = [];
     let params = [];
     let idx = 1;
@@ -16,6 +16,10 @@ async function list(req, res) {
       conditions.push(`p.client_id = $${idx++}`); 
       params.push(client_id); 
     }
+    if (group_id) {
+      conditions.push(`p.group_id = $${idx++}`);
+      params.push(group_id);
+    }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const { rows } = await pool.query(
       `SELECT p.*, c.name as client_name,
@@ -26,6 +30,7 @@ async function list(req, res) {
     );
     res.json(rows);
   } catch (err) {
+    console.error('[Playlist list]', err.message);
     res.status(500).json({ error: 'Erro interno' });
   }
 }
@@ -41,7 +46,6 @@ async function getById(req, res) {
     if (rows.length === 0) return res.status(404).json({ error: 'Playlist não encontrada' });
     const playlist = rows[0];
 
-    // Fetch items with media info
     const { rows: items } = await pool.query(
       `SELECT pi.*, m.name as media_name, m.type as media_type,
         m.filename as media_filename, m.mime_type, m.size_bytes
@@ -50,9 +54,9 @@ async function getById(req, res) {
       [req.params.id]
     );
 
-    const publicUrl = process.env.R2_PUBLIC_URL.endsWith('/') 
+    const publicUrl = (process.env.R2_PUBLIC_URL || '').endsWith('/') 
       ? process.env.R2_PUBLIC_URL 
-      : `${process.env.R2_PUBLIC_URL}/`;
+      : `${process.env.R2_PUBLIC_URL || ''}/`;
 
     playlist.items = items.map(item => ({
       ...item,
@@ -61,6 +65,7 @@ async function getById(req, res) {
 
     res.json(playlist);
   } catch (err) {
+    console.error('[Playlist getById]', err.message);
     res.status(500).json({ error: 'Erro interno' });
   }
 }
@@ -68,12 +73,15 @@ async function getById(req, res) {
 // POST /api/playlists
 async function create(req, res) {
   const { 
-    name, description, client_id, layout, footer_text, show_clock, show_weather, 
+    name, description, client_id, group_id, layout, footer_text, show_clock, show_weather, 
     theme_color, orientation, scale_mode, footer_opacity, footer_font_size, 
     footer_font_color, footer_position, footer_font_family, rss_url, transition_effect,
-    ticker_speed, ticker_direction, ticker_height, ticker_blur,
-    show_social, social_handle, social_platform, card_transparency, ticker_label
+    ticker_speed, ticker_direction, ticker_height, ticker_blur, ticker_font_weight,
+    show_social, social_handle, social_platform, card_transparency, ticker_label,
+    social_qrcode, widget_position, social_position, show_progress_bar, social_card_style,
+    logo_url, logo_position, logo_size_px, logo_opacity, news_style
   } = req.body;
+
   if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
   
   const effectiveClientId = req.user.role === 'admin' ? (client_id || req.user.client_id) : req.user.client_id;
@@ -81,28 +89,36 @@ async function create(req, res) {
   try {
     const { rows } = await pool.query(
       `INSERT INTO playlists (
-        client_id, name, description, layout, footer_text, show_clock, show_weather, 
+        client_id, group_id, name, description, layout, footer_text, show_clock, show_weather, 
         theme_color, orientation, scale_mode, footer_opacity, footer_font_size, 
         footer_font_color, footer_position, footer_font_family, rss_url, transition_effect,
-        ticker_speed, ticker_direction, ticker_height, ticker_blur,
+        ticker_speed, ticker_direction, ticker_height, ticker_blur, ticker_font_weight,
         show_social, social_handle, social_platform, card_transparency, ticker_label,
-        social_qrcode, widget_position, social_position, show_progress_bar, social_card_style
+        social_qrcode, widget_position, social_position, show_progress_bar, social_card_style,
+        logo_url, logo_position, logo_size_px, logo_opacity, news_style
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31) RETURNING *`,
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38) RETURNING *`,
       [
-        effectiveClientId, name, description || null, layout || 'fullscreen', footer_text || null, 
-        show_clock || false, show_weather || false, theme_color || '#818cf8', orientation || 'horizontal', 
-        scale_mode || 'cover', footer_opacity || 0.8, footer_font_size || '1.5rem', 
-        footer_font_color || '#ffffff', footer_position || 'bottom', 
+        effectiveClientId, group_id || null,
+        name, description || null, layout || 'fullscreen',
+        footer_text || null, show_clock || false, show_weather || false,
+        theme_color || '#818cf8', orientation || 'horizontal', scale_mode || 'cover',
+        footer_opacity ?? 0.8, footer_font_size || '1.5rem',
+        footer_font_color || '#ffffff', footer_position || 'bottom',
         footer_font_family || 'Inter', rss_url || null, transition_effect || 'fade',
-        ticker_speed || 'medium', ticker_direction || 'ltr', ticker_height || 80, ticker_blur !== false,
-        show_social || false, social_handle || null, social_platform || 'instagram', card_transparency ?? 0.4, ticker_label || 'NOTÍCIAS',
-        social_qrcode || false, widget_position || 'top-right', social_position || 'bottom-right', show_progress_bar !== false, social_card_style || 'style1'
+        ticker_speed || 'medium', ticker_direction || 'ltr', ticker_height || 80,
+        ticker_blur !== false, ticker_font_weight || '600',
+        show_social || false, social_handle || null, social_platform || 'instagram',
+        card_transparency ?? 0.4, ticker_label || 'NOTÍCIAS',
+        social_qrcode || false, widget_position || 'top-right',
+        social_position || 'bottom-right', show_progress_bar !== false,
+        social_card_style || 'style1',
+        logo_url || null, logo_position || 'bottom-right',
+        logo_size_px || 80, logo_opacity ?? 0.85, news_style || 'ticker-classic'
       ]
     );
     const playlist = rows[0];
 
-    // Save items if provided
     if (req.body.items && req.body.items.length > 0) {
       for (let i = 0; i < req.body.items.length; i++) {
         const item = req.body.items[i];
@@ -116,44 +132,59 @@ async function create(req, res) {
 
     res.status(201).json({ ...playlist, items: req.body.items || [] });
   } catch (err) {
-    console.error('Erro ao criar playlist:', err);
-    res.status(500).json({ error: 'Erro interno' });
+    console.error('[Playlist create]', err.message);
+    res.status(500).json({ error: 'Erro interno ao criar playlist' });
   }
 }
 
 // PUT /api/playlists/:id
 async function update(req, res) {
   const { 
-    name, description, active, layout, footer_text, show_clock, show_weather, 
-    theme_color, client_id, orientation, scale_mode, footer_opacity, 
-    footer_font_size, footer_font_color, footer_position, footer_font_family, 
-    rss_url, transition_effect,
-    ticker_speed, ticker_direction, ticker_height, ticker_blur,
-    show_social, social_handle, social_platform, card_transparency, ticker_label
+    name, description, active, client_id, group_id, layout, footer_text, show_clock, show_weather, 
+    theme_color, orientation, scale_mode, footer_opacity, footer_font_size, 
+    footer_font_color, footer_position, footer_font_family, rss_url, transition_effect,
+    ticker_speed, ticker_direction, ticker_height, ticker_blur, ticker_font_weight,
+    show_social, social_handle, social_platform, card_transparency, ticker_label,
+    social_qrcode, widget_position, social_position, show_progress_bar, social_card_style,
+    logo_url, logo_position, logo_size_px, logo_opacity, news_style
   } = req.body;
+
   try {
     const effectiveClientId = req.user.role === 'admin' ? client_id : undefined;
 
     let query = `UPDATE playlists SET 
-      name=$1, description=$2, active=$3, layout=$4, footer_text=$5, 
-      show_clock=$6, show_weather=$7, theme_color=$8, orientation=$9, 
-      scale_mode=$10, footer_opacity=$11, footer_font_size=$12, 
-      footer_font_color=$13, footer_position=$14, footer_font_family=$15, 
-      rss_url=$16, transition_effect=$17, ticker_speed=$18, ticker_direction=$19, 
-      ticker_height=$20, ticker_blur=$21, show_social=$22, social_handle=$23, 
-      social_platform=$24, card_transparency=$25, ticker_label=$26, 
-      social_qrcode=$27, widget_position=$28, social_position=$29, show_progress_bar=$30, social_card_style=$31, updated_at=NOW()`;
+      name=$1, description=$2, active=$3, group_id=$4, layout=$5, footer_text=$6, 
+      show_clock=$7, show_weather=$8, theme_color=$9, orientation=$10, 
+      scale_mode=$11, footer_opacity=$12, footer_font_size=$13, 
+      footer_font_color=$14, footer_position=$15, footer_font_family=$16, 
+      rss_url=$17, transition_effect=$18, ticker_speed=$19, ticker_direction=$20, 
+      ticker_height=$21, ticker_blur=$22, ticker_font_weight=$23,
+      show_social=$24, social_handle=$25, social_platform=$26,
+      card_transparency=$27, ticker_label=$28, social_qrcode=$29,
+      widget_position=$30, social_position=$31, show_progress_bar=$32,
+      social_card_style=$33, logo_url=$34, logo_position=$35,
+      logo_size_px=$36, logo_opacity=$37, news_style=$38, updated_at=NOW()`;
+
     let params = [
-      name, description || null, active !== false, layout, footer_text, 
-      show_clock, show_weather, theme_color, orientation || 'horizontal', 
-      scale_mode || 'cover', footer_opacity || 0.8, footer_font_size || '1.5rem', 
-      footer_font_color || '#ffffff', footer_position || 'bottom', 
+      name, description || null, active !== false,
+      group_id || null, layout || 'fullscreen',
+      footer_text || null, show_clock || false, show_weather || false,
+      theme_color || '#818cf8', orientation || 'horizontal',
+      scale_mode || 'cover', footer_opacity ?? 0.8, footer_font_size || '1.5rem',
+      footer_font_color || '#ffffff', footer_position || 'bottom',
       footer_font_family || 'Inter', rss_url || null, transition_effect || 'fade',
-      ticker_speed || 'medium', ticker_direction || 'ltr', ticker_height || 80, ticker_blur !== false,
-      show_social || false, social_handle || null, social_platform || 'instagram', card_transparency ?? 0.4, ticker_label || 'NOTÍCIAS',
-      req.body.social_qrcode || false, req.body.widget_position || 'top-right', req.body.social_position || 'bottom-right', req.body.show_progress_bar !== false, req.body.social_card_style || 'style1'
+      ticker_speed || 'medium', ticker_direction || 'ltr',
+      ticker_height || 80, ticker_blur !== false, ticker_font_weight || '600',
+      show_social || false, social_handle || null, social_platform || 'instagram',
+      card_transparency ?? 0.4, ticker_label || 'NOTÍCIAS',
+      social_qrcode || false, widget_position || 'top-right',
+      social_position || 'bottom-right', show_progress_bar !== false,
+      social_card_style || 'style1',
+      logo_url || null, logo_position || 'bottom-right',
+      logo_size_px || 80, logo_opacity ?? 0.85, news_style || 'ticker-classic'
     ];
-    let idx = 32;
+
+    let idx = 39;
 
     if (effectiveClientId) {
       query += `, client_id=$${idx++}`;
@@ -167,7 +198,6 @@ async function update(req, res) {
     if (rows.length === 0) return res.status(404).json({ error: 'Playlist não encontrada' });
     const playlist = rows[0];
 
-    // Update items (clear and re-insert)
     if (req.body.items) {
       await pool.query('DELETE FROM playlist_items WHERE playlist_id = $1', [playlist.id]);
       for (let i = 0; i < req.body.items.length; i++) {
@@ -182,7 +212,8 @@ async function update(req, res) {
 
     res.json(playlist);
   } catch (err) {
-    res.status(500).json({ error: 'Erro interno' });
+    console.error('[Playlist update]', err.message);
+    res.status(500).json({ error: 'Erro interno ao atualizar playlist' });
   }
 }
 
@@ -197,9 +228,9 @@ async function remove(req, res) {
   }
 }
 
-// PUT /api/playlists/:id/items  (replace all items with new ordered list)
+// PUT /api/playlists/:id/items
 async function setItems(req, res) {
-  const { items } = req.body; // [{ media_id, duration_seconds }]
+  const { items } = req.body;
   const playlistId = req.params.id;
   try {
     await pool.query('DELETE FROM playlist_items WHERE playlist_id = $1', [playlistId]);
@@ -208,30 +239,23 @@ async function setItems(req, res) {
         await pool.query(
           `INSERT INTO playlist_items (playlist_id, media_id, position, duration_seconds, valid_from, valid_until)
            VALUES ($1, $2, $3, $4, $5, $6)`,
-          [
-            playlistId, 
-            items[i].media_id, 
-            i, 
-            items[i].duration_seconds || 10,
-            items[i].valid_from || null,
-            items[i].valid_until || null
-          ]
+          [playlistId, items[i].media_id, i, items[i].duration_seconds || 10,
+           items[i].valid_from || null, items[i].valid_until || null]
         );
       }
     }
     res.json({ message: 'Itens atualizados!' });
   } catch (err) {
-    console.error(err);
+    console.error('[setItems]', err.message);
     res.status(500).json({ error: 'Erro interno' });
   }
 }
 
-// GET /api/playlists/active (for Player mode)
+// GET /api/playlists/active (Player)
 async function getActive(req, res) {
   try {
     const clientId = req.user.client_id;
     if (!clientId) {
-      console.error('[Player] Erro: Usuário sem client_id');
       return res.status(401).json({ error: 'Cliente não identificado' });
     }
 
@@ -239,9 +263,6 @@ async function getActive(req, res) {
     const currentTime = now.toTimeString().split(' ')[0];
     const currentDay = now.getDay();
 
-    console.log(`[Player] Tentando carregar para Cliente: ${clientId}`);
-
-    // Passo 1: Tentar encontrar uma playlist através de AGENDAMENTO ATIVO
     const { rows: scheduled } = await pool.query(
       `SELECT p.* 
        FROM schedules s
@@ -259,11 +280,8 @@ async function getActive(req, res) {
     let playlist;
 
     if (scheduled.length > 0) {
-      console.log(`[Player] Sucesso: Playlist agendada encontrada (${scheduled[0].name})`);
       playlist = scheduled[0];
     } else {
-      console.log(`[Player] Nenhum agendamento para agora. Buscando qualquer playlist ativa...`);
-      // Passo 2: Fallback para QUALQUER playlist ativa deste cliente que tenha itens
       const { rows: fallbacks } = await pool.query(
         `SELECT p.* 
          FROM playlists p 
@@ -274,14 +292,11 @@ async function getActive(req, res) {
       );
       
       if (fallbacks.length === 0) {
-        console.log(`[Player] Crítico: Cliente ${clientId} não tem NENHUMA playlist ativa com mídias.`);
         return res.status(404).json({ error: 'Nenhuma mídia programada para este cliente.' });
       }
       playlist = fallbacks[0];
-      console.log(`[Player] Sucesso: Usando playlist padrão/ativa (${playlist.name})`);
     }
 
-    // Passo 3: Carregar os itens da playlist escolhida
     const { rows: items } = await pool.query(
       `SELECT pi.*, m.type, m.filename, m.name as media_name
        FROM playlist_items pi 
@@ -292,7 +307,6 @@ async function getActive(req, res) {
     );
 
     if (items.length === 0) {
-      console.log(`[Player] Erro: A playlist ${playlist.name} está vazia no banco.`);
       return res.status(404).json({ error: 'Playlist sem mídias.' });
     }
 
@@ -305,10 +319,9 @@ async function getActive(req, res) {
       url: item.type === 'widget' ? item.filename : `${publicUrl}${item.filename}`,
     }));
     
-    console.log(`[Player] OK! Enviando ${items.length} mídias para o player.`);
     res.json(playlist);
   } catch (err) {
-    console.error('[Player] Erro fatal em getActive:', err);
+    console.error('[getActive]', err.message);
     res.status(500).json({ error: 'Erro interno no servidor' });
   }
 }
