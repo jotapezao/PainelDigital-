@@ -99,7 +99,14 @@ const ClientEditor = () => {
     }
   };
 
-  const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
+  const set = (key, val) => {
+    setForm(p => ({ ...p, [key]: val }));
+    // Réplica automática para o usuário de acesso
+    if (isNew && userForm.create) {
+      if (key === 'name') setU('name', val);
+      if (key === 'email') setU('email', val);
+    }
+  };
   const setU = (key, val) => setUserForm(p => ({ ...p, [key]: val }));
 
   const tabStyle = (tab) => ({

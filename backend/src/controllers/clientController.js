@@ -12,7 +12,7 @@ async function list(req, res) {
         (SELECT COUNT(*) FROM devices WHERE client_id = c.id) as device_count,
         (SELECT COUNT(*) FROM medias WHERE client_id = c.id) as media_count,
         COALESCE((SELECT SUM(size_bytes)::BIGINT FROM medias WHERE client_id = c.id), 0) as storage_used,
-        COALESCE(c.storage_quota_gb, 10) * 1024 * 1024 * 1024 as storage_quota_bytes
+        COALESCE(c.storage_quota_gb, 10)::BIGINT * 1024 * 1024 * 1024 as storage_quota_bytes
         FROM clients c ORDER BY c.created_at DESC`;
       params = [];
     } else {
@@ -21,7 +21,7 @@ async function list(req, res) {
         (SELECT COUNT(*) FROM devices WHERE client_id = c.id) as device_count,
         (SELECT COUNT(*) FROM medias WHERE client_id = c.id) as media_count,
         COALESCE((SELECT SUM(size_bytes)::BIGINT FROM medias WHERE client_id = c.id), 0) as storage_used,
-        COALESCE(c.storage_quota_gb, 10) * 1024 * 1024 * 1024 as storage_quota_bytes
+        COALESCE(c.storage_quota_gb, 10)::BIGINT * 1024 * 1024 * 1024 as storage_quota_bytes
         FROM clients c WHERE c.id = $1`;
       params = [req.user.client_id];
     }
@@ -41,7 +41,7 @@ async function getById(req, res) {
         (SELECT COUNT(*) FROM users WHERE client_id = c.id) as user_count,
         (SELECT COUNT(*) FROM devices WHERE client_id = c.id) as device_count,
         COALESCE((SELECT SUM(size_bytes)::BIGINT FROM medias WHERE client_id = c.id), 0) as storage_used,
-        COALESCE(c.storage_quota_gb, 10) * 1024 * 1024 * 1024 as storage_quota_bytes
+        COALESCE(c.storage_quota_gb, 10)::BIGINT * 1024 * 1024 * 1024 as storage_quota_bytes
        FROM clients c WHERE c.id = $1`,
       [req.params.id]
     );
