@@ -1,5 +1,9 @@
 {
   "appId": "com.paineldigital.app",
   "appName": "Painel Digital",
-  "webDir": "dist"
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "cleartext": true
+  }
 }

@@ -1,16 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => localStorage.getItem('pd_remember_email') || '');
   const [password, setPassword] = useState('');
-  const [remember, setRemember] = useState(false);
+  const [remember, setRemember] = useState(() => !!localStorage.getItem('pd_remember_email'));
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [tvModeChecked, setTvModeChecked] = useState(false);
   
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // TV Mode: if a device_token is saved, auto-redirect to player
+  useEffect(() => {
+    const deviceToken = localStorage.getItem('pd_device_token');
+    const deviceCompany = localStorage.getItem('pd_device_company');
+    if (deviceToken) {
+      setTvModeChecked(true);
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,8 +30,13 @@ const Login = () => {
     const result = await login(email, password, remember);
     
     if (result.success) {
-      // O result.user virá do AuthContext atualizado
+      if (remember) {
+        localStorage.setItem('pd_remember_email', email);
+      } else {
+        localStorage.removeItem('pd_remember_email');
+      }
       if (result.user?.role === 'client') {
+        localStorage.setItem('pd_device_company', result.user?.client_name || '');
         navigate('/player?autoStart=true');
       } else {
         navigate('/');
@@ -32,6 +47,27 @@ const Login = () => {
     
     setLoading(false);
   };
+
+  const deviceCompany = localStorage.getItem('pd_device_company');
+
+  // TV Mode banner — show above the form if this device was previously linked
+  const TvModeBanner = () => deviceCompany ? (
+    <div style={{
+      background: 'rgba(99, 102, 241, 0.12)',
+      border: '1px solid rgba(99,102,241,0.3)',
+      borderRadius: 'var(--radius-md)',
+      padding: '12px 16px',
+      marginBottom: '24px',
+      fontSize: '0.8125rem',
+      color: 'var(--text-muted)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+    }}>
+      <span style={{ fontSize: '1.2rem' }}>📺</span>
+      <span>Este dispositivo está vinculado a: <strong style={{ color: 'var(--primary)' }}>{deviceCompany}</strong></span>
+    </div>
+  ) : null;
 
   return (
     <div style={{
@@ -49,6 +85,8 @@ const Login = () => {
           </h1>
           <p style={{ color: 'var(--text-muted)' }}>Entre para gerenciar seus dispositivos</p>
         </div>
+
+        <TvModeBanner />
 
         <form onSubmit={handleSubmit}>
           <div className="input-group">
@@ -81,7 +119,7 @@ const Login = () => {
                 onChange={(e) => setRemember(e.target.checked)}
                 style={{ width: '18px', height: '18px' }}
               />
-              <span style={{ color: 'var(--text-main)' }}>Continuar logado</span>
+              <span style={{ color: 'var(--text-main)' }}>Lembrar e-mail neste dispositivo</span>
             </label>
           </div>
 
@@ -105,7 +143,7 @@ const Login = () => {
             style={{ width: '100%', padding: '14px' }}
             disabled={loading}
           >
-            {loading ? 'Entrando...' : 'Acessar Painel'}
+            {loading ? 'Entrando...' : '📺 Acessar Painel'}
           </button>
         </form>
 

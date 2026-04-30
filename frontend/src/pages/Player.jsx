@@ -26,7 +26,10 @@ const Player = () => {
     if (!previewId) {
       const sendHeartbeat = async () => {
         try {
-          await api.post('/devices/heartbeat');
+          await api.post('/devices/heartbeat', {
+            player_status: 'playing',
+            ip_address: null, // browser doesn't expose IP directly
+          });
         } catch (e) {
           console.error('Falha no sinal de vida');
         }
@@ -245,7 +248,7 @@ const Player = () => {
       case 'facebook':
         return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg>;
       case 'youtube':
-        return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.5 12 3.5 12 3.5s-7.505 0-9.377.55a3.016 3.016 0 0 0-2.122 2.136C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.55 9.376.55 9.376.55s7.505 0 9.377-.55a3.016 3.016 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>;
+        return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.5 12 3.5 12 3.5s-7.505 0-9.377.55a3.016 3.016 0 0 0-2.122 2.136C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.55 9.376.55 9.376.55s7.505 0 9.377-.55a3.016 3.016 0 0 0 2.122 2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>;
       case 'tiktok':
         return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.95v7.4c-.01 2.98-1.73 5.82-4.5 6.94-2.77 1.13-6.1.48-8.19-1.57-2.1-2.05-2.7-5.46-1.4-8.16 1.3-2.7 4.54-4.25 7.49-3.55v4.07c-1.3-.12-2.65.34-3.48 1.34-.84 1.01-.98 2.5-.32 3.65.65 1.15 2.16 1.7 3.44 1.25 1.28-.46 2.06-1.8 2.05-3.16V.02z"/></svg>;
       default:
@@ -464,50 +467,150 @@ const Player = () => {
         )}
       </div>
 
-      {(playlist.layout === 'with_footer' || playlist.footer_text || playlist.rss_url) && (
-        <div style={{
-          height: `${playlist.ticker_height || 80}px`,
-          backgroundColor: `rgba(${hexToRgb(playlist.theme_color || '#818cf8')}, ${playlist.footer_opacity ?? 0.8})`,
-          color: playlist.footer_font_color || '#fff',
-          display: 'flex',
-          alignItems: 'center',
-          overflow: 'hidden',
-          whiteSpace: 'nowrap',
-          position: 'relative',
-          zIndex: 20,
-          backdropFilter: playlist.ticker_blur !== false ? 'blur(10px)' : 'none',
-          boxShadow: playlist.footer_position === 'top' ? '0 10px 30px rgba(0,0,0,0.3)' : '0 -10px 30px rgba(0,0,0,0.3)'
-        }}>
-          <div className="player-ticker-label" style={{
-            padding: '0 30px',
-            background: 'rgba(0,0,0,0.2)',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            fontWeight: '800',
-            fontSize: '1.1rem',
-            textTransform: 'uppercase',
-            letterSpacing: '1px',
-            borderRight: '1px solid rgba(255,255,255,0.1)',
-            zIndex: 21
-          }}>
-            {playlist.ticker_label || 'NOTÍCIAS'}
-          </div>
-          <div style={{
-            display: 'inline-block',
-            paddingLeft: playlist.ticker_direction === 'rtl' ? '100%' : '0',
-            paddingRight: playlist.ticker_direction === 'ltr' ? '100%' : '0',
-            animation: `scrollText${(playlist.ticker_direction || 'rtl').toUpperCase()} ${
-              playlist.ticker_speed === 'slow' ? '45s' : playlist.ticker_speed === 'fast' ? '15s' : '30s'
-            } linear infinite`,
-            fontSize: playlist.footer_font_size || '2rem',
-            fontWeight: playlist.ticker_font_weight || '600',
-            fontFamily: playlist.footer_font_family || 'inherit'
-          }}>
-            {playlist.footer_text || 'Painel Digital • Sua comunicação em outro nível • ' + (playlist.client_name || '')}
-          </div>
-        </div>
+      {/* Persistent Logo Overlay */}
+      {playlist.logo_url && (
+        <img
+          src={playlist.logo_url}
+          alt="Logo"
+          style={{
+            ...getPositionStyles(playlist.logo_position || 'bottom-right', '32px'),
+            width: `${playlist.logo_size_px || 80}px`,
+            height: 'auto',
+            opacity: playlist.logo_opacity ?? 0.85,
+            objectFit: 'contain',
+            zIndex: 12,
+            filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.4))',
+            transition: 'opacity 0.3s',
+          }}
+          onError={e => e.target.style.display = 'none'}
+        />
       )}
+
+      {/* News/Ticker Styles */}
+      {(playlist.layout === 'with_footer' || playlist.footer_text || playlist.rss_url) && (() => {
+        const style = playlist.news_style || 'ticker-classic';
+        const text = playlist.footer_text || 'Painel Digital • Sua comunicação em outro nível';
+        const label = playlist.ticker_label || 'NOTÍCIAS';
+        const speed = playlist.ticker_speed === 'slow' ? '45s' : playlist.ticker_speed === 'fast' ? '15s' : '30s';
+        const direction = playlist.ticker_direction || 'rtl';
+        const color = playlist.theme_color || '#818cf8';
+        const fontColor = playlist.footer_font_color || '#fff';
+        const height = playlist.ticker_height || 80;
+        const blur = playlist.ticker_blur !== false;
+
+        if (style === 'glassmorphism-bar') {
+          return (
+            <div style={{
+              position: playlist.footer_position === 'top' ? 'absolute' : 'absolute',
+              [playlist.footer_position === 'top' ? 'top' : 'bottom']: 0,
+              left: 0, right: 0,
+              height: `${height}px`,
+              background: 'rgba(255,255,255,0.08)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              borderTop: playlist.footer_position !== 'top' ? '1px solid rgba(255,255,255,0.12)' : 'none',
+              borderBottom: playlist.footer_position === 'top' ? '1px solid rgba(255,255,255,0.12)' : 'none',
+              display: 'flex', alignItems: 'center', overflow: 'hidden', zIndex: 20,
+            }}>
+              <div style={{ padding: '0 24px', fontWeight: '800', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px', color, flexShrink: 0 }}>{label}</div>
+              <div style={{ flex: 1, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                <span style={{ display: 'inline-block', animation: `scrollText${direction.toUpperCase()} ${speed} linear infinite`, fontSize: playlist.footer_font_size || '1.1rem', color: fontColor, fontWeight: playlist.ticker_font_weight || '600' }}>
+                  {text}
+                </span>
+              </div>
+            </div>
+          );
+        }
+
+        if (style === 'floating-card') {
+          return (
+            <div style={{
+              position: 'absolute', bottom: '80px', right: '40px',
+              maxWidth: '380px', background: 'rgba(0,0,0,0.75)',
+              backdropFilter: 'blur(16px)', borderRadius: '20px',
+              padding: '20px 24px', zIndex: 20,
+              border: `1px solid ${color}40`,
+              boxShadow: `0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px ${color}20`,
+            }}>
+              <div style={{ fontSize: '0.7rem', fontWeight: '800', color, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>{label}</div>
+              <div style={{ fontSize: '0.9rem', color: fontColor, lineHeight: 1.5, maxHeight: '80px', overflow: 'hidden' }}>{text.split('•')[0].trim()}</div>
+            </div>
+          );
+        }
+
+        if (style === 'vertical-lateral') {
+          const news = text.split('•').filter(Boolean);
+          return (
+            <div style={{
+              position: 'absolute', top: 0, right: 0, bottom: 0,
+              width: '280px', background: 'rgba(0,0,0,0.80)',
+              backdropFilter: 'blur(12px)', zIndex: 20,
+              borderLeft: `3px solid ${color}`,
+              display: 'flex', flexDirection: 'column', padding: '24px 20px', gap: '16px',
+            }}>
+              <div style={{ fontSize: '0.7rem', fontWeight: '800', color, textTransform: 'uppercase', letterSpacing: '2px', borderBottom: `1px solid ${color}30`, paddingBottom: '12px' }}>{label}</div>
+              {news.slice(0, 6).map((n, i) => (
+                <div key={i} style={{ fontSize: '0.8rem', color: fontColor, lineHeight: 1.4, opacity: i === 0 ? 1 : 0.7, borderLeft: i === 0 ? `3px solid ${color}` : '3px solid transparent', paddingLeft: '10px' }}>
+                  {n.trim()}
+                </div>
+              ))}
+            </div>
+          );
+        }
+
+        if (style === 'breaking-center') {
+          return (
+            <div style={{
+              position: 'absolute', top: '50%', left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 20, textAlign: 'center',
+              background: 'rgba(0,0,0,0.82)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: '24px', padding: '32px 48px',
+              border: `2px solid ${color}`,
+              boxShadow: `0 0 60px ${color}40`,
+              maxWidth: '70%',
+              animation: 'fadeIn 0.5s ease',
+            }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: '900', color, textTransform: 'uppercase', letterSpacing: '4px', marginBottom: '16px' }}>🔴 {label}</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: '700', color: fontColor, lineHeight: 1.4 }}>{text.split('•')[0].trim()}</div>
+            </div>
+          );
+        }
+
+        // Default: ticker-classic
+        return (
+          <div style={{
+            height: `${height}px`,
+            backgroundColor: `rgba(${hexToRgb(color)}, ${playlist.footer_opacity ?? 0.8})`,
+            color: fontColor,
+            display: 'flex', alignItems: 'center', overflow: 'hidden',
+            whiteSpace: 'nowrap', position: 'relative', zIndex: 20,
+            backdropFilter: blur ? 'blur(10px)' : 'none',
+            boxShadow: playlist.footer_position === 'top' ? '0 10px 30px rgba(0,0,0,0.3)' : '0 -10px 30px rgba(0,0,0,0.3)'
+          }}>
+            <div className="player-ticker-label" style={{
+              padding: '0 30px', background: 'rgba(0,0,0,0.2)', height: '100%',
+              display: 'flex', alignItems: 'center', fontWeight: '800', fontSize: '1.1rem',
+              textTransform: 'uppercase', letterSpacing: '1px',
+              borderRight: '1px solid rgba(255,255,255,0.1)', zIndex: 21
+            }}>
+              {label}
+            </div>
+            <div style={{
+              display: 'inline-block',
+              paddingLeft: direction === 'rtl' ? '100%' : '0',
+              paddingRight: direction === 'ltr' ? '100%' : '0',
+              animation: `scrollText${direction.toUpperCase()} ${speed} linear infinite`,
+              fontSize: playlist.footer_font_size || '2rem',
+              fontWeight: playlist.ticker_font_weight || '600',
+              fontFamily: playlist.footer_font_family || 'inherit'
+            }}>
+              {text}
+            </div>
+          </div>
+        );
+      })()}
       
       <div className="player-client-name" style={{ position: 'absolute', top: playlist.layout === 'with_header' ? '120px' : '30px', left: '40px', zIndex: 5 }}>
         <h2 style={{ color: '#fff', opacity: 0.8, fontSize: '1.8rem', margin: 0, fontWeight: '800', fontFamily: 'Outfit', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{playlist.client_name}</h2>

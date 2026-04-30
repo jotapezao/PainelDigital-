@@ -343,6 +343,120 @@ async function runMigrations() {
     `);
     // --- END NEW MIGRATIONS ---
 
+    // ================================================
+    // V2 MIGRATIONS — Advanced Features
+    // ================================================
+
+    // V2.1 — Detailed device monitoring fields
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='devices' AND column_name='player_status') THEN
+          ALTER TABLE devices ADD COLUMN player_status VARCHAR(50) DEFAULT 'idle';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='devices' AND column_name='ip_address') THEN
+          ALTER TABLE devices ADD COLUMN ip_address VARCHAR(45);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='devices' AND column_name='last_error') THEN
+          ALTER TABLE devices ADD COLUMN last_error TEXT;
+        END IF;
+      END $$;
+    `);
+
+    // V2.2 — Overlay Cards (floating image/gif overlays per playlist)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS playlist_overlay_cards (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        playlist_id UUID REFERENCES playlists(id) ON DELETE CASCADE,
+        card_type VARCHAR(30) NOT NULL DEFAULT 'image',
+        content_url TEXT,
+        content_text TEXT,
+        position_preset VARCHAR(20) DEFAULT 'bottom-right',
+        pos_x INTEGER DEFAULT 0,
+        pos_y INTEGER DEFAULT 0,
+        width_px INTEGER DEFAULT 200,
+        height_px INTEGER DEFAULT 200,
+        opacity NUMERIC(3,2) DEFAULT 1.0,
+        z_index INTEGER DEFAULT 10,
+        border_radius INTEGER DEFAULT 0,
+        animation_in VARCHAR(30) DEFAULT 'fade-in',
+        animation_out VARCHAR(30) DEFAULT 'fade-out',
+        display_rule VARCHAR(30) DEFAULT 'always',
+        display_interval_minutes INTEGER,
+        display_duration_seconds INTEGER DEFAULT 15,
+        display_time_start TIME,
+        display_time_end TIME,
+        active BOOLEAN DEFAULT true,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // V2.3 — News feed styles + persistent logo in playlists
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='news_style') THEN
+          ALTER TABLE playlists ADD COLUMN news_style VARCHAR(30) DEFAULT 'ticker-classic';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='logo_url') THEN
+          ALTER TABLE playlists ADD COLUMN logo_url TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='logo_position') THEN
+          ALTER TABLE playlists ADD COLUMN logo_position VARCHAR(20) DEFAULT 'bottom-right';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='logo_size_px') THEN
+          ALTER TABLE playlists ADD COLUMN logo_size_px INTEGER DEFAULT 80;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='logo_opacity') THEN
+          ALTER TABLE playlists ADD COLUMN logo_opacity NUMERIC(3,2) DEFAULT 0.85;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='storage_quota_gb') THEN
+          ALTER TABLE clients ADD COLUMN storage_quota_gb INTEGER DEFAULT 10;
+        END IF;
+      END $$;
+    `);
+
+    // V2.4 — Client Groups (different from device_groups — groups companies/clients)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS client_groups (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        default_plan VARCHAR(50) DEFAULT 'basic',
+        default_theme_color VARCHAR(7) DEFAULT '#6366f1',
+        default_storage_quota_gb INTEGER DEFAULT 10,
+        active BOOLEAN DEFAULT true,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='group_id') THEN
+          ALTER TABLE clients ADD COLUMN group_id UUID REFERENCES client_groups(id) ON DELETE SET NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='inherits_group_settings') THEN
+          ALTER TABLE clients ADD COLUMN inherits_group_settings BOOLEAN DEFAULT true;
+        END IF;
+      END $$;
+    `);
+
+    // V2.5 — Plan change history log
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS plan_change_log (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
+        changed_by UUID REFERENCES users(id),
+        old_plan VARCHAR(50),
+        new_plan VARCHAR(50),
+        reason TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // --- END V2 MIGRATIONS ---
+
     // Create default admin if not exists
     const { rows } = await client.query(`SELECT id FROM users WHERE role = 'admin' LIMIT 1`);
     if (rows.length === 0) {

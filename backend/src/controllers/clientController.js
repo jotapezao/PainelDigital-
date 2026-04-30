@@ -10,14 +10,18 @@ async function list(req, res) {
       query = `SELECT c.*,
         (SELECT COUNT(*) FROM users WHERE client_id = c.id) as user_count,
         (SELECT COUNT(*) FROM devices WHERE client_id = c.id) as device_count,
-        (SELECT COUNT(*) FROM medias WHERE client_id = c.id) as media_count
+        (SELECT COUNT(*) FROM medias WHERE client_id = c.id) as media_count,
+        COALESCE((SELECT SUM(size_bytes) FROM medias WHERE client_id = c.id), 0) as storage_used,
+        COALESCE(c.storage_quota_gb, 10) * 1024 * 1024 * 1024 as storage_quota_bytes
         FROM clients c ORDER BY c.created_at DESC`;
       params = [];
     } else {
       query = `SELECT c.*,
         (SELECT COUNT(*) FROM users WHERE client_id = c.id) as user_count,
         (SELECT COUNT(*) FROM devices WHERE client_id = c.id) as device_count,
-        (SELECT COUNT(*) FROM medias WHERE client_id = c.id) as media_count
+        (SELECT COUNT(*) FROM medias WHERE client_id = c.id) as media_count,
+        COALESCE((SELECT SUM(size_bytes) FROM medias WHERE client_id = c.id), 0) as storage_used,
+        COALESCE(c.storage_quota_gb, 10) * 1024 * 1024 * 1024 as storage_quota_bytes
         FROM clients c WHERE c.id = $1`;
       params = [req.user.client_id];
     }
@@ -35,7 +39,9 @@ async function getById(req, res) {
     const { rows } = await pool.query(
       `SELECT c.*,
         (SELECT COUNT(*) FROM users WHERE client_id = c.id) as user_count,
-        (SELECT COUNT(*) FROM devices WHERE client_id = c.id) as device_count
+        (SELECT COUNT(*) FROM devices WHERE client_id = c.id) as device_count,
+        COALESCE((SELECT SUM(size_bytes) FROM medias WHERE client_id = c.id), 0) as storage_used,
+        COALESCE(c.storage_quota_gb, 10) * 1024 * 1024 * 1024 as storage_quota_bytes
        FROM clients c WHERE c.id = $1`,
       [req.params.id]
     );
@@ -63,7 +69,7 @@ async function getUsers(req, res) {
 // POST /api/clients
 // Accepts optional user fields: user_name, user_email, user_password, user_role
 async function create(req, res) {
-  const { name, email, company, phone, plan, theme_color, notes,
+  const { name, email, company, phone, plan, theme_color, notes, storage_quota_gb,
           user_name, user_email, user_password, user_role } = req.body;
 
   if (!name || !email) return res.status(400).json({ error: 'Nome e email são obrigatórios' });
@@ -73,10 +79,10 @@ async function create(req, res) {
     await db.query('BEGIN');
 
     const clientResult = await db.query(
-      `INSERT INTO clients (name, email, company, phone, plan, theme_color, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      `INSERT INTO clients (name, email, company, phone, plan, theme_color, notes, storage_quota_gb)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
       [name, email, company || null, phone || null, plan || 'basic',
-       theme_color || '#6366f1', notes || null]
+       theme_color || '#6366f1', notes || null, parseInt(storage_quota_gb) || 10]
     );
     const newClient = clientResult.rows[0];
 
@@ -104,14 +110,15 @@ async function create(req, res) {
 
 // PUT /api/clients/:id
 async function update(req, res) {
-  const { name, email, company, phone, plan, active, theme_color, notes } = req.body;
+  const { name, email, company, phone, plan, active, theme_color, notes, storage_quota_gb } = req.body;
   try {
     const { rows } = await pool.query(
       `UPDATE clients SET name=$1, email=$2, company=$3, phone=$4, plan=$5,
-       active=$6, theme_color=$7, notes=$8, updated_at=NOW()
-       WHERE id=$9 RETURNING *`,
+       active=$6, theme_color=$7, notes=$8, storage_quota_gb=$9, updated_at=NOW()
+       WHERE id=$10 RETURNING *`,
       [name, email, company || null, phone || null, plan || 'basic',
-       active !== false, theme_color || '#6366f1', notes || null, req.params.id]
+       active !== false, theme_color || '#6366f1', notes || null,
+       parseInt(storage_quota_gb) || 10, req.params.id]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Cliente não encontrado' });
     res.json(rows[0]);

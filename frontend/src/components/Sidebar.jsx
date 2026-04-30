@@ -39,10 +39,11 @@ const Sidebar = ({ isOpen, onClose }) => {
   const baseItems = [
     { name: 'Dashboard', path: '/', icon: 'dashboard' },
     { name: 'Mídias', path: '/medias', icon: 'media' },
-    { name: 'Planos', path: '/playlists', icon: 'playlist' },
+    { name: 'Programação Digital', path: '/playlists', icon: 'playlist' },
     { name: 'Dispositivos', path: '/devices', icon: 'devices' },
     { name: 'Agendamentos', path: '/schedules', icon: 'calendar' },
     { name: 'Logs', path: '/logs', icon: 'logs' },
+    { name: 'Ajuda / FAQ', path: '/faq', icon: 'help' },
   ];
 
   const adminItems = [

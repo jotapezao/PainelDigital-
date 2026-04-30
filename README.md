@@ -1,41 +1,78 @@
 # Painel Digital - Digital Signage Platform
 
-Este é um sistema de Digital Signage com um painel administrativo (React) e uma API (Node.js/Express).
+Plataforma profissional para gerenciamento de Mídia Indoor (Digital Signage) e TV Corporativa. O **Painel Digital** permite o controle remoto de múltiplos dispositivos, agendamento de playlists, e exibição de widgets interativos (Clima, Relógio, Notícias RSS, e Redes Sociais).
 
-## Estrutura do Projeto
+## 🚀 Arquitetura e Tecnologias
 
-- `/backend`: API Node.js com PostgreSQL.
-- `/frontend`: Painel administrativo em React (Vite).
+O sistema é construído utilizando tecnologias modernas e escaláveis:
 
-## Deploy no Railway
+### Backend
+- **Node.js + Express**: API rápida e assíncrona.
+- **PostgreSQL**: Banco de dados relacional robusto.
+- **Cloudflare R2 (S3 API)**: Armazenamento distribuído e econômico para vídeos e imagens pesadas.
+- **Multer**: Gerenciamento de Uploads seguro com limite estabelecido de 1GB por arquivo.
 
-Para fazer o deploy no Railway, siga estes passos:
+### Frontend
+- **React.js (Vite)**: Renderização veloz e reativa.
+- **Context API**: Gerenciamento de estado global.
+- **Integração SVG nativa**: Ícones dinâmicos de alta qualidade.
+- **Design System Responsivo**: Layout construído do zero com foco em adaptação (Mobile, Tablet, Desktop, TV).
 
-### 1. Backend
-- Crie um novo serviço no Railway a partir do GitHub.
-- Selecione este repositório.
-- **IMPORTANTE:** Em **Settings**, procure por **Root Directory** e mude para `backend`.
-- Adicione as variáveis de ambiente:
-  - `PORT`: 3001
-  - `DATABASE_URL`: Conecte a um banco PostgreSQL no Railway.
-  - `JWT_SECRET`: Uma chave secreta segura.
-  - `FRONTEND_URL`: A URL do serviço do frontend (ex: `https://seu-frontend.up.railway.app`).
-  - `NODE_ENV`: `production`
+## 🌟 Funcionalidades Principais
 
-### 2. Frontend
-- Crie outro serviço no Railway a partir do GitHub.
-- Selecione este repositório.
-- **IMPORTANTE:** Em **Settings**, procure por **Root Directory** e mude para `frontend`.
-- Em **Build & Deploy**, verifique se o comando de build é `npm run build` e o diretório de saída é `dist`.
-- Adicione as variáveis de ambiente:
-  - `VITE_API_URL`: A URL do serviço do backend + `/api`. Ex: `https://seu-backend.up.railway.app/api`
+- **Multi-tenant (Multi-Empresas)**: Administração central de múltiplos clientes isolados.
+- **Automação de Player**: Contas de cliente iniciam o player imediatamente ao fazer login (`autoStart=true`).
+- **Widgets de Alta Personalização**:
+  - **Redes Sociais**: 5 estilos (Vidro Moderno, Minimalista, Vibrante, Claro, Pílula) com suporte a QR Code em tempo real.
+  - **Relógio e Clima**: Personalizáveis nos quatro cantos da tela.
+  - **Notícias RSS (Ticker)**: Rodapé rotativo animado (LTR ou RTL) com controle de velocidade, altura e fontes. Integração transparente via `rss2json`.
+- **Efeitos Premium de Mídia**: 
+  - Controle global de Transições (Fade, Slide, Zoom).
+  - Modos de enquadramento de vídeo/imagem, incluindo o efeito avançado **Blur-fill** (Preenchimento com fundo desfocado em tempo real).
+- **Controle Operacional**: Auditoria de sistema e visualização do Status de "Vida" (Heartbeat) de cada tela remotamente.
 
-## Configuração Local
+## 📦 Estrutura do Repositório
 
-1. Configure o `.env` no `backend` com seu banco de dados PostgreSQL.
-2. `cd backend && npm install && npm run dev`
-3. `cd frontend && npm install && npm run dev`
+```text
+Painel Digital/
+│
+├── backend/               # Código do Servidor da API
+│   ├── src/
+│   │   ├── controllers/   # Lógica de manipulação das requisições
+│   │   ├── database/      # Conexão DB e Migrations
+│   │   ├── middleware/    # Autenticação (JWT) e Upload (Multer)
+│   │   ├── routes/        # Rotas e endpoints REST
+│   │   └── services/      # Integração com R2 (Cloudflare)
+│   └── package.json       # Dependências Node.js
+│
+└── frontend/              # Interface Web (Dashboard e Player)
+    ├── src/
+    │   ├── components/    # Sidebar, TopBar, Cards, Modais
+    │   ├── contexts/      # AuthContext, ToastContext
+    │   ├── pages/         # Dashboard, PlaylistEditor, Player
+    │   ├── services/      # Cliente HTTP Axios (api.js)
+    │   └── index.css      # Design System global
+    └── package.json       # Dependências React/Vite
+```
 
-### Credenciais Padrão
-- **Email:** `admin@sistema.com`
-- **Senha:** `admin123`
+## 🛠️ Como Instalar e Rodar Localmente
+
+1. **Requisitos**: Instale Node.js (v18+) e PostgreSQL.
+2. Crie um banco de dados no PostgreSQL chamado `painel_digital`.
+3. Configure os arquivos `.env` no backend e frontend usando os `.env.example` como base.
+4. Rode a API:
+   ```bash
+   cd backend
+   npm install
+   npm start
+   ```
+   *(As tabelas do banco serão criadas automaticamente).*
+5. Rode a Interface:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+---
+Feito com 💡 por João Paulo Fernandes.

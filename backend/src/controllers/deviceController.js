@@ -240,15 +240,28 @@ async function syncDevice(req, res) {
 async function heartbeat(req, res) {
   const deviceId = req.user.id; // From authMiddleware (viewer/device token)
   try {
+    const { player_status, ip_address, current_media, error_message } = req.body;
+
     await pool.query(
-      'UPDATE devices SET status = $1, last_seen = NOW() WHERE id = $2',
-      ['online', deviceId]
+      `UPDATE devices SET 
+        status = $1, 
+        last_seen = NOW(),
+        player_status = COALESCE($2, player_status),
+        ip_address = COALESCE($3, ip_address),
+        last_error = $4
+       WHERE id = $5`,
+      ['online', player_status || 'idle', ip_address || null, error_message || null, deviceId]
     );
     
     // Notify admins via WebSocket
     const io = req.app.get('io');
     if (io) {
-      io.emit('device:status', { deviceId, status: 'online' });
+      io.emit('device:status', { 
+        deviceId, 
+        status: 'online',
+        player_status: player_status || 'idle',
+        current_media: current_media || null
+      });
     }
     
     res.json({ status: 'ok' });

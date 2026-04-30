@@ -49,6 +49,13 @@ const PlaylistEditor = () => {
   const [socialCardStyle, setSocialCardStyle] = useState('style1');
   const [showProgressBar, setShowProgressBar] = useState(true);
   
+  // V2 — Logo persistente e estilos de feed
+  const [logoUrl, setLogoUrl] = useState('');
+  const [logoPosition, setLogoPosition] = useState('bottom-right');
+  const [logoSizePx, setLogoSizePx] = useState(80);
+  const [logoOpacity, setLogoOpacity] = useState(0.85);
+  const [newsStyle, setNewsStyle] = useState('ticker-classic');
+  
   const [medias, setMedias] = useState([]);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -100,6 +107,12 @@ const PlaylistEditor = () => {
           setSocialPosition(p.social_position || 'bottom-right');
           setSocialCardStyle(p.social_card_style || 'style1');
           setShowProgressBar(p.show_progress_bar !== false);
+          // V2 fields
+          setLogoUrl(p.logo_url || '');
+          setLogoPosition(p.logo_position || 'bottom-right');
+          setLogoSizePx(p.logo_size_px || 80);
+          setLogoOpacity(p.logo_opacity !== undefined ? parseFloat(p.logo_opacity) : 0.85);
+          setNewsStyle(p.news_style || 'ticker-classic');
         }
       } catch (err) {
         addToast('error', 'Erro', 'Falha ao carregar dados do plano.');
@@ -178,6 +191,12 @@ const PlaylistEditor = () => {
         social_position: socialPosition,
         social_card_style: socialCardStyle,
         show_progress_bar: showProgressBar,
+        // V2
+        logo_url: logoUrl || null,
+        logo_position: logoPosition,
+        logo_size_px: parseInt(logoSizePx) || 80,
+        logo_opacity: parseFloat(logoOpacity) || 0.85,
+        news_style: newsStyle,
         items: selectedItems.map((item, i) => ({
           media_id: item.media_id,
           duration_seconds: item.media?.type === 'video' ? 0 : (item.duration || 10),
@@ -281,6 +300,29 @@ const PlaylistEditor = () => {
             <div className="animate-fade-in">
               <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
                 <div>
+                  <div className="input-group">
+                    <label>Estilo do Feed de Notícias / Ticker</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px', marginBottom: '8px' }}>
+                      {[
+                        { value: 'ticker-classic', label: '📰 Ticker Clássico', desc: 'Faixa scrolling no rodapé' },
+                        { value: 'glassmorphism-bar', label: '✨ Barra Glassmorphism', desc: 'Blur + transparência' },
+                        { value: 'floating-card', label: '🃏 Card Flutuante', desc: 'Box com sombra no canto' },
+                        { value: 'vertical-lateral', label: '📋 Lateral Vertical', desc: 'Coluna de notícias à direita' },
+                        { value: 'breaking-center', label: '🔴 Destaque Central', desc: 'Breaking news centralizado' },
+                      ].map(s => (
+                        <button
+                          key={s.value}
+                          onClick={() => setNewsStyle(s.value)}
+                          className={`btn ${newsStyle === s.value ? 'btn-primary' : 'btn-outline'}`}
+                          style={{ height: 'auto', padding: '12px', textAlign: 'left', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}
+                        >
+                          <span style={{ fontWeight: '700', fontSize: '0.8125rem' }}>{s.label}</span>
+                          <span style={{ fontSize: '0.7rem', opacity: 0.7, fontWeight: '400' }}>{s.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="input-group">
                     <label>Efeito de Transição (entre mídias)</label>
                     <select value={transitionEffect} onChange={e => setTransitionEffect(e.target.value)}>
@@ -474,6 +516,37 @@ const PlaylistEditor = () => {
                             </div>
                           </div>
                         )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* V2 — Logo Persistente */}
+                  <div className="input-group" style={{ borderTop: '1px solid var(--border)', paddingTop: '24px', marginTop: '8px' }}>
+                    <label>🏷️ Logo Persistente (aparece em todas as mídias)</label>
+                    <div style={{ background: 'var(--bg-input)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>URL da Logo (link da imagem)</label>
+                        <input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://suaempresa.com/logo.png" />
+                        {logoUrl && <img src={logoUrl} alt="preview" style={{ marginTop: '8px', height: '40px', objectFit: 'contain', borderRadius: '6px', background: 'rgba(255,255,255,0.1)', padding: '4px' }} onError={e => e.target.style.display = 'none'} />}
+                      </div>
+                      <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Posição</label>
+                          <select value={logoPosition} onChange={e => setLogoPosition(e.target.value)}>
+                            <option value="top-left">↖ Superior Esquerdo</option>
+                            <option value="top-right">↗ Superior Direito</option>
+                            <option value="bottom-left">↙ Inferior Esquerdo</option>
+                            <option value="bottom-right">↘ Inferior Direito</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Tamanho ({logoSizePx}px)</label>
+                          <input type="range" min="30" max="300" value={logoSizePx} onChange={e => setLogoSizePx(e.target.value)} style={{ width: '100%' }} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>Opacidade ({Math.round(logoOpacity * 100)}%)</label>
+                          <input type="range" min="0.1" max="1" step="0.05" value={logoOpacity} onChange={e => setLogoOpacity(e.target.value)} style={{ width: '100%' }} />
+                        </div>
                       </div>
                     </div>
                   </div>
