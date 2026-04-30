@@ -9,13 +9,10 @@ const Player = () => {
   const previewId = searchParams.get('preview');
   const { user, logout } = useAuth();
   const [playlist, setPlaylist] = useState(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isStarted, setIsStarted] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
-  const logoutTimerRef = useRef(null);
   const videoRef = useRef(null);
-  const timerRef = useRef(null);
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -87,6 +84,25 @@ const Player = () => {
     }
   };
 
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [mediaNonce, setMediaNonce] = useState(0);
+  const timerRef = useRef(null);
+  const logoutTimerRef = useRef(null);
+
+  const nextMedia = () => {
+    setCurrentIndex((prev) => {
+      const next = (prev + 1) % playlist.items.length;
+      if (next === prev) {
+        setMediaNonce(n => n + 1);
+      }
+      return next;
+    });
+  };
+
+  const handleVideoEnd = () => {
+    nextMedia();
+  };
+
   useEffect(() => {
     if (!playlist || playlist.items.length === 0) return;
 
@@ -100,15 +116,7 @@ const Player = () => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [currentIndex, playlist]);
-
-  const nextMedia = () => {
-    setCurrentIndex((prev) => (prev + 1) % playlist.items.length);
-  };
-
-  const handleVideoEnd = () => {
-    nextMedia();
-  };
+  }, [currentIndex, mediaNonce, playlist]);
 
   if (loading) {
     return (
@@ -341,14 +349,14 @@ const Player = () => {
 
           {currentItem.type === 'image' ? (
             <img 
-              key={`${currentItem.id}-${currentIndex}`}
+              key={`${currentItem.id}-${currentIndex}-${mediaNonce}`}
               src={mediaUrl} 
               className={`transition-${playlist.transition_effect || 'fade'}`}
               style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'), zIndex: 1, position: 'relative' }}
             />
           ) : (
             <video
-              key={`${currentItem.id}-${currentIndex}`}
+              key={`${currentItem.id}-${currentIndex}-${mediaNonce}`}
               ref={videoRef}
               src={mediaUrl}
               autoPlay
@@ -415,7 +423,7 @@ const Player = () => {
           {playlist.show_progress_bar !== false && (
             <div style={{ position: 'absolute', bottom: 0, left: 0, height: '6px', background: 'rgba(255,255,255,0.15)', width: '100%', zIndex: 15 }}>
               <div 
-                key={`${currentItem.id}-${currentIndex}`} // Forces re-render of animation on new item
+                key={`${currentItem.id}-${currentIndex}-${mediaNonce}`} // Forces re-render of animation on new item
                 style={{ 
                   height: '100%', background: playlist.theme_color || '#818cf8', width: '100%', 
                   animation: `progressAnim ${currentItem.duration_seconds || 10}s linear forwards` 
