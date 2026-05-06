@@ -192,7 +192,9 @@ const Player = () => {
   const currentItem = playlist.items[currentIndex];
   const mediaUrl = currentItem.url || currentItem.filename;
 
-  const bottomOffset = (playlist.footer_text || playlist.layout === 'with_footer') ? `${(playlist.ticker_height || 80) + 40}  const getPositionStyles = (posStr, offset = '40px', bOffset = bottomOffset) => {
+  const bottomOffset = (playlist.footer_text || playlist.layout === 'with_footer') ? `${(playlist.ticker_height || 80) + 40}px` : '40px';
+
+  const getPositionStyles = (posStr, offset = '40px', bOffset = bottomOffset) => {
     const styles = { position: 'absolute', zIndex: 10 };
     if (!posStr) posStr = 'top-right';
     
@@ -551,16 +553,6 @@ const hexToRgb = (hex) => {
   if (!hex) return '129, 140, 248';
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '129, 140, 248';
-};
-
-export default Player;
-
-const hexToRgb = (hex) => {
-  if (!hex) return '129, 140, 248';
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? 
-    `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : 
-    '129, 140, 248';
 };
 
 export default Player;
