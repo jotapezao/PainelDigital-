@@ -118,7 +118,6 @@ const ClientEditor = () => {
     borderBottom: tab === activeTab ? '2px solid var(--primary)' : '2px solid transparent',
     background: 'none',
     border: 'none',
-    borderBottom: tab === activeTab ? '2px solid var(--primary)' : '2px solid transparent',
     cursor: 'pointer',
     transition: 'all 0.2s',
   });
