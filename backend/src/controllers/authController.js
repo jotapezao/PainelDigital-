@@ -222,4 +222,21 @@ async function deleteUser(req, res) {
   }
 }
 
-module.exports = { login, me, register, changePassword, getUser, listUsers, updateUser, deleteUser };
+// POST /api/auth/users/avatar
+async function uploadAvatar(req, res) {
+  if (!req.file) return res.status(400).json({ error: 'Nenhuma imagem enviada' });
+  try {
+    const { uploadFile } = require('../services/r2Service');
+    const { url } = await uploadFile(req.file);
+    
+    const targetUserId = (req.user.role === 'admin' && req.body.userId) ? req.body.userId : req.user.id;
+
+    await pool.query('UPDATE users SET avatar_url = $1 WHERE id = $2', [url, targetUserId]);
+    res.json({ url });
+  } catch (err) {
+    console.error('Erro no upload de avatar:', err);
+    res.status(500).json({ error: 'Erro ao fazer upload da imagem de perfil' });
+  }
+}
+
+module.exports = { login, me, register, changePassword, getUser, listUsers, updateUser, deleteUser, uploadAvatar };

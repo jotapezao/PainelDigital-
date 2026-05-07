@@ -14,6 +14,7 @@ const Player = () => {
   const [showLogout, setShowLogout] = useState(false);
   const videoRef = useRef(null);
   const containerRef = useRef(null);
+  const currentMediaRef = useRef(null);
 
   useEffect(() => {
     fetchPlaylist();
@@ -24,15 +25,16 @@ const Player = () => {
       const sendHeartbeat = async () => {
         try {
           await api.post('/devices/heartbeat', {
-            player_status: 'playing',
+            player_status: isStarted ? 'playing' : 'stopped',
             ip_address: null, // browser doesn't expose IP directly
+            current_media: currentMediaRef.current
           });
         } catch (e) {
           console.error('Falha no sinal de vida');
         }
       };
       sendHeartbeat(); // Immediate heartbeat
-      heartbeat = setInterval(sendHeartbeat, 30000);
+      heartbeat = setInterval(sendHeartbeat, 20000); // 20 seconds
     }
 
     const interval = setInterval(fetchPlaylist, 2 * 60 * 1000);
@@ -41,7 +43,7 @@ const Player = () => {
       if (heartbeat) clearInterval(heartbeat);
       clearInterval(interval);
     };
-  }, [previewId]);
+  }, [previewId, isStarted]);
 
   const fetchPlaylist = async () => {
     try {
@@ -107,6 +109,7 @@ const Player = () => {
     if (!playlist || playlist.items.length === 0) return;
 
     const currentItem = playlist.items[currentIndex];
+    currentMediaRef.current = currentItem.media_name || currentItem.name || 'Mídia Desconhecida';
     
     if (currentItem.type === 'image') {
       const duration = (currentItem.duration_seconds || 10) * 1000;

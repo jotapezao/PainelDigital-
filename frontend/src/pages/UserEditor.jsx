@@ -29,6 +29,7 @@ const UserEditor = () => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
@@ -82,6 +83,26 @@ const UserEditor = () => {
     }
   };
 
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    if (!isNew) formData.append('userId', id);
+
+    setUploading(true);
+    try {
+      const res = await api.post('/auth/users/avatar', formData);
+      set('avatar_url', res.data.url);
+      addToast('success', 'Upload', 'Foto enviada com sucesso!');
+    } catch (err) {
+      addToast('error', 'Erro', 'Falha ao enviar a foto.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
 
   if (loading) return <div className="loading-screen">Carregando editor...</div>;
@@ -132,10 +153,22 @@ const UserEditor = () => {
             <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.875rem', fontWeight: '500', color: 'var(--text-muted)' }}>
               URL da Foto de Perfil
             </label>
-            <input type="url" value={form.avatar_url || ''} onChange={e => set('avatar_url', e.target.value)}
-              placeholder="https://exemplo.com/avatar.jpg" />
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input type="url" value={form.avatar_url || ''} onChange={e => set('avatar_url', e.target.value)}
+                placeholder="https://exemplo.com/avatar.jpg" style={{ flex: 1 }} />
+              
+              <input type="file" id="avatar_upload" style={{ display: 'none' }} accept="image/*" onChange={handleAvatarUpload} />
+              <button 
+                className="btn btn-outline" 
+                onClick={() => document.getElementById('avatar_upload').click()}
+                disabled={uploading}
+                title="Fazer Upload para nuvem (R2)"
+              >
+                {uploading ? '...' : '☁️ Upload'}
+              </button>
+            </div>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '6px' }}>
-              Cole a URL de uma imagem pública. A prévia é atualizada automaticamente.
+              Cole a URL de uma imagem pública ou faça upload para nossa nuvem R2.
             </p>
           </div>
         </div>

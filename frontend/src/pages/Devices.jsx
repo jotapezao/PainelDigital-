@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import ConfirmModal from '../components/ConfirmModal';
+import { io } from 'socket.io-client';
 
 const StatusDot = ({ status }) => {
   const colors = {
@@ -58,8 +59,31 @@ const Devices = () => {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 30000); // refresh a cada 30s
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchData, 30000); // fallback refresh
+    
+    // Real-time WebSocket connection
+    const socketUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:3001';
+    const socket = io(socketUrl);
+    
+    socket.on('device:status', (data) => {
+      setDevices(prev => prev.map(d => {
+        if (d.id === data.deviceId) {
+          return {
+            ...d,
+            status: data.status,
+            player_status: data.player_status,
+            current_media: data.current_media,
+            last_seen: new Date().toISOString()
+          };
+        }
+        return d;
+      }));
+    });
+
+    return () => {
+      clearInterval(interval);
+      socket.disconnect();
+    };
   }, [fetchData]);
 
   const handleDelete = async () => {
@@ -158,10 +182,21 @@ const Devices = () => {
               </div>
 
               <div style={{ backgroundColor: 'var(--bg-input)', borderRadius: 'var(--radius-md)', padding: '12px', marginBottom: '16px' }}>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginBottom: '4px' }}>Plano Atual</p>
-                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: '500' }}>
-                  {device.playlist_name || '— Nenhum —'}
-                </p>
+                <div style={{ marginBottom: '8px' }}>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginBottom: '2px' }}>Plano Atual</p>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: '500' }}>
+                    {device.playlist_name || '— Nenhum —'}
+                  </p>
+                </div>
+                {device.status === 'online' && (
+                  <div>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginBottom: '2px' }}>Transmitindo Agora</p>
+                    <p style={{ fontSize: '0.875rem', color: 'var(--primary)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {device.player_status === 'playing' ? <span style={{ animation: 'pulse 1.5s infinite' }}>▶️</span> : '⏸️'}
+                      {device.current_media || 'Carregando...'}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {device.last_seen && (
