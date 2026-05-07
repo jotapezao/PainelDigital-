@@ -229,6 +229,7 @@ const PlaylistEditor = () => {
         await api.put(`/playlists/${id}`, payload);
       } else {
         await api.post('/playlists', payload);
+      }
       addToast('success', 'Sucesso', 'Plano salvo com sucesso!');
       navigate('/playlists');
     } catch (err) {
