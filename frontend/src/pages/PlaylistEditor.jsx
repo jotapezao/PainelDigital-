@@ -451,8 +451,9 @@ const PlaylistEditor = () => {
               <div>
                 <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Estrutura da Tela</label>
                 <select value={layout} onChange={e => setLayout(e.target.value)} style={{ width: '100%', padding: '10px', background: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#fff', marginBottom: '16px' }}>
-                  <option value="fullscreen">Tela Cheia (Sem Rodapé)</option>
-                  <option value="with_footer">Com Barra Inferior (L)</option>
+                  <option value="fullscreen">Tela Cheia (Sem Textos)</option>
+                  <option value="with_footer">Com Barra Inferior (Fixa)</option>
+                  <option value="floating">Aviso Flutuante (Sobre a Mídia)</option>
                 </select>
               </div>
               <div>
@@ -527,27 +528,59 @@ const PlaylistEditor = () => {
                   <div onClick={() => setSelectedElement('social')} style={{ 
                     position: 'absolute', [socialPosition.split('-')[0]]: '40px', [socialPosition.split('-')[1]]: socialPosition.includes('center') ? '50%' : '40px',
                     transform: socialPosition.includes('center') ? 'translateX(-50%)' : 'none',
-                    background: `rgba(0,0,0,${cardTransparency})`, padding: '16px 24px', borderRadius: '20px', color: '#fff', backdropFilter: 'blur(20px)',
-                    border: selectedElement === 'social' ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.1)', cursor: 'move',
-                    display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 20px 40px rgba(0,0,0,0.4)'
+                    background: socialCardStyle === 'style2' ? '#fff' : socialCardStyle === 'style3' ? 'transparent' : `rgba(0,0,0,${cardTransparency})`, 
+                    padding: '16px 24px', borderRadius: '20px', 
+                    color: socialCardStyle === 'style2' ? '#000' : '#fff', 
+                    backdropFilter: socialCardStyle === 'style3' ? 'none' : 'blur(20px)',
+                    border: selectedElement === 'social' ? '2px solid #6366f1' : (socialCardStyle === 'style3' ? 'none' : '1px solid rgba(255,255,255,0.1)'), 
+                    cursor: 'move', display: 'flex', alignItems: 'center', gap: '16px', 
+                    boxShadow: socialCardStyle === 'style3' ? 'none' : '0 20px 40px rgba(0,0,0,0.4)'
                   }}>
-                    {socialQrcode && <div style={{ width: '60px', height: '60px', background: '#fff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontSize: '0.6rem', fontWeight: '900' }}>QR</div>}
+                    {socialQrcode && <div style={{ width: '60px', height: '60px', background: socialCardStyle === 'style2' ? '#f4f4f5' : '#fff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontSize: '0.6rem', fontWeight: '900' }}>QR</div>}
                     <div>
-                      <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Siga-nos</div>
+                      <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Siga-nos no {socialPlatform}</div>
                       <div style={{ fontSize: '1.4rem', fontWeight: '900', fontFamily: 'Outfit' }}>{socialHandle || '@instagram'}</div>
                     </div>
                   </div>
                 )}
 
-                {/* Footer / Ticker */}
-                {layout === 'with_footer' && (
-                  <div onClick={() => setSelectedElement('ticker')} style={{ 
-                    position: 'absolute', bottom: 0, width: '100%', height: `${tickerHeight}px`,
-                    background: `rgba(0,0,0,${footerOpacity})`, backdropFilter: 'blur(16px)', borderTop: '1px solid rgba(255,255,255,0.1)',
-                    display: 'flex', alignItems: 'center', zIndex: 20, border: selectedElement === 'ticker' ? '2px solid #6366f1' : 'none', cursor: 'pointer'
+                {/* Weather Widget */}
+                {showWeather && (
+                  <div onClick={() => setSelectedElement('weather')} style={{ 
+                    position: 'absolute', top: '40px', left: '40px',
+                    background: `rgba(0,0,0,${cardTransparency})`, padding: '20px', borderRadius: '24px', color: '#fff', backdropFilter: 'blur(20px)',
+                    border: selectedElement === 'weather' ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.1)', cursor: 'move',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', gap: '20px'
                   }}>
-                    <div style={{ padding: '0 30px', background: themeColor, height: '100%', display: 'flex', alignItems: 'center', fontWeight: '900', fontSize: '1.2rem', color: '#fff' }}>{tickerLabel}</div>
-                    <div style={{ flex: 1, padding: '0 30px', fontSize: footerFontSize, color: footerFontColor, fontWeight: tickerFontWeight }}>{footerText || 'Notícias e avisos aparecerão aqui...'}</div>
+                    <span style={{ fontSize: '3rem', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.3))' }}>⛅</span>
+                    <div>
+                      <div style={{ fontSize: '2.5rem', fontWeight: '900', lineHeight: 1, fontFamily: 'Outfit' }}>24°C</div>
+                      <div style={{ fontSize: '0.9rem', opacity: 0.8, marginTop: '4px' }}>Ensolarado</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Footer / Ticker */}
+                {(layout === 'with_footer' || layout === 'floating') && (
+                  <div onClick={() => setSelectedElement('ticker')} style={{ 
+                    position: 'absolute', 
+                    bottom: footerPosition === 'bottom' ? (layout === 'floating' ? '40px' : 0) : 'auto', 
+                    top: footerPosition === 'top' ? (layout === 'floating' ? '40px' : 0) : 'auto', 
+                    width: layout === 'floating' ? '90%' : '100%', 
+                    left: layout === 'floating' ? '5%' : '0',
+                    height: `${tickerHeight}px`,
+                    borderRadius: layout === 'floating' ? '24px' : '0',
+                    overflow: 'hidden',
+                    background: `rgba(0,0,0,${footerOpacity})`, backdropFilter: tickerBlur ? 'blur(16px)' : 'none', border: layout === 'floating' ? '1px solid rgba(255,255,255,0.1)' : 'borderTop: 1px solid rgba(255,255,255,0.1)',
+                    display: 'flex', alignItems: 'center', zIndex: 20, boxShadow: layout === 'floating' ? '0 20px 40px rgba(0,0,0,0.5)' : 'none', cursor: 'pointer',
+                    outline: selectedElement === 'ticker' ? '2px solid #6366f1' : 'none'
+                  }}>
+                    {tickerLabel && <div style={{ padding: '0 30px', background: themeColor, height: '100%', display: 'flex', alignItems: 'center', fontWeight: '900', fontSize: '1.2rem', color: '#fff' }}>{tickerLabel}</div>}
+                    <div style={{ flex: 1, padding: '0 30px', fontSize: footerFontSize, color: footerFontColor, fontWeight: tickerFontWeight, whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                      <div style={{ display: 'inline-block', animation: `marquee ${tickerSpeed === 'fast' ? '10s' : tickerSpeed === 'slow' ? '30s' : '20s'} linear infinite` }}>
+                        {footerText || 'Aviso importante! Digite seu texto nas propriedades e ele irá rolar aqui...'}
+                      </div>
+                    </div>
                   </div>
                 )}
              </div>
@@ -686,11 +719,29 @@ const PlaylistEditor = () => {
                   </select>
                 </div>
                 <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Estilo do Card</label>
+                  <select value={socialCardStyle} onChange={e => setSocialCardStyle(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
+                    <option value="style1">Escuro Glassmorphism</option>
+                    <option value="style2">Claro Opaco</option>
+                    <option value="style3">Minimalista (Sem Fundo)</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Posição na Tela</label>
+                  <select value={socialPosition} onChange={e => setSocialPosition(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
+                    <option value="bottom-right">Inferior Direito</option>
+                    <option value="bottom-left">Inferior Esquerdo</option>
+                    <option value="top-right">Superior Direito</option>
+                    <option value="top-left">Superior Esquerdo</option>
+                    <option value="bottom-center">Inferior Centro</option>
+                  </select>
+                </div>
+                <div>
                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>@ Usuário</label>
                   <input value={socialHandle} onChange={e => setSocialHandle(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }} />
                 </div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontSize: '0.85rem' }}>
-                  <input type="checkbox" checked={socialQrcode} onChange={e => setSocialQrcode(e.target.value)} style={{ width: '16px', height: '16px' }} />
+                  <input type="checkbox" checked={socialQrcode} onChange={e => setSocialQrcode(e.target.checked)} style={{ width: '16px', height: '16px' }} />
                   Gerar QR Code Automático
                 </label>
               </>

@@ -285,6 +285,9 @@ async function runMigrations() {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='ticker_blur') THEN 
           ALTER TABLE playlists ADD COLUMN ticker_blur BOOLEAN DEFAULT true; 
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='ticker_font_weight') THEN 
+          ALTER TABLE playlists ADD COLUMN ticker_font_weight VARCHAR(20) DEFAULT '600'; 
+        END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='show_social') THEN 
           ALTER TABLE playlists ADD COLUMN show_social BOOLEAN DEFAULT false; 
         END IF;
