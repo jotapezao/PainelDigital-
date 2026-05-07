@@ -149,31 +149,26 @@ const PlaylistEditor = () => {
     fetchData();
   }, [id, user]);
 
-  const toggleMedia = (media) => {
-    const exists = selectedItems.find(i => i.media_id === media.id);
-    if (exists) {
-      setSelectedItems(prev => prev.filter(i => i.media_id !== media.id));
-    } else {
-      setSelectedItems(prev => [...prev, {
-        media_id: media.id,
-        media: media,
-        duration: media.type === 'video' ? 0 : 10,
-        order: prev.length
-      }]);
-    }
+  const addMedia = (media) => {
+    setSelectedItems(prev => [...prev, {
+      media_id: media.id,
+      media: media,
+      duration: media.type === 'video' ? 0 : 10,
+    }]);
   };
 
-  const updateDuration = (mediaId, duration) => {
-    setSelectedItems(prev => prev.map(i =>
-      i.media_id === mediaId ? { ...i, duration: Math.max(1, parseInt(duration) || 1) } : i
-    ));
-  };
-
-  const moveUp = (idx) => {
-    if (idx === 0) return;
+  const updateDuration = (idx, duration) => {
     setSelectedItems(prev => {
       const copy = [...prev];
-      [copy[idx - 1], copy[idx]] = [copy[idx], copy[idx - 1]];
+      copy[idx].duration = Math.max(1, parseInt(duration) || 1);
+      return copy;
+    });
+  };
+
+  const removeMedia = (idx) => {
+    setSelectedItems(prev => {
+      const copy = [...prev];
+      copy.splice(idx, 1);
       return copy;
     });
   };
@@ -234,11 +229,11 @@ const PlaylistEditor = () => {
         await api.put(`/playlists/${id}`, payload);
       } else {
         await api.post('/playlists', payload);
-      }
       addToast('success', 'Sucesso', 'Plano salvo com sucesso!');
       navigate('/playlists');
     } catch (err) {
-      addToast('error', 'Erro', 'Falha ao salvar o plano.');
+      console.error('Save error:', err.response?.data || err.message);
+      addToast('error', 'Erro', err.response?.data?.error || 'Falha ao salvar o plano.');
     } finally {
       setSaving(false);
     }
@@ -345,7 +340,7 @@ const PlaylistEditor = () => {
               
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', overflowY: 'auto' }}>
                 {medias.map(m => (
-                  <div key={m.id} onClick={() => toggleMedia(m)} style={{ 
+                  <div key={m.id} onClick={() => addMedia(m)} style={{ 
                     position: 'relative', borderRadius: '12px', overflow: 'hidden', cursor: 'grab',
                     border: selectedItems.some(i => i.media_id === m.id) ? '2px solid #6366f1' : '1px solid #27272a',
                     aspectRatio: '16/9', background: '#000'
@@ -417,6 +412,58 @@ const PlaylistEditor = () => {
               </div>
             </div>
           )}
+
+          {activeTab === 'text' && (
+            <div style={{ padding: '24px' }}>
+              <h3 style={{ fontSize: '0.85rem', fontWeight: '800', textTransform: 'uppercase', color: '#a1a1aa', letterSpacing: '1px', marginBottom: '20px' }}>Textos / Rodapé</h3>
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Fonte do Rodapé</label>
+                <select value={footerFontFamily} onChange={e => setFooterFontFamily(e.target.value)} style={{ width: '100%', padding: '10px', background: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#fff', marginBottom: '16px' }}>
+                  <option value="Inter">Inter (Moderna)</option>
+                  <option value="Outfit">Outfit (Geométrica)</option>
+                  <option value="Roboto">Roboto (Clássica)</option>
+                  <option value="Playfair Display">Playfair (Elegante)</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Tamanho da Fonte</label>
+                <select value={footerFontSize} onChange={e => setFooterFontSize(e.target.value)} style={{ width: '100%', padding: '10px', background: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#fff', marginBottom: '16px' }}>
+                  <option value="1rem">Pequeno</option>
+                  <option value="1.5rem">Médio</option>
+                  <option value="2rem">Grande</option>
+                  <option value="2.5rem">Extra Grande</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Cor do Texto</label>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <input type="color" value={footerFontColor} onChange={e => setFooterFontColor(e.target.value)} style={{ width: '40px', height: '40px', padding: '0', border: 'none', borderRadius: '8px', cursor: 'pointer', background: 'none' }} />
+                  <input value={footerFontColor} onChange={e => setFooterFontColor(e.target.value)} style={{ flex: 1, padding: '10px', background: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#fff' }} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'zones' && (
+            <div style={{ padding: '24px' }}>
+              <h3 style={{ fontSize: '0.85rem', fontWeight: '800', textTransform: 'uppercase', color: '#a1a1aa', letterSpacing: '1px', marginBottom: '20px' }}>Layout / Zonas</h3>
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Estrutura da Tela</label>
+                <select value={layout} onChange={e => setLayout(e.target.value)} style={{ width: '100%', padding: '10px', background: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#fff', marginBottom: '16px' }}>
+                  <option value="fullscreen">Tela Cheia (Sem Rodapé)</option>
+                  <option value="with_footer">Com Barra Inferior (L)</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Posição do Rodapé</label>
+                <select value={footerPosition} onChange={e => setFooterPosition(e.target.value)} style={{ width: '100%', padding: '10px', background: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#fff', marginBottom: '16px' }}>
+                  <option value="bottom">Abaixo da Mídia</option>
+                  <option value="top">Acima da Mídia</option>
+                </select>
+              </div>
+            </div>
+          )}
+
         </div>
 
         {/* CENTER CANVA - LIVE PREVIEW & TIMELINE */}
@@ -514,7 +561,20 @@ const PlaylistEditor = () => {
             
             <div style={{ flex: 1, padding: '20px', display: 'flex', gap: '12px', overflowX: 'auto', alignItems: 'center' }}>
               {selectedItems.map((item, idx) => (
-                <div key={`${item.media_id}-${idx}`} style={{ 
+                <div key={`${item.media_id}-${idx}`} 
+                     draggable 
+                     onDragStart={(e) => e.dataTransfer.setData('text/plain', idx)} 
+                     onDragOver={(e) => e.preventDefault()} 
+                     onDrop={(e) => {
+                       e.preventDefault();
+                       const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+                       if (isNaN(fromIdx)) return;
+                       const newItems = [...selectedItems];
+                       const [moved] = newItems.splice(fromIdx, 1);
+                       newItems.splice(idx, 0, moved);
+                       setSelectedItems(newItems);
+                     }}
+                     style={{ 
                   height: '100px', width: `${Math.max(120, item.duration * 15)}px`, minWidth: '120px',
                   background: '#27272a', borderRadius: '8px', overflow: 'hidden', position: 'relative',
                   border: '1px solid #3f3f46', flexShrink: 0, cursor: 'grab'
@@ -523,8 +583,22 @@ const PlaylistEditor = () => {
                   <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '6px 8px', background: 'rgba(0,0,0,0.8)', fontSize: '0.65rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {item.media?.name}
                   </div>
-                  <div style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(0,0,0,0.8)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: '800', color: '#6366f1' }}>
-                    {item.duration}s
+                  <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '4px' }}>
+                    {item.media?.type !== 'video' && (
+                      <input 
+                        type="number" 
+                        min="1" 
+                        value={item.duration} 
+                        onChange={(e) => updateDuration(idx, e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ width: '40px', background: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '4px', color: '#6366f1', fontSize: '0.65rem', fontWeight: '800', textAlign: 'center' }} 
+                      />
+                    )}
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); removeMedia(idx); }} 
+                      style={{ background: 'rgba(255,0,0,0.8)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', padding: '2px 6px' }}>
+                      X
+                    </button>
                   </div>
                   {/* Pseudo-transição */}
                   {idx < selectedItems.length - 1 && (
@@ -532,7 +606,7 @@ const PlaylistEditor = () => {
                   )}
                 </div>
               ))}
-              <div style={{ height: '100px', width: '100px', border: '2px dashed #3f3f46', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#a1a1aa', flexShrink: 0 }}>
+              <div onClick={() => setActiveTab('medias')} style={{ height: '100px', width: '100px', border: '2px dashed #3f3f46', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#a1a1aa', flexShrink: 0 }}>
                 + Mídia
               </div>
             </div>
