@@ -36,11 +36,18 @@ const timeSince = (dateStr) => {
 };
 
 const UserMonitorCard = ({ user }) => {
-  const isOnline = true; // By definition in this list
-  const displayTime = user.session_start ? timeSince(user.session_start).replace(' atrás', '') : 'Recém logado';
-  const location = (user.location_city || user.location_district) 
-    ? `${user.location_district || 'Bairro desconhecido'} - ${user.location_city || 'Cidade'}`
-    : 'Localização aproximada (capturando...)';
+  const isOnline = true;
+  const displayTime = user.session_start ? timeSince(user.session_start).replace(' atrás', '') : 'Iniciando...';
+  
+  // Lógica de localização aprimorada
+  let location = 'Localização não disponível';
+  if (user.location_city && user.location_city !== 'Cidade não identificada') {
+    location = user.location_district && user.location_district !== 'Bairro não identificado'
+      ? `${user.location_district}, ${user.location_city}`
+      : user.location_city;
+  } else if (user.last_ip) {
+    location = `IP: ${user.last_ip}`;
+  }
 
   return (
     <div style={{

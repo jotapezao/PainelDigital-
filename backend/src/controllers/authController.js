@@ -44,17 +44,17 @@ async function login(req, res) {
     
     const loc = await resolveLocation(ip);
 
-    // Tenta por username OU email
+    // Tenta por username OU email - RESETANDO session_start para NOW() para marcar o início desta conexão real
     const { rows } = await pool.query(
       `UPDATE users SET 
         last_seen = NOW(), 
         last_ip = $2,
-        location_city = COALESCE($3, location_city),
-        location_district = COALESCE($4, location_district),
-        session_start = COALESCE(session_start, NOW())
+        location_city = $3,
+        location_district = $4,
+        session_start = NOW()
        WHERE (username = $1 OR email = $1) AND active = true 
        RETURNING *`,
-      [identifier.toLowerCase().trim(), ip, loc?.city || null, loc?.district || null]
+      [identifier.toLowerCase().trim(), ip, loc?.city || 'Cidade não identificada', loc?.district || 'Bairro não identificado']
     );
     if (rows.length === 0) {
       return res.status(401).json({ error: 'Credenciais inválidas' });
