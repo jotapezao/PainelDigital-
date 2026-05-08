@@ -15,7 +15,7 @@ const PlaylistEditor = () => {
   const [clientId, setClientId] = useState('');
   const [groupId, setGroupId] = useState('');
   const [selectedItems, setSelectedItems] = useState([]);
-  const [activeTab, setActiveTab] = useState('info');
+  const [activeTab, setActiveTab] = useState('medias');
   const [layout, setLayout] = useState('fullscreen');
   const [footerText, setFooterText] = useState('');
   const [showClock, setShowClock] = useState(false);
@@ -69,6 +69,20 @@ const PlaylistEditor = () => {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // Widget sizes
+  const [clockSize, setClockSize] = useState(100);
+  const [weatherSize, setWeatherSize] = useState(100);
+  const [socialSize, setSocialSize] = useState(100);
+  // Widget display timing (minutes, 0=always)
+  const [clockInterval, setClockInterval] = useState(0);
+  const [weatherInterval, setWeatherInterval] = useState(0);
+  const [socialInterval, setSocialInterval] = useState(0);
+  // Widget entrance effect
+  const [clockEffect, setClockEffect] = useState('fade');
+  const [weatherEffect, setWeatherEffect] = useState('fade');
+  const [socialEffect, setSocialEffect] = useState('fade');
+  // Ticker/Notícias state (moved here from separate tab)
+  const [showTicker, setShowTicker] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -230,8 +244,8 @@ const PlaylistEditor = () => {
       } else {
         await api.post('/playlists', payload);
       }
-      addToast('success', 'Sucesso', 'Plano salvo com sucesso!');
-      navigate('/playlists');
+      addToast('success', 'Sucesso', '✅ Plano salvo com sucesso!');
+      if (id === 'new') navigate('/playlists');
     } catch (err) {
       console.error('Save error:', err.response?.data || err.message);
       addToast('error', 'Erro', err.response?.data?.error || 'Falha ao salvar o plano.');
@@ -265,7 +279,7 @@ const PlaylistEditor = () => {
     addToast('info', 'Preset Aplicado', `Configurações do modo ${preset} aplicadas.`);
   };
 
-  if (loading) return <div className="loading-screen">Sincronizando editor...</div>;
+
 
   return (
     <div className="animate-fade-in" style={{ height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column', background: '#09090b', color: '#fff', margin: '-24px', overflow: 'hidden' }}>
@@ -298,7 +312,6 @@ const PlaylistEditor = () => {
             { id: 'medias', icon: '🖼️', label: 'Mídias' },
             { id: 'themes', icon: '✨', label: 'Temas' },
             { id: 'widgets', icon: '🧩', label: 'Widgets' },
-            { id: 'text', icon: 'T', label: 'Textos' },
             { id: 'overlays', icon: '🌘', label: 'Efeitos' },
             { id: 'zones', icon: '🪟', label: 'Zonas' },
           ].map(tab => (
@@ -357,32 +370,179 @@ const PlaylistEditor = () => {
           )}
 
           {activeTab === 'widgets' && (
-            <div style={{ padding: '24px' }}>
-              <h3 style={{ fontSize: '0.85rem', fontWeight: '800', textTransform: 'uppercase', color: '#a1a1aa', letterSpacing: '1px', marginBottom: '20px' }}>Widgets Dinâmicos</h3>
-              <p style={{ fontSize: '0.75rem', color: '#71717a', marginBottom: '20px' }}>Clique em um widget para adicioná-lo à tela (Mockup).</p>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
-                <div onClick={() => { setShowClock(!showClock); setSelectedElement('clock'); }} style={{ padding: '16px', background: '#18181b', borderRadius: '12px', border: showClock ? '1px solid #6366f1' : '1px solid #27272a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '1.5rem' }}>⌚</span>
-                  <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: '700' }}>Relógio Digital</div>
-                    <div style={{ fontSize: '0.7rem', color: '#71717a' }}>Vários estilos e fontes</div>
+            <div style={{ padding: '20px' }}>
+              <h3 style={{ fontSize: '0.85rem', fontWeight: '800', textTransform: 'uppercase', color: '#a1a1aa', letterSpacing: '1px', marginBottom: '16px' }}>Widgets Dinâmicos</h3>
+              <p style={{ fontSize: '0.72rem', color: '#71717a', marginBottom: '16px' }}>Clique para ativar. Clique no widget no canvas para editar propriedades.</p>
+
+              {/* Clock */}
+              <div style={{ marginBottom: '12px', padding: '14px', background: '#18181b', borderRadius: '12px', border: showClock ? '1px solid #6366f1' : '1px solid #27272a' }}>
+                <div onClick={() => { setShowClock(!showClock); setSelectedElement('clock'); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: showClock ? '12px' : '0' }}>
+                  <span style={{ fontSize: '1.3rem' }}>⌚</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.88rem', fontWeight: '700' }}>Relógio Digital</div>
+                    <div style={{ fontSize: '0.68rem', color: '#71717a' }}>Vários estilos e fontes</div>
+                  </div>
+                  <div style={{ width: '36px', height: '20px', borderRadius: '10px', background: showClock ? '#6366f1' : '#3f3f46', position: 'relative', transition: 'background 0.2s' }}>
+                    <div style={{ position: 'absolute', top: '2px', left: showClock ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }}></div>
                   </div>
                 </div>
-                <div onClick={() => { setShowWeather(!showWeather); setSelectedElement('weather'); }} style={{ padding: '16px', background: '#18181b', borderRadius: '12px', border: showWeather ? '1px solid #6366f1' : '1px solid #27272a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '1.5rem' }}>⛅</span>
-                  <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: '700' }}>Previsão do Tempo</div>
-                    <div style={{ fontSize: '0.7rem', color: '#71717a' }}>Ícones animados</div>
+                {showClock && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Tamanho: {clockSize}%</label>
+                      <input type="range" min="50" max="200" value={clockSize} onChange={e => setClockSize(parseInt(e.target.value))} style={{ width: '130px' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir a cada (min):</label>
+                      <select value={clockInterval} onChange={e => setClockInterval(parseInt(e.target.value))} style={{ padding: '4px 8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                        <option value={0}>Sempre visível</option>
+                        <option value={5}>5 minutos</option>
+                        <option value={10}>10 minutos</option>
+                        <option value={15}>15 minutos</option>
+                        <option value={30}>30 minutos</option>
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Efeito entrada:</label>
+                      <select value={clockEffect} onChange={e => setClockEffect(e.target.value)} style={{ padding: '4px 8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                        <option value="fade">Fade</option>
+                        <option value="slide">Slide</option>
+                        <option value="bounce">Bounce</option>
+                        <option value="zoom">Zoom</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Weather */}
+              <div style={{ marginBottom: '12px', padding: '14px', background: '#18181b', borderRadius: '12px', border: showWeather ? '1px solid #6366f1' : '1px solid #27272a' }}>
+                <div onClick={() => { setShowWeather(!showWeather); setSelectedElement('weather'); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: showWeather ? '12px' : '0' }}>
+                  <span style={{ fontSize: '1.3rem' }}>⛅</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.88rem', fontWeight: '700' }}>Previsão do Tempo</div>
+                    <div style={{ fontSize: '0.68rem', color: '#71717a' }}>Ícones animados</div>
+                  </div>
+                  <div style={{ width: '36px', height: '20px', borderRadius: '10px', background: showWeather ? '#6366f1' : '#3f3f46', position: 'relative', transition: 'background 0.2s' }}>
+                    <div style={{ position: 'absolute', top: '2px', left: showWeather ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }}></div>
                   </div>
                 </div>
-                <div onClick={() => { setShowSocial(!showSocial); setSelectedElement('social'); }} style={{ padding: '16px', background: '#18181b', borderRadius: '12px', border: showSocial ? '1px solid #6366f1' : '1px solid #27272a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '1.5rem' }}>📱</span>
-                  <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: '700' }}>Card Social / QR</div>
-                    <div style={{ fontSize: '0.7rem', color: '#71717a' }}>Engajamento instantâneo</div>
+                {showWeather && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Tamanho: {weatherSize}%</label>
+                      <input type="range" min="50" max="200" value={weatherSize} onChange={e => setWeatherSize(parseInt(e.target.value))} style={{ width: '130px' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir a cada (min):</label>
+                      <select value={weatherInterval} onChange={e => setWeatherInterval(parseInt(e.target.value))} style={{ padding: '4px 8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                        <option value={0}>Sempre visível</option>
+                        <option value={5}>5 minutos</option>
+                        <option value={10}>10 minutos</option>
+                        <option value={30}>30 minutos</option>
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Efeito entrada:</label>
+                      <select value={weatherEffect} onChange={e => setWeatherEffect(e.target.value)} style={{ padding: '4px 8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                        <option value="fade">Fade</option>
+                        <option value="slide">Slide</option>
+                        <option value="bounce">Bounce</option>
+                        <option value="zoom">Zoom</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Social */}
+              <div style={{ marginBottom: '12px', padding: '14px', background: '#18181b', borderRadius: '12px', border: showSocial ? '1px solid #6366f1' : '1px solid #27272a' }}>
+                <div onClick={() => { setShowSocial(!showSocial); setSelectedElement('social'); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: showSocial ? '12px' : '0' }}>
+                  <span style={{ fontSize: '1.3rem' }}>📱</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.88rem', fontWeight: '700' }}>Card Social / QR</div>
+                    <div style={{ fontSize: '0.68rem', color: '#71717a' }}>Engajamento instantâneo</div>
+                  </div>
+                  <div style={{ width: '36px', height: '20px', borderRadius: '10px', background: showSocial ? '#6366f1' : '#3f3f46', position: 'relative', transition: 'background 0.2s' }}>
+                    <div style={{ position: 'absolute', top: '2px', left: showSocial ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }}></div>
                   </div>
                 </div>
+                {showSocial && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Tamanho: {socialSize}%</label>
+                      <input type="range" min="50" max="200" value={socialSize} onChange={e => setSocialSize(parseInt(e.target.value))} style={{ width: '130px' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir a cada (min):</label>
+                      <select value={socialInterval} onChange={e => setSocialInterval(parseInt(e.target.value))} style={{ padding: '4px 8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                        <option value={0}>Sempre visível</option>
+                        <option value={5}>5 minutos</option>
+                        <option value={10}>10 minutos</option>
+                        <option value={30}>30 minutos</option>
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Efeito entrada:</label>
+                      <select value={socialEffect} onChange={e => setSocialEffect(e.target.value)} style={{ padding: '4px 8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                        <option value="fade">Fade</option>
+                        <option value="slide">Slide</option>
+                        <option value="bounce">Bounce</option>
+                        <option value="zoom">Zoom</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Ticker / Notícias */}
+              <div style={{ padding: '14px', background: '#18181b', borderRadius: '12px', border: (layout !== 'fullscreen') ? '1px solid #6366f1' : '1px solid #27272a' }}>
+                <div onClick={() => { setLayout(layout === 'fullscreen' ? 'floating' : 'fullscreen'); setSelectedElement('ticker'); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: layout !== 'fullscreen' ? '12px' : '0' }}>
+                  <span style={{ fontSize: '1.3rem' }}>📰</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.88rem', fontWeight: '700' }}>Texto / Notícias</div>
+                    <div style={{ fontSize: '0.68rem', color: '#71717a' }}>Ticker rolante e avisos</div>
+                  </div>
+                  <div style={{ width: '36px', height: '20px', borderRadius: '10px', background: layout !== 'fullscreen' ? '#6366f1' : '#3f3f46', position: 'relative', transition: 'background 0.2s' }}>
+                    <div style={{ position: 'absolute', top: '2px', left: layout !== 'fullscreen' ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }}></div>
+                  </div>
+                </div>
+                {layout !== 'fullscreen' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <textarea value={footerText} onChange={e => setFooterText(e.target.value)} placeholder="Digite o texto que vai rolar..." rows={3} style={{ width: '100%', padding: '8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff', resize: 'none', fontSize: '0.8rem' }} />
+                    <select value={layout} onChange={e => setLayout(e.target.value)} style={{ width: '100%', padding: '8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff', fontSize: '0.8rem' }}>
+                      <option value="with_footer">Barra Inferior Fixa</option>
+                      <option value="floating">Aviso Flutuante</option>
+                    </select>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Fonte:</label>
+                      <select value={footerFontFamily} onChange={e => setFooterFontFamily(e.target.value)} style={{ padding: '4px 8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                        <option value="Inter">Inter</option>
+                        <option value="Outfit">Outfit</option>
+                        <option value="Roboto">Roboto</option>
+                        <option value="Playfair Display">Playfair</option>
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Velocidade:</label>
+                      <select value={tickerSpeed} onChange={e => setTickerSpeed(e.target.value)} style={{ padding: '4px 8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                        <option value="slow">Lento</option>
+                        <option value="medium">Normal</option>
+                        <option value="fast">Rápido</option>
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Cor texto:</label>
+                      <input type="color" value={footerFontColor} onChange={e => setFooterFontColor(e.target.value)} style={{ width: '32px', height: '28px', padding: '0', border: 'none', borderRadius: '6px', cursor: 'pointer' }} />
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Título:</label>
+                      <input value={tickerLabel} onChange={e => setTickerLabel(e.target.value)} style={{ flex: 1, padding: '4px 8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.75rem', color: '#a1a1aa' }}>
+                      <input type="checkbox" checked={tickerBlur} onChange={e => setTickerBlur(e.target.checked)} style={{ width: '14px', height: '14px' }} />
+                      Fundo com blur (glassmorphism)
+                    </label>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -513,7 +673,8 @@ const PlaylistEditor = () => {
                 {showClock && (
                   <div onClick={() => setSelectedElement('clock')} style={{ 
                     position: 'absolute', [widgetPosition.split('-')[0]]: '40px', [widgetPosition.split('-')[1]]: widgetPosition.includes('center') ? '50%' : '40px',
-                    transform: widgetPosition.includes('center') ? 'translateX(-50%)' : 'none',
+                    transform: `${widgetPosition.includes('center') ? 'translateX(-50%) ' : ''}scale(${clockSize / 100})`,
+                    transformOrigin: `${widgetPosition.split('-')[0]} ${widgetPosition.split('-')[1]}`,
                     background: `rgba(0,0,0,${cardTransparency})`, padding: '24px 36px', borderRadius: '24px', color: '#fff', backdropFilter: 'blur(20px)',
                     border: selectedElement === 'clock' ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.1)', cursor: 'move',
                     boxShadow: '0 20px 40px rgba(0,0,0,0.4)'
@@ -527,7 +688,8 @@ const PlaylistEditor = () => {
                 {showSocial && (
                   <div onClick={() => setSelectedElement('social')} style={{ 
                     position: 'absolute', [socialPosition.split('-')[0]]: '40px', [socialPosition.split('-')[1]]: socialPosition.includes('center') ? '50%' : '40px',
-                    transform: socialPosition.includes('center') ? 'translateX(-50%)' : 'none',
+                    transform: `${socialPosition.includes('center') ? 'translateX(-50%) ' : ''}scale(${socialSize / 100})`,
+                    transformOrigin: `${socialPosition.split('-')[0]} ${socialPosition.split('-')[1]}`,
                     background: socialCardStyle === 'style2' ? '#fff' : socialCardStyle === 'style3' ? 'transparent' : `rgba(0,0,0,${cardTransparency})`, 
                     padding: '16px 24px', borderRadius: '20px', 
                     color: socialCardStyle === 'style2' ? '#000' : '#fff', 
@@ -548,6 +710,7 @@ const PlaylistEditor = () => {
                 {showWeather && (
                   <div onClick={() => setSelectedElement('weather')} style={{ 
                     position: 'absolute', top: '40px', left: '40px',
+                    transform: `scale(${weatherSize / 100})`, transformOrigin: 'top left',
                     background: `rgba(0,0,0,${cardTransparency})`, padding: '20px', borderRadius: '24px', color: '#fff', backdropFilter: 'blur(20px)',
                     border: selectedElement === 'weather' ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.1)', cursor: 'move',
                     boxShadow: '0 20px 40px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', gap: '20px'
@@ -665,11 +828,20 @@ const PlaylistEditor = () => {
               <>
                 <div>
                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Empresa / Cliente</label>
-                  <select value={clientId} onChange={e => setClientId(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
+                  <select value={clientId} onChange={e => { setClientId(e.target.value); setGroupId(''); }} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
                     <option value="">— Selecionar Empresa —</option>
                     {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
+                {groups.length > 0 && (
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>ou Grupo de Clientes</label>
+                    <select value={groupId} onChange={e => { setGroupId(e.target.value); if (e.target.value) setClientId(''); }} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
+                      <option value="">— Selecionar Grupo —</option>
+                      {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                    </select>
+                  </div>
+                )}
                 
                 <div>
                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Cor da Marca (Global)</label>
