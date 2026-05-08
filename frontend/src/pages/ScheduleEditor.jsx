@@ -123,13 +123,13 @@ const ScheduleEditor = () => {
             </select>
           </div>
         </div>
-          <div className="input-group">
-            <label>Plano de Exibição *</label>
-            <select value={form.playlist_id} onChange={e => setForm(p => ({ ...p, playlist_id: e.target.value }))}>
-              <option value="">— Selecione o Plano —</option>
-              {playlists.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </div>
+
+        <div className="input-group">
+          <label>Plano de Exibição *</label>
+          <select value={form.playlist_id} onChange={e => setForm(p => ({ ...p, playlist_id: e.target.value }))}>
+            <option value="">— Selecione o Plano —</option>
+            {playlists.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
         </div>
 
         <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
