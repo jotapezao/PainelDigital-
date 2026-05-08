@@ -56,6 +56,16 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// OTA Version Check - Digital Signage App
+app.get('/api/app-version', (req, res) => {
+  res.json({
+    latestVersion: '1.0.1', // INCREMENTE AQUI PARA NOTIFICAR OS DISPOSITIVOS
+    url: 'https://github.com/seu-usuario/seu-repositorio/releases/latest/download/base.apk', // LINK DIRETO DO APK NO GITHUB
+    force: false, 
+    message: 'Temos uma nova versão disponível com melhorias de performance e layout!'
+  });
+});
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/clients', clientRoutes);

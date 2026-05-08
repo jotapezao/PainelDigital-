@@ -110,83 +110,139 @@ const Login = () => {
           100% { transform: translate(5%, 5%) scale(1.1); }
         }
         .login-card {
-          background: rgba(24, 24, 27, 0.6);
+          background: rgba(24, 24, 27, 0.7);
           backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          border-radius: 24px;
-          padding: 48px;
-          width: 100%;
-          maxWidth: 440px;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 28px;
+          padding: 40px;
+          width: 90%;
+          max-width: 400px;
+          max-height: 90vh;
+          overflow-y: auto;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
           position: relative;
           z-index: 10;
+          transition: all 0.3s ease;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255,255,255,0.1) transparent;
+        }
+        .login-card::-webkit-scrollbar {
+          width: 6px;
+        }
+        .login-card::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.1);
+          border-radius: 10px;
+        }
+        @media (max-width: 480px) or (max-height: 500px) {
+          .login-card {
+            padding: 24px;
+            border-radius: 24px;
+          }
+          .login-header {
+            margin-bottom: 20px !important;
+          }
+          .login-logo {
+            width: 48px !important;
+            height: 48px !important;
+            margin-bottom: 12px !important;
+          }
+          .login-logo img {
+            width: 32px !important;
+            height: 32px !important;
+          }
+          .login-title {
+            font-size: 1.5rem !important;
+          }
+          .login-input {
+            padding: 10px 14px !important;
+            font-size: 0.9rem !important;
+          }
+          .login-button {
+            padding: 12px !important;
+            margin-top: 16px !important;
+          }
         }
         .login-input {
           width: 100%;
           padding: 14px 16px;
           background: rgba(39, 39, 42, 0.5);
           border: 1px solid rgba(63, 63, 70, 0.5);
-          border-radius: 12px;
+          border-radius: 14px;
           color: #fff;
           font-size: 1rem;
-          transition: all 0.2s;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
           margin-top: 8px;
         }
         .login-input:focus {
           outline: none;
           border-color: #6366f1;
           background: rgba(39, 39, 42, 0.8);
-          box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+          box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
         }
         .login-button {
           width: 100%;
           padding: 16px;
-          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+          background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
           border: none;
-          border-radius: 12px;
+          border-radius: 14px;
           color: #fff;
-          font-size: 1rem;
+          font-size: 1.05rem;
           font-weight: 700;
           cursor: pointer;
-          transition: all 0.3s;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           margin-top: 24px;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 10px;
+          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
         .login-button:hover {
           transform: translateY(-2px);
-          box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.5);
+          box-shadow: 0 12px 24px -10px rgba(99, 102, 241, 0.5);
           filter: brightness(1.1);
         }
         .login-button:active {
           transform: translateY(0);
         }
         .login-button:disabled {
-          opacity: 0.7;
+          opacity: 0.6;
           cursor: not-allowed;
+        }
+        .spinner {
+          width: 18px;
+          height: 18px;
+          border: 2px solid rgba(255,255,255,0.3);
+          border-top-color: #fff;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
       `}</style>
 
       <div className="login-card animate-fade-in">
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <div style={{ 
-            width: '64px', 
-            height: '64px', 
-            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', 
-            borderRadius: '16px', 
+        <div className="login-header" style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div className="login-logo" style={{ 
+            width: '80px', 
+            height: '80px', 
+            background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', 
+            borderRadius: '20px', 
             margin: '0 auto 20px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '2rem',
-            boxShadow: '0 10px 20px -5px rgba(99, 102, 241, 0.4)'
-          }}>📺</div>
-          <h1 style={{ 
+            boxShadow: '0 12px 24px -8px rgba(99, 102, 241, 0.5)',
+            overflow: 'hidden',
+            border: '1px solid rgba(255,255,255,0.1)'
+          }}>
+             <img src="./logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+          <h1 className="login-title" style={{ 
             fontSize: '2.25rem', 
             fontWeight: '900', 
-            letterSpacing: '-0.025em',
+            letterSpacing: '-0.04em',
             marginBottom: '8px', 
             background: 'linear-gradient(to right, #fff, #a1a1aa)', 
             WebkitBackgroundClip: 'text', 
@@ -194,7 +250,7 @@ const Login = () => {
           }}>
             Painel Digital
           </h1>
-          <p style={{ color: '#a1a1aa', fontWeight: '500' }}>Bem-vindo de volta ao centro de controle</p>
+          <p style={{ color: '#a1a1aa', fontWeight: '500', fontSize: '0.9rem', lineHeight: '1.4' }}>Controle suas telas de qualquer lugar com inteligência</p>
         </div>
 
         <TvModeBanner />

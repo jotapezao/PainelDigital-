@@ -12,8 +12,20 @@ export const AuthProvider = ({ children }) => {
     const storagedToken = localStorage.getItem('@DigitalSignage:token') || sessionStorage.getItem('@DigitalSignage:token');
 
     if (storagedUser && storagedToken) {
-      setUser(JSON.parse(storagedUser));
-      api.defaults.headers.Authorization = `Bearer ${storagedToken}`;
+      try {
+        // Anti-crash: If storagedUser is "undefined" or invalid, JSON.parse will throw
+        const parsedUser = JSON.parse(storagedUser);
+        if (parsedUser) {
+          setUser(parsedUser);
+          api.defaults.headers.Authorization = `Bearer ${storagedToken}`;
+        } else {
+          // If parsed is null/empty, clear it
+          logout();
+        }
+      } catch (e) {
+        console.error('Falha ao restaurar sessão:', e);
+        logout(); // Clear corrupted data
+      }
     }
     
     setLoading(false);
@@ -24,6 +36,10 @@ export const AuthProvider = ({ children }) => {
       const response = await api.post('/auth/login', { login: loginIdentifier, password });
       
       const { user, token } = response.data;
+
+      if (!user || !token) {
+        throw new Error('Dados de autenticação inválidos recebidos do servidor');
+      }
 
       const storage = remember ? localStorage : sessionStorage;
 
@@ -37,7 +53,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { 
         success: false, 
-        message: error.response?.data?.error || error.response?.data?.message || 'Erro ao realizar login' 
+        message: error.response?.data?.error || error.response?.data?.message || error.message || 'Erro ao realizar login' 
       };
     }
   }

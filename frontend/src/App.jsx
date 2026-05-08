@@ -35,10 +35,13 @@ const RoleRedirect = () => {
   return user?.role === 'client' ? <Navigate to="/player" /> : <Dashboard />;
 };
 
+import UpdateManager from './components/UpdateManager';
+
 function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <UpdateManager />
         <ToastProvider>
         <Router>
           <Routes>
