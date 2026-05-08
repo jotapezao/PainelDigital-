@@ -50,13 +50,13 @@ async function getById(req, res) {
 
 // POST /api/schedules
 async function create(req, res) {
-  const { device_id, playlist_id, name, start_datetime, end_datetime, days_of_week, start_time, end_time } = req.body;
+  const { device_id, group_id, playlist_id, name, start_datetime, end_datetime, days_of_week, start_time, end_time } = req.body;
   if (!playlist_id) return res.status(400).json({ error: 'playlist_id é obrigatório' });
   try {
     const { rows } = await pool.query(
-      `INSERT INTO schedules (device_id, playlist_id, name, start_datetime, end_datetime, days_of_week, start_time, end_time)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [device_id || null, playlist_id, name || null, start_datetime || null, end_datetime || null,
+      `INSERT INTO schedules (device_id, group_id, playlist_id, name, start_datetime, end_datetime, days_of_week, start_time, end_time)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [device_id || null, group_id || null, playlist_id, name || null, start_datetime || null, end_datetime || null,
         days_of_week || [0,1,2,3,4,5,6], start_time || null, end_time || null]
     );
     res.status(201).json(rows[0]);
@@ -68,13 +68,13 @@ async function create(req, res) {
 
 // PUT /api/schedules/:id
 async function update(req, res) {
-  const { name, device_id, playlist_id, start_datetime, end_datetime, days_of_week, start_time, end_time, active } = req.body;
+  const { name, device_id, group_id, playlist_id, start_datetime, end_datetime, days_of_week, start_time, end_time, active } = req.body;
   try {
     const { rows } = await pool.query(
-      `UPDATE schedules SET name=$1, device_id=$2, playlist_id=$3, start_datetime=$4, end_datetime=$5,
-       days_of_week=$6, start_time=$7, end_time=$8, active=$9, updated_at=NOW()
-       WHERE id=$10 RETURNING *`,
-      [name || null, device_id || null, playlist_id, start_datetime || null, end_datetime || null,
+      `UPDATE schedules SET name=$1, device_id=$2, group_id=$3, playlist_id=$4, start_datetime=$5, end_datetime=$6,
+       days_of_week=$7, start_time=$8, end_time=$9, active=$10, updated_at=NOW()
+       WHERE id=$11 RETURNING *`,
+      [name || null, device_id || null, group_id || null, playlist_id, start_datetime || null, end_datetime || null,
        days_of_week || [0,1,2,3,4,5,6], start_time || null, end_time || null,
        active !== false, req.params.id]
     );

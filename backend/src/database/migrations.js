@@ -319,6 +319,65 @@ async function runMigrations() {
           ALTER TABLE playlists ADD COLUMN social_card_style VARCHAR(20) DEFAULT 'style1'; 
         END IF;
 
+        -- Add group_id to schedules
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schedules' AND column_name='group_id') THEN 
+          ALTER TABLE schedules ADD COLUMN group_id UUID REFERENCES device_groups(id) ON DELETE CASCADE; 
+        END IF;
+
+        -- NEW V3 COLUMNS
+
+        -- NEW V3 COLUMNS
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='clock_size') THEN 
+          ALTER TABLE playlists ADD COLUMN clock_size INTEGER DEFAULT 100; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='weather_size') THEN 
+          ALTER TABLE playlists ADD COLUMN weather_size INTEGER DEFAULT 100; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='social_size') THEN 
+          ALTER TABLE playlists ADD COLUMN social_size INTEGER DEFAULT 100; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='clock_interval') THEN 
+          ALTER TABLE playlists ADD COLUMN clock_interval INTEGER DEFAULT 0; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='weather_interval') THEN 
+          ALTER TABLE playlists ADD COLUMN weather_interval INTEGER DEFAULT 0; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='social_interval') THEN 
+          ALTER TABLE playlists ADD COLUMN social_interval INTEGER DEFAULT 0; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='clock_duration') THEN 
+          ALTER TABLE playlists ADD COLUMN clock_duration INTEGER DEFAULT 0; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='weather_duration') THEN 
+          ALTER TABLE playlists ADD COLUMN weather_duration INTEGER DEFAULT 0; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='social_duration') THEN 
+          ALTER TABLE playlists ADD COLUMN social_duration INTEGER DEFAULT 0; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='ticker_interval') THEN 
+          ALTER TABLE playlists ADD COLUMN ticker_interval INTEGER DEFAULT 0; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='ticker_duration') THEN 
+          ALTER TABLE playlists ADD COLUMN ticker_duration INTEGER DEFAULT 0; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='clock_effect') THEN 
+          ALTER TABLE playlists ADD COLUMN clock_effect VARCHAR(50) DEFAULT 'fade'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='weather_effect') THEN 
+          ALTER TABLE playlists ADD COLUMN weather_effect VARCHAR(50) DEFAULT 'fade'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='social_effect') THEN 
+          ALTER TABLE playlists ADD COLUMN social_effect VARCHAR(50) DEFAULT 'fade'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='clock_style') THEN 
+          ALTER TABLE playlists ADD COLUMN clock_style VARCHAR(50) DEFAULT 'digital_transparent'; 
+        END IF;
+        
+        -- Add transition column to playlist_items
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlist_items' AND column_name='transition') THEN 
+          ALTER TABLE playlist_items ADD COLUMN transition VARCHAR(50) DEFAULT 'fade'; 
+        END IF;
+
         -- Add theme_color to clients
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='theme_color') THEN 
           ALTER TABLE clients ADD COLUMN theme_color VARCHAR(20) DEFAULT '#6366f1'; 

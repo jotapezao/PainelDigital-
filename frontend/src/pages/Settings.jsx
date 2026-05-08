@@ -102,13 +102,44 @@ const Settings = () => {
             </div>
             
             <div className="input-group">
-              <label>URL da Logotipo <span className="info-icon" title="URL da imagem da logo do sistema">?</span></label>
-              <input 
-                type="text" 
-                value={settings.logo_url} 
-                onChange={e => setSettings({...settings, logo_url: e.target.value})}
-                placeholder="https://exemplo.com/logo.png"
-              />
+              <label>Logotipo do Sistema <span className="info-icon" title="Imagem da logo do sistema (recomendado PNG transparente)">?</span></label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '8px' }}>
+                {settings.logo_url && (
+                  <div style={{ width: '60px', height: '60px', background: '#27272a', borderRadius: '8px', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <img src={settings.logo_url} alt="Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                  </div>
+                )}
+                <div style={{ flex: 1 }}>
+                  <input 
+                    type="file" 
+                    id="logo-upload"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      const formData = new FormData();
+                      formData.append('file', file);
+                      try {
+                        const token = localStorage.getItem('token');
+                        const res = await axios.post('/api/settings/logo', formData, {
+                          headers: { 
+                            'Content-Type': 'multipart/form-data',
+                            Authorization: `Bearer ${token}` 
+                          }
+                        });
+                        setSettings({ ...settings, logo_url: res.data.url });
+                        addToast('Logo carregada com sucesso!', 'success');
+                      } catch (err) {
+                        addToast('Erro ao carregar logo', 'error');
+                      }
+                    }}
+                    style={{ display: 'none' }}
+                  />
+                  <label htmlFor="logo-upload" className="btn btn-outline" style={{ cursor: 'pointer', display: 'inline-block' }}>
+                    {settings.logo_url ? 'Alterar Logo' : 'Selecionar Logo'}
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
 

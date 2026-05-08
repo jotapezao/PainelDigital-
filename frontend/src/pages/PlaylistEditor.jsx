@@ -81,8 +81,14 @@ const PlaylistEditor = () => {
   const [clockEffect, setClockEffect] = useState('fade');
   const [weatherEffect, setWeatherEffect] = useState('fade');
   const [socialEffect, setSocialEffect] = useState('fade');
+  const [clockStyle, setClockStyle] = useState('digital_transparent');
   // Ticker/Notícias state (moved here from separate tab)
   const [showTicker, setShowTicker] = useState(false);
+  const [tickerInterval, setTickerInterval] = useState(0);
+  const [tickerDuration, setTickerDuration] = useState(0);
+  const [clockDuration, setClockDuration] = useState(0);
+  const [weatherDuration, setWeatherDuration] = useState(0);
+  const [socialDuration, setSocialDuration] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -153,6 +159,23 @@ const PlaylistEditor = () => {
           setLogoSizePx(p.logo_size_px || 80);
           setLogoOpacity(p.logo_opacity !== undefined ? parseFloat(p.logo_opacity) : 0.85);
           setNewsStyle(p.news_style || 'ticker-classic');
+
+          // V3 Visual Editor States
+          setClockSize(p.clock_size || 100);
+          setWeatherSize(p.weather_size || 100);
+          setSocialSize(p.social_size || 100);
+          setClockInterval(p.clock_interval || 0);
+          setWeatherInterval(p.weather_interval || 0);
+          setSocialInterval(p.social_interval || 0);
+          setClockDuration(p.clock_duration || 0);
+          setWeatherDuration(p.weather_duration || 0);
+          setSocialDuration(p.social_duration || 0);
+          setTickerInterval(p.ticker_interval || 0);
+          setTickerDuration(p.ticker_duration || 0);
+          setClockEffect(p.clock_effect || 'fade');
+          setWeatherEffect(p.weather_effect || 'fade');
+          setSocialEffect(p.social_effect || 'fade');
+          setClockStyle(p.clock_style || 'digital_transparent');
         }
       } catch (err) {
         addToast('error', 'Erro', 'Falha ao carregar dados do plano.');
@@ -168,7 +191,16 @@ const PlaylistEditor = () => {
       media_id: media.id,
       media: media,
       duration: media.type === 'video' ? 0 : 10,
+      transition: 'fade'
     }]);
+  };
+
+  const updateTransition = (idx, transition) => {
+    setSelectedItems(prev => {
+      const copy = [...prev];
+      copy[idx].transition = transition;
+      return copy;
+    });
   };
 
   const updateDuration = (idx, duration) => {
@@ -233,10 +265,26 @@ const PlaylistEditor = () => {
         logo_size_px: parseInt(logoSizePx) || 80,
         logo_opacity: parseFloat(logoOpacity) || 0.85,
         news_style: newsStyle,
+        clock_size: clockSize,
+        weather_size: weatherSize,
+        social_size: socialSize,
+        clock_interval: clockInterval,
+        weather_interval: weatherInterval,
+        social_interval: socialInterval,
+        clock_duration: clockDuration,
+        weather_duration: weatherDuration,
+        social_duration: socialDuration,
+        ticker_interval: tickerInterval,
+        ticker_duration: tickerDuration,
+        clock_effect: clockEffect,
+        weather_effect: weatherEffect,
+        social_effect: socialEffect,
+        clock_style: clockStyle,
         items: selectedItems.map((item, i) => ({
           media_id: item.media_id,
           duration_seconds: item.media?.type === 'video' ? 0 : (item.duration || 10),
-          position: i
+          position: i,
+          transition: item.transition || 'fade'
         }))
       };
       if (id && id !== 'new') {
@@ -313,7 +361,6 @@ const PlaylistEditor = () => {
             { id: 'themes', icon: '✨', label: 'Temas' },
             { id: 'widgets', icon: '🧩', label: 'Widgets' },
             { id: 'overlays', icon: '🌘', label: 'Efeitos' },
-            { id: 'zones', icon: '🪟', label: 'Zonas' },
           ].map(tab => (
             <button key={tab.id} onClick={() => { setActiveTab(tab.id); setSelectedElement(null); }} style={{ 
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '100%', padding: '12px 0',
@@ -370,11 +417,10 @@ const PlaylistEditor = () => {
           )}
 
           {activeTab === 'widgets' && (
-            <div style={{ padding: '20px' }}>
+            <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
               <h3 style={{ fontSize: '0.85rem', fontWeight: '800', textTransform: 'uppercase', color: '#a1a1aa', letterSpacing: '1px', marginBottom: '16px' }}>Widgets Dinâmicos</h3>
-              <p style={{ fontSize: '0.72rem', color: '#71717a', marginBottom: '16px' }}>Clique para ativar. Clique no widget no canvas para editar propriedades.</p>
-
-              {/* Clock */}
+              
+              {/* Relógio */}
               <div style={{ marginBottom: '12px', padding: '14px', background: '#18181b', borderRadius: '12px', border: showClock ? '1px solid #6366f1' : '1px solid #27272a' }}>
                 <div onClick={() => { setShowClock(!showClock); setSelectedElement('clock'); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: showClock ? '12px' : '0' }}>
                   <span style={{ fontSize: '1.3rem' }}>⌚</span>
@@ -382,165 +428,103 @@ const PlaylistEditor = () => {
                     <div style={{ fontSize: '0.88rem', fontWeight: '700' }}>Relógio Digital</div>
                     <div style={{ fontSize: '0.68rem', color: '#71717a' }}>Vários estilos e fontes</div>
                   </div>
-                  <div style={{ width: '36px', height: '20px', borderRadius: '10px', background: showClock ? '#6366f1' : '#3f3f46', position: 'relative', transition: 'background 0.2s' }}>
-                    <div style={{ position: 'absolute', top: '2px', left: showClock ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }}></div>
+                  <div style={{ width: '36px', height: '20px', borderRadius: '10px', background: showClock ? '#6366f1' : '#3f3f46', position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: '2px', left: showClock ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: '0.2s' }}></div>
                   </div>
                 </div>
                 {showClock && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid #27272a', paddingTop: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa', display: 'block', marginBottom: '4px' }}>Estilo do Relógio:</label>
+                      <select value={clockStyle} onChange={e => setClockStyle(e.target.value)} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                        <option value="digital_transparent">Digital Transparente</option>
+                        <option value="digital_glass">Digital Glass (Blur)</option>
+                        <option value="digital_solid">Digital Sólido</option>
+                        <option value="analog_modern">Analógico Minimalista</option>
+                      </select>
+                    </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Tamanho: {clockSize}%</label>
-                      <input type="range" min="50" max="200" value={clockSize} onChange={e => setClockSize(parseInt(e.target.value))} style={{ width: '130px' }} />
+                      <input type="range" min="50" max="200" value={clockSize} onChange={e => setClockSize(parseInt(e.target.value))} style={{ width: '100px' }} />
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir a cada (min):</label>
-                      <select value={clockInterval} onChange={e => setClockInterval(parseInt(e.target.value))} style={{ padding: '4px 8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
-                        <option value={0}>Sempre visível</option>
-                        <option value={5}>5 minutos</option>
-                        <option value={10}>10 minutos</option>
-                        <option value={15}>15 minutos</option>
-                        <option value={30}>30 minutos</option>
-                      </select>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Efeito entrada:</label>
-                      <select value={clockEffect} onChange={e => setClockEffect(e.target.value)} style={{ padding: '4px 8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
-                        <option value="fade">Fade</option>
-                        <option value="slide">Slide</option>
-                        <option value="bounce">Bounce</option>
-                        <option value="zoom">Zoom</option>
-                      </select>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>A cada (min):</label>
+                        <input type="number" value={clockInterval} onChange={e => setClockInterval(parseInt(e.target.value))} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir por (min):</label>
+                        <input type="number" value={clockDuration} onChange={e => setClockDuration(parseInt(e.target.value))} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Weather */}
+              {/* Ticker / Notícias (Substitui Zonas) */}
+              <div style={{ marginBottom: '12px', padding: '14px', background: '#18181b', borderRadius: '12px', border: layout !== 'fullscreen' ? '1px solid #6366f1' : '1px solid #27272a' }}>
+                <div onClick={() => { setLayout(layout === 'fullscreen' ? 'with_footer' : 'fullscreen'); setSelectedElement('ticker'); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: layout !== 'fullscreen' ? '12px' : '0' }}>
+                  <span style={{ fontSize: '1.3rem' }}>📰</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.88rem', fontWeight: '700' }}>Barra de Notícias / Ticker</div>
+                    <div style={{ fontSize: '0.68rem', color: '#71717a' }}>Rodapé informativo</div>
+                  </div>
+                  <div style={{ width: '36px', height: '20px', borderRadius: '10px', background: layout !== 'fullscreen' ? '#6366f1' : '#3f3f46', position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: '2px', left: layout !== 'fullscreen' ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: '0.2s' }}></div>
+                  </div>
+                </div>
+                {layout !== 'fullscreen' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid #27272a', paddingTop: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Tipo de Exibição:</label>
+                      <select value={layout} onChange={e => setLayout(e.target.value)} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                        <option value="with_footer">Barra Fixa (Rodapé)</option>
+                        <option value="floating">Aviso Flutuante (Overlay)</option>
+                      </select>
+                    </div>
+                    <textarea value={footerText} onChange={e => setFooterText(e.target.value)} placeholder="Texto do ticker..." rows={2} style={{ width: '100%', padding: '8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff', resize: 'none', fontSize: '0.8rem' }} />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>A cada (min):</label>
+                        <input type="number" value={tickerInterval} onChange={e => setTickerInterval(parseInt(e.target.value))} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir por (min):</label>
+                        <input type="number" value={tickerDuration} onChange={e => setTickerDuration(parseInt(e.target.value))} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Clima */}
               <div style={{ marginBottom: '12px', padding: '14px', background: '#18181b', borderRadius: '12px', border: showWeather ? '1px solid #6366f1' : '1px solid #27272a' }}>
                 <div onClick={() => { setShowWeather(!showWeather); setSelectedElement('weather'); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: showWeather ? '12px' : '0' }}>
                   <span style={{ fontSize: '1.3rem' }}>⛅</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '0.88rem', fontWeight: '700' }}>Previsão do Tempo</div>
-                    <div style={{ fontSize: '0.68rem', color: '#71717a' }}>Ícones animados</div>
+                    <div style={{ fontSize: '0.68rem', color: '#71717a' }}>Dados em tempo real</div>
                   </div>
-                  <div style={{ width: '36px', height: '20px', borderRadius: '10px', background: showWeather ? '#6366f1' : '#3f3f46', position: 'relative', transition: 'background 0.2s' }}>
-                    <div style={{ position: 'absolute', top: '2px', left: showWeather ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }}></div>
+                  <div style={{ width: '36px', height: '20px', borderRadius: '10px', background: showWeather ? '#6366f1' : '#3f3f46', position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: '2px', left: showWeather ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: '0.2s' }}></div>
                   </div>
                 </div>
                 {showWeather && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid #27272a', paddingTop: '12px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Tamanho: {weatherSize}%</label>
-                      <input type="range" min="50" max="200" value={weatherSize} onChange={e => setWeatherSize(parseInt(e.target.value))} style={{ width: '130px' }} />
+                      <input type="range" min="50" max="200" value={weatherSize} onChange={e => setWeatherSize(parseInt(e.target.value))} style={{ width: '100px' }} />
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir a cada (min):</label>
-                      <select value={weatherInterval} onChange={e => setWeatherInterval(parseInt(e.target.value))} style={{ padding: '4px 8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
-                        <option value={0}>Sempre visível</option>
-                        <option value={5}>5 minutos</option>
-                        <option value={10}>10 minutos</option>
-                        <option value={30}>30 minutos</option>
-                      </select>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>A cada (min):</label>
+                        <input type="number" value={weatherInterval} onChange={e => setWeatherInterval(parseInt(e.target.value))} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir por (min):</label>
+                        <input type="number" value={weatherDuration} onChange={e => setWeatherDuration(parseInt(e.target.value))} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Efeito entrada:</label>
-                      <select value={weatherEffect} onChange={e => setWeatherEffect(e.target.value)} style={{ padding: '4px 8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
-                        <option value="fade">Fade</option>
-                        <option value="slide">Slide</option>
-                        <option value="bounce">Bounce</option>
-                        <option value="zoom">Zoom</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Social */}
-              <div style={{ marginBottom: '12px', padding: '14px', background: '#18181b', borderRadius: '12px', border: showSocial ? '1px solid #6366f1' : '1px solid #27272a' }}>
-                <div onClick={() => { setShowSocial(!showSocial); setSelectedElement('social'); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: showSocial ? '12px' : '0' }}>
-                  <span style={{ fontSize: '1.3rem' }}>📱</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.88rem', fontWeight: '700' }}>Card Social / QR</div>
-                    <div style={{ fontSize: '0.68rem', color: '#71717a' }}>Engajamento instantâneo</div>
-                  </div>
-                  <div style={{ width: '36px', height: '20px', borderRadius: '10px', background: showSocial ? '#6366f1' : '#3f3f46', position: 'relative', transition: 'background 0.2s' }}>
-                    <div style={{ position: 'absolute', top: '2px', left: showSocial ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }}></div>
-                  </div>
-                </div>
-                {showSocial && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Tamanho: {socialSize}%</label>
-                      <input type="range" min="50" max="200" value={socialSize} onChange={e => setSocialSize(parseInt(e.target.value))} style={{ width: '130px' }} />
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir a cada (min):</label>
-                      <select value={socialInterval} onChange={e => setSocialInterval(parseInt(e.target.value))} style={{ padding: '4px 8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
-                        <option value={0}>Sempre visível</option>
-                        <option value={5}>5 minutos</option>
-                        <option value={10}>10 minutos</option>
-                        <option value={30}>30 minutos</option>
-                      </select>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Efeito entrada:</label>
-                      <select value={socialEffect} onChange={e => setSocialEffect(e.target.value)} style={{ padding: '4px 8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
-                        <option value="fade">Fade</option>
-                        <option value="slide">Slide</option>
-                        <option value="bounce">Bounce</option>
-                        <option value="zoom">Zoom</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Ticker / Notícias */}
-              <div style={{ padding: '14px', background: '#18181b', borderRadius: '12px', border: (layout !== 'fullscreen') ? '1px solid #6366f1' : '1px solid #27272a' }}>
-                <div onClick={() => { setLayout(layout === 'fullscreen' ? 'floating' : 'fullscreen'); setSelectedElement('ticker'); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: layout !== 'fullscreen' ? '12px' : '0' }}>
-                  <span style={{ fontSize: '1.3rem' }}>📰</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.88rem', fontWeight: '700' }}>Texto / Notícias</div>
-                    <div style={{ fontSize: '0.68rem', color: '#71717a' }}>Ticker rolante e avisos</div>
-                  </div>
-                  <div style={{ width: '36px', height: '20px', borderRadius: '10px', background: layout !== 'fullscreen' ? '#6366f1' : '#3f3f46', position: 'relative', transition: 'background 0.2s' }}>
-                    <div style={{ position: 'absolute', top: '2px', left: layout !== 'fullscreen' ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }}></div>
-                  </div>
-                </div>
-                {layout !== 'fullscreen' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <textarea value={footerText} onChange={e => setFooterText(e.target.value)} placeholder="Digite o texto que vai rolar..." rows={3} style={{ width: '100%', padding: '8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff', resize: 'none', fontSize: '0.8rem' }} />
-                    <select value={layout} onChange={e => setLayout(e.target.value)} style={{ width: '100%', padding: '8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff', fontSize: '0.8rem' }}>
-                      <option value="with_footer">Barra Inferior Fixa</option>
-                      <option value="floating">Aviso Flutuante</option>
-                    </select>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Fonte:</label>
-                      <select value={footerFontFamily} onChange={e => setFooterFontFamily(e.target.value)} style={{ padding: '4px 8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
-                        <option value="Inter">Inter</option>
-                        <option value="Outfit">Outfit</option>
-                        <option value="Roboto">Roboto</option>
-                        <option value="Playfair Display">Playfair</option>
-                      </select>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Velocidade:</label>
-                      <select value={tickerSpeed} onChange={e => setTickerSpeed(e.target.value)} style={{ padding: '4px 8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
-                        <option value="slow">Lento</option>
-                        <option value="medium">Normal</option>
-                        <option value="fast">Rápido</option>
-                      </select>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Cor texto:</label>
-                      <input type="color" value={footerFontColor} onChange={e => setFooterFontColor(e.target.value)} style={{ width: '32px', height: '28px', padding: '0', border: 'none', borderRadius: '6px', cursor: 'pointer' }} />
-                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Título:</label>
-                      <input value={tickerLabel} onChange={e => setTickerLabel(e.target.value)} style={{ flex: 1, padding: '4px 8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
-                    </div>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.75rem', color: '#a1a1aa' }}>
-                      <input type="checkbox" checked={tickerBlur} onChange={e => setTickerBlur(e.target.checked)} style={{ width: '14px', height: '14px' }} />
-                      Fundo com blur (glassmorphism)
-                    </label>
                   </div>
                 )}
               </div>
@@ -780,23 +764,33 @@ const PlaylistEditor = () => {
                   <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '6px 8px', background: 'rgba(0,0,0,0.8)', fontSize: '0.65rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {item.media?.name}
                   </div>
-                  <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '4px' }}>
-                    {item.media?.type !== 'video' && (
-                      <input 
-                        type="number" 
-                        min="1" 
-                        value={item.duration} 
-                        onChange={(e) => updateDuration(idx, e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        style={{ width: '40px', background: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '4px', color: '#6366f1', fontSize: '0.65rem', fontWeight: '800', textAlign: 'center' }} 
-                      />
-                    )}
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); removeMedia(idx); }} 
-                      style={{ background: 'rgba(255,0,0,0.8)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', padding: '2px 6px' }}>
-                      X
-                    </button>
-                  </div>
+                    <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '4px' }}>
+                      <select 
+                        value={item.transition || 'fade'} 
+                        onChange={(e) => updateTransition(idx, e.target.value)}
+                        style={{ background: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '0.6rem', padding: '2px 4px' }}
+                      >
+                        <option value="fade">Fade</option>
+                        <option value="slide">Slide</option>
+                        <option value="zoom">Zoom</option>
+                        <option value="none">None</option>
+                      </select>
+                      {item.media?.type !== 'video' && (
+                        <input 
+                          type="number" 
+                          min="1" 
+                          value={item.duration} 
+                          onChange={(e) => updateDuration(idx, e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ width: '40px', background: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '4px', color: '#6366f1', fontSize: '0.65rem', fontWeight: '800', textAlign: 'center' }} 
+                        />
+                      )}
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); removeMedia(idx); }} 
+                        style={{ background: 'rgba(255,0,0,0.8)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', padding: '2px 6px' }}>
+                        X
+                      </button>
+                    </div>
                   {/* Pseudo-transição */}
                   {idx < selectedItems.length - 1 && (
                      <div style={{ position: 'absolute', right: '-12px', top: '50%', transform: 'translateY(-50%)', width: '24px', height: '24px', background: '#3f3f46', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5, fontSize: '0.5rem', border: '2px solid #18181b' }}>▶</div>

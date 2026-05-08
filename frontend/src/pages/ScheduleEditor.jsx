@@ -11,6 +11,7 @@ const ScheduleEditor = () => {
   const [form, setForm] = useState({
     name: '',
     device_id: '',
+    group_id: '',
     playlist_id: '',
     start_time: '',
     end_time: '',
@@ -19,6 +20,7 @@ const ScheduleEditor = () => {
   });
   
   const [devices, setDevices] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -28,11 +30,13 @@ const ScheduleEditor = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [devicesRes, playlistsRes] = await Promise.all([
+        const [devicesRes, groupsRes, playlistsRes] = await Promise.all([
           api.get('/devices'),
+          api.get('/client-groups'),
           api.get('/playlists')
         ]);
         setDevices(devicesRes.data);
+        setGroups(groupsRes.data);
         setPlaylists(playlistsRes.data);
 
         if (id && id !== 'new') {
@@ -106,11 +110,19 @@ const ScheduleEditor = () => {
         <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
           <div className="input-group">
             <label>Dispositivo (TV) *</label>
-            <select value={form.device_id} onChange={e => setForm(p => ({ ...p, device_id: e.target.value }))}>
+            <select value={form.device_id} onChange={e => setForm(p => ({ ...p, device_id: e.target.value, group_id: '' }))}>
               <option value="">— Selecione a TV —</option>
               {devices.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
           </div>
+          <div className="input-group">
+            <label>ou Grupo de Dispositivos *</label>
+            <select value={form.group_id} onChange={e => setForm(p => ({ ...p, group_id: e.target.value, device_id: '' }))}>
+              <option value="">— Selecione o Grupo —</option>
+              {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+            </select>
+          </div>
+        </div>
           <div className="input-group">
             <label>Plano de Exibição *</label>
             <select value={form.playlist_id} onChange={e => setForm(p => ({ ...p, playlist_id: e.target.value }))}>

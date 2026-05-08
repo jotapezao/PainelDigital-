@@ -79,7 +79,10 @@ async function create(req, res) {
     ticker_speed, ticker_direction, ticker_height, ticker_blur, ticker_font_weight,
     show_social, social_handle, social_platform, card_transparency, ticker_label,
     social_qrcode, widget_position, social_position, show_progress_bar, social_card_style,
-    logo_url, logo_position, logo_size_px, logo_opacity, news_style, rotation
+    logo_url, logo_position, logo_size_px, logo_opacity, news_style, rotation,
+    clock_size, weather_size, social_size, clock_interval, weather_interval, social_interval,
+    clock_duration, weather_duration, social_duration, ticker_interval, ticker_duration,
+    clock_effect, weather_effect, social_effect, clock_style
   } = req.body;
 
   if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
@@ -95,9 +98,12 @@ async function create(req, res) {
         ticker_speed, ticker_direction, ticker_height, ticker_blur, ticker_font_weight,
         show_social, social_handle, social_platform, card_transparency, ticker_label,
         social_qrcode, widget_position, social_position, show_progress_bar, social_card_style,
-        logo_url, logo_position, logo_size_px, logo_opacity, news_style, rotation
+        logo_url, logo_position, logo_size_px, logo_opacity, news_style, rotation,
+        clock_size, weather_size, social_size, clock_interval, weather_interval, social_interval,
+        clock_duration, weather_duration, social_duration, ticker_interval, ticker_duration,
+        clock_effect, weather_effect, social_effect, clock_style
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39) RETURNING *`,
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54) RETURNING *`,
       [
         effectiveClientId, group_id || null,
         name, description || null, layout || 'fullscreen',
@@ -114,7 +120,13 @@ async function create(req, res) {
         social_position || 'bottom-right', show_progress_bar !== false,
         social_card_style || 'style1',
         logo_url || null, logo_position || 'bottom-right',
-        logo_size_px || 80, logo_opacity ?? 0.85, news_style || 'ticker-classic', rotation || 0
+        logo_size_px || 80, logo_opacity ?? 0.85, news_style || 'ticker-classic', rotation || 0,
+        clock_size || 100, weather_size || 100, social_size || 100,
+        clock_interval || 0, weather_interval || 0, social_interval || 0,
+        clock_duration || 0, weather_duration || 0, social_duration || 0,
+        ticker_interval || 0, ticker_duration || 0,
+        clock_effect || 'fade', weather_effect || 'fade', social_effect || 'fade',
+        clock_style || 'digital_transparent'
       ]
     );
     const playlist = rows[0];
@@ -146,7 +158,10 @@ async function update(req, res) {
     ticker_speed, ticker_direction, ticker_height, ticker_blur, ticker_font_weight,
     show_social, social_handle, social_platform, card_transparency, ticker_label,
     social_qrcode, widget_position, social_position, show_progress_bar, social_card_style,
-    logo_url, logo_position, logo_size_px, logo_opacity, news_style, rotation
+    logo_url, logo_position, logo_size_px, logo_opacity, news_style, rotation,
+    clock_size, weather_size, social_size, clock_interval, weather_interval, social_interval,
+    clock_duration, weather_duration, social_duration, ticker_interval, ticker_duration,
+    clock_effect, weather_effect, social_effect, clock_style
   } = req.body;
 
   try {
@@ -163,7 +178,10 @@ async function update(req, res) {
       card_transparency=$27, ticker_label=$28, social_qrcode=$29,
       widget_position=$30, social_position=$31, show_progress_bar=$32,
       social_card_style=$33, logo_url=$34, logo_position=$35,
-      logo_size_px=$36, logo_opacity=$37, news_style=$38, rotation=$39, updated_at=NOW()`;
+      logo_size_px=$36, logo_opacity=$37, news_style=$38, rotation=$39,
+      clock_size=$40, weather_size=$41, social_size=$42, clock_interval=$43, weather_interval=$44, social_interval=$45,
+      clock_duration=$46, weather_duration=$47, social_duration=$48, ticker_interval=$49, ticker_duration=$50,
+      clock_effect=$51, weather_effect=$52, social_effect=$53, clock_style=$54, updated_at=NOW()`;
 
     let params = [
       name, description || null, active !== false,
@@ -181,10 +199,16 @@ async function update(req, res) {
       social_position || 'bottom-right', show_progress_bar !== false,
       social_card_style || 'style1',
       logo_url || null, logo_position || 'bottom-right',
-      logo_size_px || 80, logo_opacity ?? 0.85, news_style || 'ticker-classic', rotation || 0
+      logo_size_px || 80, logo_opacity ?? 0.85, news_style || 'ticker-classic', rotation || 0,
+      clock_size || 100, weather_size || 100, social_size || 100,
+      clock_interval || 0, weather_interval || 0, social_interval || 0,
+      clock_duration || 0, weather_duration || 0, social_duration || 0,
+      ticker_interval || 0, ticker_duration || 0,
+      clock_effect || 'fade', weather_effect || 'fade', social_effect || 'fade',
+      clock_style || 'digital_transparent'
     ];
 
-    let idx = 39;
+    let idx = 55;
 
     if (effectiveClientId) {
       query += `, client_id=$${idx++}`;
@@ -203,9 +227,9 @@ async function update(req, res) {
       for (let i = 0; i < req.body.items.length; i++) {
         const item = req.body.items[i];
         await pool.query(
-          `INSERT INTO playlist_items (playlist_id, media_id, position, duration_seconds)
-           VALUES ($1, $2, $3, $4)`,
-          [playlist.id, item.media_id, i, item.duration_seconds || 10]
+          `INSERT INTO playlist_items (playlist_id, media_id, position, duration_seconds, transition)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [playlist.id, item.media_id, i, item.duration_seconds || 10, item.transition || 'fade']
         );
       }
     }

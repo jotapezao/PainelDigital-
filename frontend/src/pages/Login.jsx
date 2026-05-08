@@ -75,23 +75,135 @@ const Login = () => {
       alignItems: 'center',
       justifyContent: 'center',
       minHeight: '100vh',
-      background: 'radial-gradient(circle at top left, #1e293b 0%, #0f172a 100%)',
-      padding: '20px'
+      background: '#09090b',
+      position: 'relative',
+      overflow: 'hidden',
+      fontFamily: 'Inter, sans-serif'
     }}>
-      <div className="card glass-card animate-fade-in" style={{ width: '100%', maxWidth: '400px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '2rem', marginBottom: '8px', background: 'linear-gradient(to right, #818cf8, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+      {/* Background Animated Blobs */}
+      <div style={{
+        position: 'absolute',
+        top: '-10%',
+        left: '-10%',
+        width: '40%',
+        height: '40%',
+        background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)',
+        filter: 'blur(80px)',
+        borderRadius: '50%',
+        animation: 'pulse 10s infinite alternate'
+      }}></div>
+      <div style={{
+        position: 'absolute',
+        bottom: '-10%',
+        right: '-10%',
+        width: '40%',
+        height: '40%',
+        background: 'radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, transparent 70%)',
+        filter: 'blur(80px)',
+        borderRadius: '50%',
+        animation: 'pulse 12s infinite alternate-reverse'
+      }}></div>
+
+      <style>{`
+        @keyframes pulse {
+          0% { transform: translate(0, 0) scale(1); }
+          100% { transform: translate(5%, 5%) scale(1.1); }
+        }
+        .login-card {
+          background: rgba(24, 24, 27, 0.6);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 24px;
+          padding: 48px;
+          width: 100%;
+          maxWidth: 440px;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+          position: relative;
+          z-index: 10;
+        }
+        .login-input {
+          width: 100%;
+          padding: 14px 16px;
+          background: rgba(39, 39, 42, 0.5);
+          border: 1px solid rgba(63, 63, 70, 0.5);
+          border-radius: 12px;
+          color: #fff;
+          font-size: 1rem;
+          transition: all 0.2s;
+          margin-top: 8px;
+        }
+        .login-input:focus {
+          outline: none;
+          border-color: #6366f1;
+          background: rgba(39, 39, 42, 0.8);
+          box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+        .login-button {
+          width: 100%;
+          padding: 16px;
+          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+          border: none;
+          border-radius: 12px;
+          color: #fff;
+          font-size: 1rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.3s;
+          margin-top: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+        }
+        .login-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.5);
+          filter: brightness(1.1);
+        }
+        .login-button:active {
+          transform: translateY(0);
+        }
+        .login-button:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+      `}</style>
+
+      <div className="login-card animate-fade-in">
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <div style={{ 
+            width: '64px', 
+            height: '64px', 
+            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', 
+            borderRadius: '16px', 
+            margin: '0 auto 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '2rem',
+            boxShadow: '0 10px 20px -5px rgba(99, 102, 241, 0.4)'
+          }}>📺</div>
+          <h1 style={{ 
+            fontSize: '2.25rem', 
+            fontWeight: '900', 
+            letterSpacing: '-0.025em',
+            marginBottom: '8px', 
+            background: 'linear-gradient(to right, #fff, #a1a1aa)', 
+            WebkitBackgroundClip: 'text', 
+            WebkitTextFillColor: 'transparent' 
+          }}>
             Painel Digital
           </h1>
-          <p style={{ color: 'var(--text-muted)' }}>Entre para gerenciar seus dispositivos</p>
+          <p style={{ color: '#a1a1aa', fontWeight: '500' }}>Bem-vindo de volta ao centro de controle</p>
         </div>
 
         <TvModeBanner />
 
         <form onSubmit={handleSubmit}>
-          <div className="input-group">
-            <label>Usuário ou E-mail</label>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ fontSize: '0.875rem', fontWeight: '600', color: '#e4e4e7' }}>Usuário ou E-mail</label>
             <input 
+              className="login-input"
               type="text" 
               placeholder="seu_usuario ou seu@email.com" 
               value={loginIdentifier}
@@ -100,9 +212,10 @@ const Login = () => {
             />
           </div>
 
-          <div className="input-group">
-            <label>Senha</label>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ fontSize: '0.875rem', fontWeight: '600', color: '#e4e4e7' }}>Senha</label>
             <input 
+              className="login-input"
               type="password" 
               placeholder="••••••••" 
               value={password}
@@ -111,44 +224,59 @@ const Login = () => {
             />
           </div>
 
-          <div className="input-group" style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: '500' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
               <input 
                 type="checkbox" 
                 checked={remember} 
                 onChange={(e) => setRemember(e.target.checked)}
-                style={{ width: '18px', height: '18px' }}
+                style={{ 
+                  width: '18px', 
+                  height: '18px', 
+                  accentColor: '#6366f1',
+                  cursor: 'pointer'
+                }}
               />
-              <span style={{ color: 'var(--text-main)' }}>Lembrar e-mail neste dispositivo</span>
+              <span style={{ fontSize: '0.875rem', color: '#a1a1aa', fontWeight: '500' }}>Lembrar de mim</span>
             </label>
+            <a href="#" style={{ fontSize: '0.875rem', color: '#6366f1', textDecoration: 'none', fontWeight: '600' }}>Esqueceu a senha?</a>
           </div>
 
           {error && (
             <div style={{ 
               backgroundColor: 'rgba(239, 68, 68, 0.1)', 
-              color: 'var(--error)', 
-              padding: '12px', 
-              borderRadius: 'var(--radius-md)', 
-              marginBottom: '20px',
+              color: '#f87171', 
+              padding: '12px 16px', 
+              borderRadius: '12px', 
+              marginTop: '24px',
               fontSize: '0.875rem',
-              border: '1px solid rgba(239, 68, 68, 0.2)'
+              fontWeight: '500',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}>
-              {error}
+              <span>⚠️</span> {error}
             </div>
           )}
 
           <button 
             type="submit" 
-            className="btn btn-primary" 
-            style={{ width: '100%', padding: '14px' }}
+            className="login-button" 
             disabled={loading}
           >
-            {loading ? 'Entrando...' : '📺 Acessar Painel'}
+            {loading ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="spinner"></span> Autenticando...
+              </span>
+            ) : (
+              <>🚀 Acessar Sistema</>
+            )}
           </button>
         </form>
 
-        <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-dim)' }}>
-          Precisa de ajuda? <a href="#" style={{ color: 'var(--primary)', textDecoration: 'none' }}>Falar com suporte</a>
+        <div style={{ marginTop: '32px', textAlign: 'center', fontSize: '0.875rem', color: '#71717a' }}>
+          Novo por aqui? <a href="#" style={{ color: '#fff', textDecoration: 'none', fontWeight: '700' }}>Criar conta</a>
         </div>
       </div>
     </div>

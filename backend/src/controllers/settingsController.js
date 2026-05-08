@@ -1,4 +1,5 @@
 const { pool } = require('../database/db');
+const { uploadFile } = require('../services/r2Service');
 
 // GET /api/settings
 async function getSettings(req, res) {
@@ -34,4 +35,16 @@ async function updateSettings(req, res) {
   }
 }
 
-module.exports = { getSettings, updateSettings };
+// POST /api/settings/logo
+async function uploadLogo(req, res) {
+  if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo enviado' });
+  try {
+    const { fileName, url } = await uploadFile(req.file);
+    res.json({ url });
+  } catch (err) {
+    console.error('[Logo upload]', err.message);
+    res.status(500).json({ error: 'Erro no upload da logo para o R2' });
+  }
+}
+
+module.exports = { getSettings, updateSettings, uploadLogo };
