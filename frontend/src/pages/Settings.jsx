@@ -49,8 +49,38 @@ const Settings = () => {
 
   if (loading) return <div className="loading">Carregando...</div>;
 
+  const updateData = JSON.parse(localStorage.getItem('app_update_available') || 'null');
+
   return (
     <div className="animate-fade-in">
+      {updateData && (
+        <div className="card" style={{ 
+          marginBottom: '24px', 
+          background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%)',
+          border: '1px solid rgba(99, 102, 241, 0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '20px 24px',
+          flexWrap: 'wrap',
+          gap: '16px'
+        }}>
+          <div>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              🚀 Nova versão disponível (v{updateData.latestVersion})
+            </h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{updateData.message}</p>
+          </div>
+          <button 
+            onClick={() => window.location.href = updateData.url}
+            className="btn btn-primary"
+            style={{ padding: '10px 20px', fontSize: '0.875rem' }}
+          >
+            Baixar Atualização
+          </button>
+        </div>
+      )}
+
       <div className="card">
         <h2 style={{ marginBottom: '24px' }}>Configurações do Sistema</h2>
         

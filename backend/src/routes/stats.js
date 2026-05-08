@@ -21,15 +21,15 @@ router.get('/', authMiddleware, async (req, res) => {
       queries.push(pool.query(`SELECT COUNT(*) AS total, SUM(CASE WHEN active = true THEN 1 ELSE 0 END) AS active FROM clients`));
     }
 
-    // Online users query (seen in last 5 minutes)
+    // Online users query (seen in last 1 minute for better reliability)
     const onlineUsersQuery = isAdmin 
       ? `SELECT u.id, u.name, u.last_seen, u.last_ip, u.location_city, u.location_district, u.session_start, c.name as client_name 
          FROM users u LEFT JOIN clients c ON u.client_id = c.id
-         WHERE u.last_seen >= NOW() - INTERVAL '5 minutes'
+         WHERE u.last_seen >= NOW() - INTERVAL '1 minute'
          ORDER BY u.last_seen DESC`
       : `SELECT u.id, u.name, u.last_seen, u.last_ip, u.location_city, u.location_district, u.session_start 
          FROM users u 
-         WHERE u.client_id = $1 AND u.last_seen >= NOW() - INTERVAL '5 minutes'
+         WHERE u.client_id = $1 AND u.last_seen >= NOW() - INTERVAL '1 minute'
          ORDER BY u.last_seen DESC`;
     
     queries.push(pool.query(onlineUsersQuery, clientParam));

@@ -280,7 +280,7 @@ const Login = () => {
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
               <input 
                 type="checkbox" 
@@ -295,7 +295,6 @@ const Login = () => {
               />
               <span style={{ fontSize: '0.875rem', color: '#a1a1aa', fontWeight: '500' }}>Lembrar de mim</span>
             </label>
-            <a href="#" style={{ fontSize: '0.875rem', color: '#6366f1', textDecoration: 'none', fontWeight: '600' }}>Esqueceu a senha?</a>
           </div>
 
           {error && (
@@ -331,9 +330,7 @@ const Login = () => {
           </button>
         </form>
 
-        <div style={{ marginTop: '32px', textAlign: 'center', fontSize: '0.875rem', color: '#71717a' }}>
-          Novo por aqui? <a href="#" style={{ color: '#fff', textDecoration: 'none', fontWeight: '700' }}>Criar conta</a>
-        </div>
+        {/* Footer info removed */}
       </div>
     </div>
   );

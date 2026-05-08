@@ -11,6 +11,11 @@ function authMiddleware(req, res, next) {
     const secret = process.env.JWT_SECRET || 'painel-digital-secreto-temporario-2026';
     const decoded = jwt.verify(token, secret);
     req.user = decoded;
+
+    // Background update of last_seen to keep monitor accurate
+    const { pool } = require('../database/db');
+    pool.query('UPDATE users SET last_seen = NOW() WHERE id = $1', [decoded.id]).catch(() => {});
+
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Token inválido ou expirado' });

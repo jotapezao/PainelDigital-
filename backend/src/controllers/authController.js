@@ -38,7 +38,10 @@ async function login(req, res) {
     return res.status(400).json({ error: 'Usuário/email e senha são obrigatórios' });
   }
   try {
-    const ip = req.ip || req.headers['x-forwarded-for'] || '127.0.0.1';
+    let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+    if (ip.includes(',')) ip = ip.split(',')[0].trim();
+    if (ip.startsWith('::ffff:')) ip = ip.replace('::ffff:', '');
+    
     const loc = await resolveLocation(ip);
 
     // Tenta por username OU email

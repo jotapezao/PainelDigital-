@@ -24,6 +24,13 @@ const Icon = ({ name }) => {
 const Sidebar = ({ isOpen, onClose }) => {
   const { logout, user } = useAuth();
   const [settings, setSettings] = useState(null);
+  const [hasUpdate, setHasUpdate] = useState(!!localStorage.getItem('app_update_available'));
+
+  useEffect(() => {
+    const handleUpdateEvent = () => setHasUpdate(true);
+    window.addEventListener('app:update_available', handleUpdateEvent);
+    return () => window.removeEventListener('app:update_available', handleUpdateEvent);
+  }, []);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -137,7 +144,22 @@ const Sidebar = ({ isOpen, onClose }) => {
                   borderLeft: isActive ? '3px solid var(--primary)' : '3px solid transparent'
                 })}
               >
-                <span style={{ color: 'inherit', display: 'flex' }}><Icon name={item.icon} /></span>
+                <span style={{ color: 'inherit', display: 'flex', position: 'relative' }}>
+                  <Icon name={item.icon} />
+                  {item.path === '/settings' && hasUpdate && (
+                    <span style={{
+                      position: 'absolute',
+                      top: '-2px',
+                      right: '-2px',
+                      width: '10px',
+                      height: '10px',
+                      backgroundColor: 'var(--error)',
+                      borderRadius: '50%',
+                      border: '2px solid var(--bg-sidebar)',
+                      boxShadow: '0 0 5px rgba(239, 68, 68, 0.5)'
+                    }}></span>
+                  )}
+                </span>
                 <span className="sidebar-text">{item.name}</span>
               </NavLink>
             </li>
