@@ -95,6 +95,8 @@ const PlaylistEditor = () => {
   const [weatherY, setWeatherY] = useState(0);
   const [socialX, setSocialX] = useState(0);
   const [socialY, setSocialY] = useState(0);
+  const [tickerX, setTickerX] = useState(0);
+  const [tickerY, setTickerY] = useState(640);
   const [useCustomPos, setUseCustomPos] = useState(false);
   const [dragging, setDragging] = useState(null);
 
@@ -298,10 +300,11 @@ const PlaylistEditor = () => {
         clock_x: Math.round(clockX), clock_y: Math.round(clockY), 
         weather_x: Math.round(weatherX), weather_y: Math.round(weatherY), 
         social_x: Math.round(socialX), social_y: Math.round(socialY), 
+        ticker_x: Math.round(tickerX), ticker_y: Math.round(tickerY),
         use_custom_pos: useCustomPos,
         items: selectedItems.map((item, i) => ({
           media_id: item.media_id,
-          duration_seconds: item.media?.type === 'video' ? 0 : (item.duration || 10),
+          duration_seconds: item.duration || (item.media?.type === 'video' ? 0 : 10),
           position: i,
           transition: item.transition || 'fade'
         }))
@@ -352,8 +355,8 @@ const PlaylistEditor = () => {
       type,
       startX: e.clientX,
       startY: e.clientY,
-      initialX: type === 'clock' ? clockX : type === 'weather' ? weatherX : socialX,
-      initialY: type === 'clock' ? clockY : type === 'weather' ? weatherY : socialY,
+      initialX: type === 'clock' ? clockX : type === 'weather' ? weatherX : type === 'social' ? socialX : tickerX,
+      initialY: type === 'clock' ? clockY : type === 'weather' ? weatherY : type === 'social' ? socialY : tickerY,
     });
     setUseCustomPos(true);
     setSelectedElement(type);
@@ -373,6 +376,9 @@ const PlaylistEditor = () => {
     } else if (dragging.type === 'social') {
       setSocialX(dragging.initialX + dx);
       setSocialY(dragging.initialY + dy);
+    } else if (dragging.type === 'ticker') {
+      setTickerX(dragging.initialX + dx);
+      setTickerY(dragging.initialY + dy);
     }
   };
 
@@ -525,17 +531,19 @@ const PlaylistEditor = () => {
                   <div style={{ width: '36px', height: '20px', borderRadius: '10px', background: layout !== 'fullscreen' ? '#6366f1' : '#3f3f46', position: 'relative' }}>
                     <div style={{ position: 'absolute', top: '2px', left: layout !== 'fullscreen' ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: '0.2s' }}></div>
                   </div>
-                </div>
-                {layout !== 'fullscreen' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid #27272a', paddingTop: '12px' }}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid #27272a', paddingTop: '12px' }}>
                     <div>
-                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Tipo de Exibição:</label>
-                      <select value={layout} onChange={e => setLayout(e.target.value)} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
-                        <option value="with_footer">Barra Fixa (Rodapé)</option>
-                        <option value="floating">Aviso Flutuante (Overlay)</option>
-                      </select>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Destaque da Barra (Label):</label>
+                      <input value={tickerLabel} onChange={e => setTickerLabel(e.target.value)} placeholder="Ex: AVISO" style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
                     </div>
-                    <textarea value={footerText} onChange={e => setFooterText(e.target.value)} placeholder="Texto do ticker..." rows={2} style={{ width: '100%', padding: '8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff', resize: 'none', fontSize: '0.8rem' }} />
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Cor do Ticker:</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input type="color" value={themeColor} onChange={e => setThemeColor(e.target.value)} style={{ width: '30px', height: '30px', border: 'none', background: 'none', cursor: 'pointer' }} />
+                        <input value={themeColor} onChange={e => setThemeColor(e.target.value)} style={{ flex: 1, padding: '4px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.7rem' }} />
+                      </div>
+                    </div>
+                    <textarea value={footerText} onChange={e => setFooterText(e.target.value)} placeholder="Texto informativo aqui..." rows={2} style={{ width: '100%', padding: '8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff', resize: 'none', fontSize: '0.8rem' }} />
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                       <div>
                         <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>A cada (min):</label>
@@ -545,6 +553,9 @@ const PlaylistEditor = () => {
                         <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir por (min):</label>
                         <input type="number" value={tickerDuration} onChange={e => setTickerDuration(parseInt(e.target.value))} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
                       </div>
+                    </div>
+                  </div>
+div>
                     </div>
                   </div>
                 )}
@@ -720,8 +731,8 @@ const PlaylistEditor = () => {
             onMouseLeave={handleMouseUp}
           >
              <div style={{ 
-               width: orientation === 'horizontal' ? '960px' : '540px',
-               height: orientation === 'horizontal' ? '540px' : '960px',
+               width: orientation === 'horizontal' ? '960px' : '720px',
+               height: orientation === 'horizontal' ? '720px' : '960px',
                background: '#000', position: 'relative', overflow: 'hidden',
                boxShadow: '0 40px 100px rgba(0,0,0,0.8), 0 0 0 1px #27272a',
                transform: `scale(${canvasZoom})`, transformOrigin: 'center center',
@@ -813,21 +824,27 @@ const PlaylistEditor = () => {
                   </div>
                 )}
 
-                {/* Footer / Ticker */}
+                {/* Footer / Ticker - Agora Draggable */}
                 {(layout === 'with_footer' || layout === 'floating') && (
-                  <div onClick={() => setSelectedElement('ticker')} style={{ 
-                    position: 'absolute', 
-                    bottom: footerPosition === 'bottom' ? (layout === 'floating' ? '40px' : 0) : 'auto', 
-                    top: footerPosition === 'top' ? (layout === 'floating' ? '40px' : 0) : 'auto', 
-                    width: layout === 'floating' ? '90%' : '100%', 
-                    left: layout === 'floating' ? '5%' : '0',
-                    height: `${tickerHeight}px`,
-                    borderRadius: layout === 'floating' ? '24px' : '0',
-                    overflow: 'hidden',
-                    background: `rgba(0,0,0,${footerOpacity})`, backdropFilter: tickerBlur ? 'blur(16px)' : 'none', border: layout === 'floating' ? '1px solid rgba(255,255,255,0.1)' : 'borderTop: 1px solid rgba(255,255,255,0.1)',
-                    display: 'flex', alignItems: 'center', zIndex: 20, boxShadow: layout === 'floating' ? '0 20px 40px rgba(0,0,0,0.5)' : 'none', cursor: 'pointer',
-                    outline: selectedElement === 'ticker' ? '2px solid #6366f1' : 'none'
-                  }}>
+                  <div 
+                    onMouseDown={(e) => handleMouseDown(e, 'ticker')}
+                    style={{ 
+                      position: 'absolute', 
+                      left: useCustomPos ? `${tickerX}px` : (layout === 'floating' ? '5%' : '0'),
+                      top: useCustomPos ? `${tickerY}px` : (footerPosition === 'top' ? (layout === 'floating' ? '40px' : 0) : 'auto'),
+                      bottom: !useCustomPos && footerPosition === 'bottom' ? (layout === 'floating' ? '40px' : 0) : 'auto', 
+                      width: layout === 'floating' ? '90%' : '100%', 
+                      height: `${tickerHeight}px`,
+                      borderRadius: layout === 'floating' ? '24px' : '0',
+                      overflow: 'hidden',
+                      background: `rgba(0,0,0,${footerOpacity})`, backdropFilter: tickerBlur ? 'blur(16px)' : 'none', 
+                      border: layout === 'floating' ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                      display: 'flex', alignItems: 'center', zIndex: 20, 
+                      boxShadow: layout === 'floating' ? '0 20px 40px rgba(0,0,0,0.5)' : 'none', 
+                      cursor: 'move',
+                      outline: selectedElement === 'ticker' ? '2px solid #6366f1' : 'none'
+                    }}
+                  >
                     {tickerLabel && <div style={{ padding: '0 30px', background: themeColor, height: '100%', display: 'flex', alignItems: 'center', fontWeight: '900', fontSize: '1.2rem', color: '#fff' }}>{tickerLabel}</div>}
                     <div style={{ flex: 1, padding: '0 30px', fontSize: footerFontSize, color: footerFontColor, fontWeight: tickerFontWeight, whiteSpace: 'nowrap', overflow: 'hidden' }}>
                       <div style={{ display: 'inline-block', animation: `marquee ${tickerSpeed === 'fast' ? '10s' : tickerSpeed === 'slow' ? '30s' : '20s'} linear infinite` }}>
@@ -881,16 +898,17 @@ const PlaylistEditor = () => {
                         <option value="zoom">Zoom</option>
                         <option value="none">None</option>
                       </select>
-                      {item.media?.type !== 'video' && (
+                      <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.8)', borderRadius: '4px', padding: '0 4px' }}>
+                        <span style={{ fontSize: '0.5rem', color: '#a1a1aa', marginRight: '4px' }}>{item.media?.type === 'video' ? 'LOOP' : 'DUR'}</span>
                         <input 
                           type="number" 
                           min="1" 
-                          value={item.duration} 
+                          value={item.duration || 10} 
                           onChange={(e) => updateDuration(idx, e.target.value)}
                           onClick={(e) => e.stopPropagation()}
-                          style={{ width: '40px', background: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '4px', color: '#6366f1', fontSize: '0.65rem', fontWeight: '800', textAlign: 'center' }} 
+                          style={{ width: '35px', background: 'transparent', border: 'none', color: '#6366f1', fontSize: '0.65rem', fontWeight: '800', textAlign: 'center' }} 
                         />
-                      )}
+                      </div>
                       <button 
                         onClick={(e) => { e.stopPropagation(); removeMedia(idx); }} 
                         style={{ background: 'rgba(255,0,0,0.8)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', padding: '2px 6px' }}>
