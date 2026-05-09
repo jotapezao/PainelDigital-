@@ -234,8 +234,8 @@ const Player = () => {
   const getSocialStyle = (styleType, platform) => {
     const transparency = playlist.card_transparency ?? 0.4;
     const base = {
-      ...(playlist.use_custom_pos ? { position: 'absolute', left: `${playlist.social_x}px`, top: `${playlist.social_y}px` } : getPositionStyles(playlist.social_position || 'bottom-right')), 
-      transform: `${!playlist.use_custom_pos && (playlist.social_position || 'bottom-right').includes('center') ? 'translateX(-50%) ' : ''}scale(${(playlist.social_size || 100) / 100})`,
+      ...(playlist.use_custom_pos ? { position: 'absolute', left: `${playlist.social_x}px`, top: `${playlist.social_y}px` } : getPositionStyles(playlist.social_position || 'bottom-right', isMobile ? '20px' : '40px')), 
+      transform: `${!playlist.use_custom_pos && (playlist.social_position || 'bottom-right').includes('center') ? 'translateX(-50%) ' : ''}scale(${responsiveScale(playlist.social_size)})`,
       transformOrigin: playlist.use_custom_pos ? 'top left' : `${(playlist.social_position || 'bottom-right').split('-')[0]} ${(playlist.social_position || 'bottom-right').split('-')[1]}`,
       padding: '16px 24px',
       zIndex: 20, display: 'flex', gap: '15px', alignItems: 'center',
@@ -287,6 +287,20 @@ const Player = () => {
   const isPortrait = playlist?.orientation === 'portrait';
   const rotation = playlist?.rotation || 0;
 
+  // Responsive scale factor for widgets on mobile
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isMobile = windowWidth < 768;
+  const responsiveScale = (originalSize) => {
+    const baseScale = (originalSize || 100) / 100;
+    return isMobile ? baseScale * 0.7 : baseScale;
+  };
+
   const rotationStyles = rotation !== 0 ? {
     width: (rotation === 90 || rotation === 270) ? '100vh' : '100vw',
     height: (rotation === 90 || rotation === 270) ? '100vw' : '100vh',
@@ -312,10 +326,49 @@ const Player = () => {
         display: 'flex',
         flexDirection: playlist?.layout === 'with_header' ? 'column' : (playlist?.footer_position === 'top' ? 'column-reverse' : 'column'),
         fontFamily: `${playlist?.footer_font_family || 'Inter'}, sans-serif`,
-        fontSize: isPortrait ? '1.25rem' : '1rem',
+        fontSize: isPortrait ? (isMobile ? '1rem' : '1.25rem') : (isMobile ? '0.85rem' : '1rem'),
         cursor: 'none',
       }}
     >
+      <style>{`
+        @media (max-width: 768px) {
+          .player-widget-clock {
+            padding: 16px 24px !important;
+            border-radius: 20px !important;
+          }
+          .player-widget-clock > div:first-child {
+            font-size: 2.5rem !important;
+          }
+          .player-widget-clock > div:last-child {
+            font-size: 0.9rem !important;
+          }
+          .player-widget-weather {
+            padding: 12px 20px !important;
+            border-radius: 20px !important;
+            gap: 10px !important;
+          }
+          .player-widget-weather span {
+            font-size: 1.8rem !important;
+          }
+          .player-social-widget {
+            padding: 12px 18px !important;
+            border-radius: 18px !important;
+            gap: 12px !important;
+          }
+          .player-social-widget span {
+            font-size: 1.1rem !important;
+          }
+          .player-social-widget svg {
+            width: 24px !important;
+            height: 24px !important;
+          }
+          .player-social-widget img {
+            width: 70px !important;
+            height: 70px !important;
+          }
+        }
+      `}</style>
+
       {/* Botão de Logout — triplo clique */}
       {showLogout && (
         <div style={{
@@ -339,15 +392,15 @@ const Player = () => {
 
       {playlist.layout === 'with_header' && (
         <div style={{
-          height: '120px',
+          height: isMobile ? '80px' : '120px',
           background: `linear-gradient(90deg, ${playlist.theme_color || '#818cf8'}, var(--accent))`,
-          display: 'flex', alignItems: 'center', padding: '0 50px',
+          display: 'flex', alignItems: 'center', padding: isMobile ? '0 20px' : '0 50px',
           color: '#fff', zIndex: 30, boxShadow: '0 5px 30px rgba(0,0,0,0.6)'
         }}>
-          <h1 style={{ fontSize: '3rem', fontWeight: '900', margin: 0, fontFamily: 'Outfit' }}>{playlist.name}</h1>
+          <h1 style={{ fontSize: isMobile ? '1.5rem' : '3rem', fontWeight: '900', margin: 0, fontFamily: 'Outfit' }}>{playlist.name}</h1>
           <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-            <div style={{ fontSize: '2.5rem', fontWeight: '800' }}>{new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
-            <div style={{ fontSize: '1.2rem', opacity: 0.9 }}>{new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+            <div style={{ fontSize: isMobile ? '1.2rem' : '2.5rem', fontWeight: '800' }}>{new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+            {!isMobile && <div style={{ fontSize: '1.2rem', opacity: 0.9 }}>{new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>}
           </div>
         </div>
       )}
@@ -359,7 +412,7 @@ const Player = () => {
       }}>
         {/* ÁREA DE MÍDIA */}
         <div style={{ 
-          flex: playlist.layout === 'split' ? 0.7 : 1, 
+          flex: playlist.layout === 'split' ? (isMobile ? 0.6 : 0.7) : 1, 
           position: 'relative', overflow: 'hidden',
           display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000'
         }}>
@@ -392,8 +445,8 @@ const Player = () => {
           {/* Relógio Widget */}
           {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_clock && (
             <div className="player-widget-clock" style={{
-              ...(playlist.use_custom_pos ? { position: 'absolute', left: `${playlist.clock_x}px`, top: `${playlist.clock_y}px` } : getPositionStyles(playlist.widget_position || 'top-right')),
-              transform: `${!playlist.use_custom_pos && (playlist.widget_position || 'top-right').includes('center') ? 'translateX(-50%) ' : ''}scale(${(playlist.clock_size || 100) / 100})`,
+              ...(playlist.use_custom_pos ? { position: 'absolute', left: `${playlist.clock_x}px`, top: `${playlist.clock_y}px` } : getPositionStyles(playlist.widget_position || 'top-right', isMobile ? '20px' : '40px')),
+              transform: `${!playlist.use_custom_pos && (playlist.widget_position || 'top-right').includes('center') ? 'translateX(-50%) ' : ''}scale(${responsiveScale(playlist.clock_size)})`,
               transformOrigin: playlist.use_custom_pos ? 'top left' : `${(playlist.widget_position || 'top-right').split('-')[0]} ${(playlist.widget_position || 'top-right').split('-')[1]}`,
               padding: '24px 36px',
               background: `rgba(0,0,0,${playlist.card_transparency ?? 0.4})`, backdropFilter: 'blur(16px)', borderRadius: '28px',
@@ -413,8 +466,8 @@ const Player = () => {
           {/* Clima Widget */}
           {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_weather && (
             <div className="player-widget-weather" style={{
-              ...(playlist.use_custom_pos ? { position: 'absolute', left: `${playlist.weather_x}px`, top: `${playlist.weather_y}px` } : getPositionStyles('top-left')),
-              transform: `scale(${(playlist.weather_size || 100) / 100})`,
+              ...(playlist.use_custom_pos ? { position: 'absolute', left: `${playlist.weather_x}px`, top: `${playlist.weather_y}px` } : getPositionStyles('top-left', isMobile ? '20px' : '40px')),
+              transform: `scale(${responsiveScale(playlist.weather_size)})`,
               transformOrigin: 'top left',
               padding: '20px 30px',
               background: `rgba(0,0,0,${playlist.card_transparency ?? 0.4})`, backdropFilter: 'blur(16px)', borderRadius: '28px',
@@ -468,34 +521,38 @@ const Player = () => {
         {/* CONTEÚDO LATERAL (Split) */}
         {playlist.layout === 'split' && (
           <div style={{
-            flex: 0.3, background: 'var(--bg-sidebar)', borderLeft: `6px solid ${playlist.theme_color || '#818cf8'}`,
-            display: 'flex', flexDirection: 'column', padding: '50px 40px', color: '#fff', zIndex: 10, boxShadow: '-10px 0 40px rgba(0,0,0,0.4)'
+            flex: isMobile ? 0.4 : 0.3, background: 'var(--bg-sidebar)', borderLeft: `${isMobile ? '3px' : '6px'} solid ${playlist.theme_color || '#818cf8'}`,
+            display: 'flex', flexDirection: 'column', padding: isMobile ? '20px' : '50px 40px', color: '#fff', zIndex: 10, boxShadow: '-10px 0 40px rgba(0,0,0,0.4)'
           }}>
-            <div style={{ marginBottom: '50px', textAlign: 'center' }}>
-              <div style={{ fontSize: '5rem', fontWeight: '900', fontFamily: 'Outfit', letterSpacing: '-3px' }}>
+            <div style={{ marginBottom: isMobile ? '20px' : '50px', textAlign: 'center' }}>
+              <div style={{ fontSize: isMobile ? '2rem' : '5rem', fontWeight: '900', fontFamily: 'Outfit', letterSpacing: '-1px' }}>
                 {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
               </div>
-              <div style={{ fontSize: '1.6rem', opacity: 0.7, fontWeight: '600' }}>
-                {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-              </div>
+              {!isMobile && (
+                <div style={{ fontSize: '1.6rem', opacity: 0.7, fontWeight: '600' }}>
+                  {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </div>
+              )}
             </div>
             
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '35px', justifyContent: 'center' }}>
-              <div style={{ background: 'rgba(255,255,255,0.04)', padding: '30px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <h3 style={{ color: playlist.theme_color, marginBottom: '12px', textTransform: 'uppercase', fontSize: '0.9rem', letterSpacing: '2px' }}>Próxima Atração</h3>
-                <p style={{ fontSize: '1.5rem', fontWeight: '800', margin: 0 }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: isMobile ? '15px' : '35px', justifyContent: 'center' }}>
+              <div style={{ background: 'rgba(255,255,255,0.04)', padding: isMobile ? '15px' : '30px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <h3 style={{ color: playlist.theme_color, marginBottom: '8px', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '1px' }}>Próxima</h3>
+                <p style={{ fontSize: isMobile ? '1rem' : '1.5rem', fontWeight: '800', margin: 0 }}>
                   {playlist.items[(currentIndex + 1) % playlist.items.length]?.media_name || 'Reiniciando playlist'}
                 </p>
               </div>
               
-              <div style={{ background: 'rgba(255,255,255,0.04)', padding: '30px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <h3 style={{ color: playlist.theme_color, marginBottom: '12px', textTransform: 'uppercase', fontSize: '0.9rem', letterSpacing: '2px' }}>Avisos</h3>
-                <p style={{ fontSize: '1.2rem', opacity: 0.9, lineHeight: 1.5 }}>{playlist.description || 'Bem-vindo ao nosso sistema de sinalização digital.'}</p>
-              </div>
+              {!isMobile && (
+                <div style={{ background: 'rgba(255,255,255,0.04)', padding: '30px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <h3 style={{ color: playlist.theme_color, marginBottom: '12px', textTransform: 'uppercase', fontSize: '0.9rem', letterSpacing: '2px' }}>Avisos</h3>
+                  <p style={{ fontSize: '1.2rem', opacity: 0.9, lineHeight: 1.5 }}>{playlist.description || 'Bem-vindo ao nosso sistema de sinalização digital.'}</p>
+                </div>
+              )}
             </div>
 
-            <div style={{ marginTop: 'auto', textAlign: 'center', padding: '20px', background: `${playlist.theme_color}11`, borderRadius: '16px' }}>
-              <h2 style={{ fontSize: '1.8rem', margin: 0, fontWeight: '900' }}>{playlist.client_name}</h2>
+            <div style={{ marginTop: 'auto', textAlign: 'center', padding: isMobile ? '10px' : '20px', background: `${playlist.theme_color}11`, borderRadius: '16px' }}>
+              <h2 style={{ fontSize: isMobile ? '1rem' : '1.8rem', margin: 0, fontWeight: '900' }}>{playlist.client_name}</h2>
             </div>
           </div>
         )}
@@ -504,8 +561,8 @@ const Player = () => {
       {/* Logomarca Flutuante */}
       {playlist.logo_url && (
         <img src={playlist.logo_url} alt="Logo" style={{
-          ...getPositionStyles(playlist.logo_position || 'bottom-right', '40px'),
-          width: `${playlist.logo_size_px || 100}px`, height: 'auto',
+          ...getPositionStyles(playlist.logo_position || 'bottom-right', isMobile ? '20px' : '40px'),
+          width: `${isMobile ? (playlist.logo_size_px || 100) * 0.6 : (playlist.logo_size_px || 100)}px`, height: 'auto',
           opacity: playlist.logo_opacity ?? 0.85, objectFit: 'contain', zIndex: 12,
           filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.5))'
         }} onError={e => e.target.style.display = 'none'} />
@@ -521,7 +578,7 @@ const Player = () => {
         const direction = playlist.ticker_direction || 'rtl';
         const color = playlist.theme_color || '#818cf8';
         const fontColor = playlist.footer_font_color || '#fff';
-        const height = playlist.ticker_height || 85;
+        const height = isMobile ? (playlist.ticker_height || 85) * 0.6 : (playlist.ticker_height || 85);
 
         const isFullscreen = playlist.layout === 'fullscreen';
 
@@ -537,8 +594,8 @@ const Player = () => {
             boxShadow: playlist.footer_position === 'top' ? '0 10px 40px rgba(0,0,0,0.5)' : '0 -10px 40px rgba(0,0,0,0.5)'
           }}>
             <div style={{
-              padding: '0 35px', background: 'rgba(0,0,0,0.25)', height: '100%',
-              display: 'flex', alignItems: 'center', fontWeight: '900', fontSize: '1.2rem',
+              padding: isMobile ? '0 15px' : '0 35px', background: 'rgba(0,0,0,0.25)', height: '100%',
+              display: 'flex', alignItems: 'center', fontWeight: '900', fontSize: isMobile ? '0.7rem' : '1.2rem',
               textTransform: 'uppercase', letterSpacing: '2px', borderRight: '2px solid rgba(255,255,255,0.1)', zIndex: 101
             }}>
               {label}
@@ -547,7 +604,7 @@ const Player = () => {
               display: 'inline-block', paddingLeft: direction === 'rtl' ? '100%' : '0',
               paddingRight: direction === 'ltr' ? '100%' : '0',
               animation: `scrollText${direction.toUpperCase()} ${speed} linear infinite`,
-              fontSize: playlist.footer_font_size || '2.2rem', fontWeight: playlist.ticker_font_weight || '700',
+              fontSize: isMobile ? (parseFloat(playlist.footer_font_size) || 2.2) * 0.5 + 'rem' : playlist.footer_font_size || '2.2rem', fontWeight: playlist.ticker_font_weight || '700',
               zIndex: 100
             }}>
               {text}
@@ -556,8 +613,8 @@ const Player = () => {
         );
       })()}
       
-      <div style={{ position: 'absolute', top: playlist.layout === 'with_header' ? '140px' : '40px', left: '50px', zIndex: 5 }}>
-        <h2 style={{ color: '#fff', opacity: 0.6, fontSize: '2rem', margin: 0, fontWeight: '900', fontFamily: 'Outfit', textShadow: '0 4px 20px rgba(0,0,0,0.6)' }}>{playlist.client_name}</h2>
+      <div style={{ position: 'absolute', top: playlist.layout === 'with_header' ? (isMobile ? '90px' : '140px') : (isMobile ? '20px' : '40px'), left: isMobile ? '20px' : '50px', zIndex: 5 }}>
+        <h2 style={{ color: '#fff', opacity: 0.6, fontSize: isMobile ? '1.2rem' : '2rem', margin: 0, fontWeight: '900', fontFamily: 'Outfit', textShadow: '0 4px 20px rgba(0,0,0,0.6)' }}>{playlist.client_name}</h2>
       </div>
     </div>
   );
