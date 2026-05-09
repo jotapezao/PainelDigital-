@@ -296,27 +296,25 @@ const Player = () => {
       alignItems: 'center',
       gap: '20px',
       zIndex: 25,
-      boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
-      border: '1px solid rgba(255,255,255,0.1)',
       color: '#fff'
     };
 
     switch (styleType) {
       case 'minimalist':
-        return { ...base, background: 'none', border: 'none', boxShadow: 'none', backdropFilter: 'none' };
+        return { ...base, background: 'none', border: 'none', boxShadow: 'none', backdropFilter: 'none', textShadow: '0 2px 12px rgba(0,0,0,0.8)' };
       case 'light':
-        return { ...base, background: `rgba(255,255,255,${transparency + 0.3})`, color: '#18181b', border: '1px solid rgba(0,0,0,0.1)', backdropFilter: 'blur(10px)' };
+        return { ...base, background: `rgba(255,255,255,${0.85 + transparency * 0.15})`, color: '#18181b', border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 8px 32px rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.1)', backdropFilter: 'blur(20px)' };
       case 'dark':
-        return { ...base, background: `rgba(0,0,0,${transparency + 0.2})`, color: '#fff', backdropFilter: 'blur(16px)' };
+        return { ...base, background: `rgba(0,0,0,${0.5 + transparency * 0.4})`, color: '#fff', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 50px rgba(0,0,0,0.4)' };
       case 'glass_pro':
-        return { ...base, background: 'rgba(255,255,255,0.1)', color: '#fff', backdropFilter: 'blur(30px)', border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)' };
+        return { ...base, background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%)', color: '#fff', backdropFilter: 'blur(40px) saturate(180%)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2)' };
       case 'neon':
-        const themeColor = playlist?.theme_color || '#6366f1';
-        return { ...base, background: 'none', color: '#fff', border: `2px solid ${themeColor}`, boxShadow: `0 0 20px ${themeColor}66`, backdropFilter: 'blur(5px)' };
+        const themeColor = playlist?.theme_color || '#22d3ee';
+        return { ...base, background: 'rgba(0,0,0,0.75)', color: '#fff', border: `2px solid #22d3ee`, boxShadow: `0 0 15px rgba(34,211,238,0.5), 0 0 45px rgba(34,211,238,0.2), inset 0 0 20px rgba(34,211,238,0.1)`, backdropFilter: 'blur(8px)', borderRadius: '16px' };
       case 'border_classic':
-        return { ...base, background: `rgba(0,0,0,${transparency})`, color: '#fff', border: `4px solid ${playlist?.theme_color || '#6366f1'}`, borderRadius: '12px' };
+        return { ...base, background: `rgba(0,0,0,${0.7 + transparency * 0.3})`, color: '#fff', border: `3px solid rgba(255,255,255,0.9)`, borderRadius: '6px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' };
       default:
-        return base;
+        return { ...base, background: `rgba(0,0,0,${0.5 + transparency * 0.4})`, backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 50px rgba(0,0,0,0.4)' };
     }
   };
 
@@ -566,7 +564,10 @@ const Player = () => {
               transformOrigin: 'top left',
             }}>
               <span style={{ fontSize: '2.8rem' }}>⛅</span>
-              <span style={{ fontSize: '2.8rem', fontWeight: '800', fontFamily: 'Outfit' }}>26°C</span>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '2.8rem', fontWeight: '800', fontFamily: 'Outfit', lineHeight: 1 }}>26°C</span>
+                <span style={{ fontSize: '1rem', opacity: 0.8, fontWeight: '600' }}>{playlist.weather_city || 'Cuiabá - MT'}</span>
+              </div>
             </div>
           )}
 

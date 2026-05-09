@@ -568,8 +568,25 @@ async function runMigrations() {
           ALTER TABLE users ADD COLUMN session_start TIMESTAMPTZ;
         END IF;
         -- Add group_id to playlists
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='group_id') THEN
-          ALTER TABLE playlists ADD COLUMN group_id UUID;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='group_id') THEN 
+          ALTER TABLE playlists ADD COLUMN group_id UUID; 
+        END IF;
+
+        -- APP VERSIONING COLUMNS
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='system_settings' AND column_name='latest_app_version') THEN 
+          ALTER TABLE system_settings ADD COLUMN latest_app_version VARCHAR(20) DEFAULT '1.0.0'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='system_settings' AND column_name='app_download_url') THEN 
+          ALTER TABLE system_settings ADD COLUMN app_download_url TEXT; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='system_settings' AND column_name='app_update_message') THEN 
+          ALTER TABLE system_settings ADD COLUMN app_update_message TEXT DEFAULT 'Temos uma nova versão disponível com melhorias!'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='system_settings' AND column_name='app_force_update') THEN 
+          ALTER TABLE system_settings ADD COLUMN app_force_update BOOLEAN DEFAULT false; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='system_settings' AND column_name='github_repo') THEN 
+          ALTER TABLE system_settings ADD COLUMN github_repo VARCHAR(255); 
         END IF;
       END $$;
     `);

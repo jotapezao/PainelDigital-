@@ -56,14 +56,82 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Cache for GitHub API results (1 hour)
+let githubCache = {
+  data: null,
+  expiry: 0
+};
+
 // OTA Version Check - Digital Signage App
-app.get('/api/app-version', (req, res) => {
-  res.json({
-    latestVersion: '1.0.1', // INCREMENTE AQUI PARA NOTIFICAR OS DISPOSITIVOS
-    url: 'https://github.com/seu-usuario/seu-repositorio/releases/latest/download/base.apk', // LINK DIRETO DO APK NO GITHUB
-    force: false, 
-    message: 'Temos uma nova versão disponível com melhorias de performance e layout!'
-  });
+app.get('/api/app-version', async (req, res) => {
+  try {
+    const { pool } = require('./database/db');
+    const { rows } = await pool.query('SELECT latest_app_version, app_download_url, app_update_message, app_force_update, github_repo FROM system_settings WHERE id = 1');
+    
+    if (rows.length === 0) {
+      return res.json({ latestVersion: '1.0.0', url: '', force: false, message: '' });
+    }
+
+    const settings = rows[0];
+    let latestVersion = settings.latest_app_version || '1.0.0';
+    let url = settings.app_download_url || '';
+
+    // If GitHub repo is configured, try to fetch the latest release
+    if (settings.github_repo) {
+      const now = Date.now();
+      if (githubCache.data && githubCache.expiry > now) {
+        latestVersion = githubCache.data.version;
+        url = githubCache.data.url;
+      } else {
+        try {
+          const https = require('https');
+          const repo = settings.github_repo;
+          const options = {
+            hostname: 'api.github.com',
+            path: `/repos/${repo}/releases/latest`,
+            headers: { 'User-Agent': 'Digital-Signage-Platform' }
+          };
+
+          const githubData = await new Promise((resolve, reject) => {
+            https.get(options, (res) => {
+              let body = '';
+              res.on('data', (chunk) => body += chunk);
+              res.on('end', () => {
+                if (res.statusCode === 200) {
+                  const data = JSON.parse(body);
+                  const version = data.tag_name.replace(/[^0-9.]/g, ''); // Limpa 'v' se houver
+                  const apkAsset = data.assets.find(a => a.name.endsWith('.apk'));
+                  const downloadUrl = apkAsset ? apkAsset.browser_download_url : null;
+                  resolve({ version, url: downloadUrl });
+                } else {
+                  reject(new Error(`GitHub API returned ${res.statusCode}`));
+                }
+              });
+            }).on('error', reject);
+          });
+
+          if (githubData.version && githubData.url) {
+            latestVersion = githubData.version;
+            url = githubData.url;
+            githubCache = { data: githubData, expiry: now + 3600000 }; // 1h cache
+          }
+        } catch (ghErr) {
+          console.error('Error fetching from GitHub:', ghErr.message);
+          // Fallback to manual settings if GH fails
+        }
+      }
+    }
+
+    res.json({
+      latestVersion,
+      url,
+      force: settings.app_force_update || false, 
+      message: settings.app_update_message || 'Nova versão disponível!'
+    });
+  } catch (err) {
+    console.error('OTA version check error:', err);
+    res.status(500).json({ error: 'Erro ao verificar versão' });
+  }
 });
 
 // API routes

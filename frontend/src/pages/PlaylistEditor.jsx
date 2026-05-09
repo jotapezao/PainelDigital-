@@ -4,7 +4,71 @@ import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 
+const getWidgetBaseStyle = (style, transparency) => {
+  const base = {
+    padding: '24px 32px',
+    borderRadius: '28px',
+    color: '#fff',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '20px',
+    zIndex: 25,
+    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+  };
+
+  switch (style) {
+    case 'minimalist':
+      return { ...base, background: 'transparent', backdropFilter: 'none', border: 'none', boxShadow: 'none', padding: '10px', color: '#fff', textShadow: '0 2px 12px rgba(0,0,0,0.8)' };
+    case 'light':
+      return { ...base, background: `rgba(255,255,255,${0.85 + (transparency || 0) * 0.15})`, color: '#18181b', border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 8px 32px rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.1)', backdropFilter: 'blur(20px)' };
+    case 'glass_pro':
+      return { ...base, background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%)', backdropFilter: 'blur(40px) saturate(180%)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2)' };
+    case 'neon':
+      return { ...base, border: '2px solid #22d3ee', boxShadow: '0 0 15px rgba(34,211,238,0.5), 0 0 45px rgba(34,211,238,0.2), inset 0 0 20px rgba(34,211,238,0.1)', background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', borderRadius: '16px' };
+    case 'border_classic':
+      return { ...base, borderRadius: '6px', border: '3px solid rgba(255,255,255,0.9)', background: `rgba(0,0,0,${0.7 + (transparency || 0) * 0.3})`, padding: '20px 28px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' };
+    default: // dark
+      return { ...base, background: `rgba(0,0,0,${0.5 + (transparency || 0) * 0.4})`, backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 50px rgba(0,0,0,0.4)' };
+  }
+};
+
+// Preview visual para os estilos de card no editor
+const CARD_STYLE_PREVIEWS = [
+  { value: 'dark', label: 'Escuro', desc: 'Fundo escuro com blur', color: '#18181b', border: '1px solid #3f3f46', textColor: '#fff' },
+  { value: 'light', label: 'Claro', desc: 'Fundo branco translúcido', color: '#f4f4f5', border: '1px solid #e4e4e7', textColor: '#18181b' },
+  { value: 'minimalist', label: 'Sem fundo', desc: 'Texto direto na mídia', color: 'transparent', border: '2px dashed #52525b', textColor: '#a1a1aa' },
+  { value: 'glass_pro', label: 'Glass Pro', desc: 'Vidro premium com blur', color: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(168,85,247,0.15))', border: '1px solid rgba(99,102,241,0.3)', textColor: '#c4b5fd' },
+  { value: 'neon', label: 'Neon Glow', desc: 'Brilho neon ciano', color: '#0a0a0a', border: '2px solid #22d3ee', textColor: '#22d3ee' },
+  { value: 'border_classic', label: 'Moldura', desc: 'Borda sólida clássica', color: '#0a0a0a', border: '3px solid #fff', textColor: '#fff' },
+];
+
 const PlaylistEditor = () => {
+  const renderClockPreview = () => {
+    switch (clockStyle) {
+      case 'analog_modern':
+        return (
+          <div style={{ width: '120px', height: '120px', borderRadius: '50%', border: '4px solid #fff', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ position: 'absolute', width: '2px', height: '40px', background: '#fff', top: '20px', transformOrigin: 'bottom', transform: 'rotate(45deg)' }}></div>
+            <div style={{ position: 'absolute', width: '3px', height: '30px', background: '#818cf8', top: '30px', transformOrigin: 'bottom', transform: 'rotate(180deg)' }}></div>
+            <div style={{ width: '8px', height: '8px', background: '#fff', borderRadius: '50%', zIndex: 2 }}></div>
+          </div>
+        );
+      case 'big_bold':
+        return (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '6rem', fontWeight: '900', letterSpacing: '-4px', lineHeight: 0.8 }}>14:55</div>
+            <div style={{ fontSize: '1.2rem', textTransform: 'uppercase', marginTop: '10px', letterSpacing: '2px', opacity: 0.6 }}>Segunda-Feira</div>
+          </div>
+        );
+      default: // digital_solid
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontSize: '3.5rem', fontWeight: '900', lineHeight: 1, fontFamily: 'Outfit' }}>14:55</div>
+            <div style={{ fontSize: '1.1rem', opacity: 0.8, marginTop: '4px', fontWeight: '600' }}>Segunda, 24 Out</div>
+          </div>
+        );
+    }
+  };
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -101,6 +165,7 @@ const PlaylistEditor = () => {
   const [tickerY, setTickerY] = useState(640);
   const [useCustomPos, setUseCustomPos] = useState(false);
   const [dragging, setDragging] = useState(null);
+  const [weatherCity, setWeatherCity] = useState('Cuiabá - MT');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -166,6 +231,7 @@ const PlaylistEditor = () => {
           setSocialCardStyle(p.social_card_style || 'dark');
           setClockCardStyle(p.clock_card_style || 'dark');
           setWeatherCardStyle(p.weather_card_style || 'dark');
+          setWeatherCity(p.weather_city || 'Cuiabá - MT');
           setShowProgressBar(p.show_progress_bar !== false);
           // V2 fields
           setLogoUrl(p.logo_url || '');
@@ -283,6 +349,7 @@ const PlaylistEditor = () => {
         social_card_style: socialCardStyle,
         clock_card_style: clockCardStyle,
         weather_card_style: weatherCardStyle,
+        weather_city: weatherCity,
         show_progress_bar: showProgressBar,
         rotation: parseInt(rotation) || 0,
         // V2
@@ -739,12 +806,13 @@ const PlaylistEditor = () => {
             onMouseLeave={handleMouseUp}
           >
              <div style={{ 
-               width: orientation === 'horizontal' ? '960px' : '720px',
-               height: orientation === 'horizontal' ? '720px' : '960px',
+               width: orientation === 'horizontal' ? '960px' : '540px',
+               height: orientation === 'horizontal' ? '540px' : '960px',
                background: '#000', position: 'relative', overflow: 'hidden',
                boxShadow: '0 40px 100px rgba(0,0,0,0.8), 0 0 0 1px #27272a',
                transform: `scale(${canvasZoom})`, transformOrigin: 'center center',
-               transition: 'width 0.3s, height 0.3s'
+               transition: 'width 0.3s, height 0.3s',
+               aspectRatio: orientation === 'horizontal' ? '16/9' : '9/16'
              }} onClick={e => e.stopPropagation()}>
                 
                 {/* Imagem de Fundo (Simulação do primeiro item) */}
@@ -763,20 +831,19 @@ const PlaylistEditor = () => {
                   <div 
                     onMouseDown={(e) => handleMouseDown(e, 'clock')}
                     style={{ 
-                    position: 'absolute', 
-                    left: useCustomPos ? `${clockX}px` : (widgetPosition.split('-')[1] === 'right' ? 'auto' : widgetPosition.includes('center') ? '50%' : '40px'),
-                    top: useCustomPos ? `${clockY}px` : (widgetPosition.split('-')[0] === 'bottom' ? 'auto' : '40px'),
-                    right: !useCustomPos && widgetPosition.split('-')[1] === 'right' ? '40px' : 'auto',
-                    bottom: !useCustomPos && widgetPosition.split('-')[0] === 'bottom' ? '40px' : 'auto',
-                    transform: `${!useCustomPos && widgetPosition.includes('center') ? 'translateX(-50%) ' : ''}scale(${clockSize / 100})`,
-                    transformOrigin: useCustomPos ? 'top left' : `${widgetPosition.split('-')[0]} ${widgetPosition.split('-')[1]}`,
-                    background: `rgba(0,0,0,${cardTransparency})`, padding: '24px 36px', borderRadius: '24px', color: '#fff', backdropFilter: 'blur(20px)',
-                    border: selectedElement === 'clock' ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.1)', cursor: 'move',
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
-                    userSelect: 'none'
-                  }}>
-                    <div style={{ fontSize: '3rem', fontWeight: '900', lineHeight: 1, fontFamily: 'Outfit' }}>14:55</div>
-                    <div style={{ fontSize: '1rem', opacity: 0.8, marginTop: '4px' }}>Segunda, 24 Out</div>
+                      ...getWidgetBaseStyle(clockCardStyle, cardTransparency),
+                      position: 'absolute', 
+                      left: useCustomPos ? `${clockX}px` : (widgetPosition.split('-')[1] === 'right' ? 'auto' : widgetPosition.includes('center') ? '50%' : '40px'),
+                      top: useCustomPos ? `${clockY}px` : (widgetPosition.split('-')[0] === 'bottom' ? 'auto' : '40px'),
+                      right: !useCustomPos && widgetPosition.split('-')[1] === 'right' ? '40px' : 'auto',
+                      bottom: !useCustomPos && widgetPosition.split('-')[0] === 'bottom' ? '40px' : 'auto',
+                      transform: `${!useCustomPos && widgetPosition.includes('center') ? 'translateX(-50%) ' : ''}scale(${clockSize / 100})`,
+                      transformOrigin: useCustomPos ? 'top left' : `${widgetPosition.split('-')[0]} ${widgetPosition.split('-')[1]}`,
+                      border: selectedElement === 'clock' ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.1)',
+                      cursor: 'move',
+                      userSelect: 'none'
+                    }}>
+                    {renderClockPreview()}
                   </div>
                 )}
 
@@ -785,27 +852,23 @@ const PlaylistEditor = () => {
                   <div 
                     onMouseDown={(e) => handleMouseDown(e, 'social')}
                     style={{ 
-                    position: 'absolute', 
-                    left: useCustomPos ? `${socialX}px` : (socialPosition.split('-')[1] === 'right' ? 'auto' : socialPosition.includes('center') ? '50%' : '40px'),
-                    top: useCustomPos ? `${socialY}px` : (socialPosition.split('-')[0] === 'bottom' ? 'auto' : '40px'),
-                    right: !useCustomPos && socialPosition.split('-')[1] === 'right' ? '40px' : 'auto',
-                    bottom: !useCustomPos && socialPosition.split('-')[0] === 'bottom' ? '40px' : 'auto',
-                    transform: `${!useCustomPos && socialPosition.includes('center') ? 'translateX(-50%) ' : ''}scale(${socialSize / 100})`,
-                    transformOrigin: useCustomPos ? 'top left' : `${socialPosition.split('-')[0]} ${socialPosition.split('-')[1]}`,
-                    background: socialCardStyle === 'style2' ? '#fff' : socialCardStyle === 'style3' ? 'transparent' : `rgba(0,0,0,${cardTransparency})`, 
-                    padding: '16px 24px', borderRadius: '20px', 
-                    color: socialCardStyle === 'style2' ? '#000' : '#fff', 
-                    backdropFilter: socialCardStyle === 'style3' ? 'none' : 'blur(20px)',
-                    border: selectedElement === 'social' ? '2px solid #6366f1' : (socialCardStyle === 'style3' ? 'none' : '1px solid rgba(255,255,255,0.1)'), 
-                    cursor: 'move', display: 'flex', alignItems: 'center', gap: '16px', 
-                    boxShadow: socialCardStyle === 'style3' ? 'none' : '0 20px 40px rgba(0,0,0,0.4)',
-                    userSelect: 'none'
-                  }}>
-                    {socialQrcode && <div style={{ width: '60px', height: '60px', background: socialCardStyle === 'style2' ? '#f4f4f5' : '#fff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontSize: '0.6rem', fontWeight: '900' }}>QR</div>}
-                    <div>
+                      ...getWidgetBaseStyle(socialCardStyle, cardTransparency),
+                      position: 'absolute', 
+                      left: useCustomPos ? `${socialX}px` : (socialPosition.split('-')[1] === 'right' ? 'auto' : socialPosition.includes('center') ? '50%' : '40px'),
+                      top: useCustomPos ? `${socialY}px` : (socialPosition.split('-')[0] === 'bottom' ? 'auto' : '40px'),
+                      right: !useCustomPos && socialPosition.split('-')[1] === 'right' ? '40px' : 'auto',
+                      bottom: !useCustomPos && socialPosition.split('-')[0] === 'bottom' ? '40px' : 'auto',
+                      transform: `${!useCustomPos && socialPosition.includes('center') ? 'translateX(-50%) ' : ''}scale(${socialSize / 100})`,
+                      transformOrigin: useCustomPos ? 'top left' : `${socialPosition.split('-')[0]} ${socialPosition.split('-')[1]}`,
+                      border: selectedElement === 'social' ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.1)', 
+                      cursor: 'move',
+                      userSelect: 'none'
+                    }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Siga-nos no {socialPlatform}</div>
-                      <div style={{ fontSize: '1.4rem', fontWeight: '900', fontFamily: 'Outfit' }}>{socialHandle || '@instagram'}</div>
+                      <div style={{ fontSize: '1.4rem', fontWeight: '900', fontFamily: 'Outfit' }}>{socialHandle || '@seu_negocio'}</div>
                     </div>
+                    {socialQrcode && <div style={{ width: '60px', height: '60px', background: '#fff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontSize: '0.6rem', fontWeight: '900' }}>QR</div>}
                   </div>
                 )}
 
@@ -814,20 +877,20 @@ const PlaylistEditor = () => {
                   <div 
                     onMouseDown={(e) => handleMouseDown(e, 'weather')}
                     style={{ 
-                    position: 'absolute', 
-                    left: useCustomPos ? `${weatherX}px` : '40px',
-                    top: useCustomPos ? `${weatherY}px` : '40px',
-                    transform: `scale(${weatherSize / 100})`, 
-                    transformOrigin: 'top left',
-                    background: `rgba(0,0,0,${cardTransparency})`, padding: '20px', borderRadius: '24px', color: '#fff', backdropFilter: 'blur(20px)',
-                    border: selectedElement === 'weather' ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.1)', cursor: 'move',
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', gap: '20px',
-                    userSelect: 'none'
-                  }}>
-                    <span style={{ fontSize: '3rem', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.3))' }}>⛅</span>
+                      ...getWidgetBaseStyle(weatherCardStyle, cardTransparency),
+                      position: 'absolute', 
+                      left: useCustomPos ? `${weatherX}px` : '40px',
+                      top: useCustomPos ? `${weatherY}px` : '40px',
+                      transform: `scale(${weatherSize / 100})`, 
+                      transformOrigin: 'top left',
+                      border: selectedElement === 'weather' ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.1)', 
+                      cursor: 'move',
+                      userSelect: 'none'
+                    }}>
+                    <span style={{ fontSize: '3rem' }}>⛅</span>
                     <div>
-                      <div style={{ fontSize: '2.5rem', fontWeight: '900', lineHeight: 1, fontFamily: 'Outfit' }}>24°C</div>
-                      <div style={{ fontSize: '0.9rem', opacity: 0.8, marginTop: '4px' }}>Ensolarado</div>
+                      <div style={{ fontSize: '2rem', fontWeight: '900', lineHeight: 1, fontFamily: 'Outfit' }}>24°C</div>
+                      <div style={{ fontSize: '0.8rem', opacity: 0.8, marginTop: '2px' }}>{weatherCity}</div>
                     </div>
                   </div>
                 )}
@@ -865,72 +928,162 @@ const PlaylistEditor = () => {
           </div>
 
           {/* TIMELINE ESTILO PREMIERE/EDITOR DE VÍDEO */}
-          <div style={{ height: '220px', background: '#18181b', borderTop: '1px solid #27272a', display: 'flex', flexDirection: 'column', zIndex: 10 }}>
-            <div style={{ padding: '12px 24px', borderBottom: '1px solid #27272a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '0.8rem', fontWeight: '800', textTransform: 'uppercase', color: '#a1a1aa' }}>Timeline Visual</h3>
-              <span style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: '700' }}>{totalDuration} SEG TOTAL</span>
+          <div style={{ height: '240px', background: '#18181b', borderTop: '1px solid #27272a', display: 'flex', flexDirection: 'column', zIndex: 10 }}>
+            {/* Timeline Header */}
+            <div style={{ padding: '10px 24px', borderBottom: '1px solid #27272a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <h3 style={{ fontSize: '0.8rem', fontWeight: '800', textTransform: 'uppercase', color: '#a1a1aa', margin: 0 }}>Timeline</h3>
+                <span style={{ fontSize: '0.7rem', color: '#52525b' }}>{selectedItems.length} mídias</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 12px', background: 'rgba(99,102,241,0.1)', borderRadius: '20px', border: '1px solid rgba(99,102,241,0.2)' }}>
+                  <span style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Duração Total:</span>
+                  <span style={{ fontSize: '0.8rem', color: '#818cf8', fontWeight: '800', fontFamily: 'Outfit' }}>
+                    {totalDuration >= 60 ? `${Math.floor(totalDuration / 60)}m ${totalDuration % 60}s` : `${totalDuration}s`}
+                  </span>
+                </div>
+              </div>
             </div>
             
-            <div style={{ flex: 1, padding: '20px', display: 'flex', gap: '12px', overflowX: 'auto', alignItems: 'center' }}>
-              {selectedItems.map((item, idx) => (
-                <div key={`${item.media_id}-${idx}`} 
-                     draggable 
-                     onDragStart={(e) => e.dataTransfer.setData('text/plain', idx)} 
-                     onDragOver={(e) => e.preventDefault()} 
-                     onDrop={(e) => {
-                       e.preventDefault();
-                       const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
-                       if (isNaN(fromIdx)) return;
-                       const newItems = [...selectedItems];
-                       const [moved] = newItems.splice(fromIdx, 1);
-                       newItems.splice(idx, 0, moved);
-                       setSelectedItems(newItems);
-                     }}
-                     style={{ 
-                  height: '100px', width: `${Math.max(120, item.duration * 15)}px`, minWidth: '120px',
-                  background: '#27272a', borderRadius: '8px', overflow: 'hidden', position: 'relative',
-                  border: '1px solid #3f3f46', flexShrink: 0, cursor: 'grab'
-                }}>
-                  {item.media?.type === 'image' ? <img src={item.media?.url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} /> : <div style={{ height: '100%', background: '#111' }}></div>}
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '6px 8px', background: 'rgba(0,0,0,0.8)', fontSize: '0.65rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {item.media?.name}
-                  </div>
-                    <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '4px' }}>
-                      <select 
-                        value={item.transition || 'fade'} 
-                        onChange={(e) => updateTransition(idx, e.target.value)}
-                        style={{ background: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '0.6rem', padding: '2px 4px' }}
-                      >
-                        <option value="fade">Fade</option>
-                        <option value="slide">Slide</option>
-                        <option value="zoom">Zoom</option>
-                        <option value="none">None</option>
-                      </select>
-                      <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.8)', borderRadius: '4px', padding: '0 4px' }}>
-                        <span style={{ fontSize: '0.5rem', color: '#a1a1aa', marginRight: '4px' }}>{item.media?.type === 'video' ? 'LOOP' : 'DUR'}</span>
-                        <input 
-                          type="number" 
-                          min="1" 
-                          value={item.duration || 10} 
-                          onChange={(e) => updateDuration(idx, e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
-                          style={{ width: '35px', background: 'transparent', border: 'none', color: '#6366f1', fontSize: '0.65rem', fontWeight: '800', textAlign: 'center' }} 
-                        />
-                      </div>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); removeMedia(idx); }} 
-                        style={{ background: 'rgba(255,0,0,0.8)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', padding: '2px 6px' }}>
-                        X
-                      </button>
+            {/* Timeline Content */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowX: 'auto', overflowY: 'hidden', background: '#0f0f11' }}>
+              {/* Régua proporcional */}
+              <div style={{ height: '28px', borderBottom: '1px solid #1e1e22', position: 'relative', minWidth: `${Math.max(selectedItems.length * 180, 800)}px`, display: 'flex', alignItems: 'flex-end', padding: '0 20px' }}>
+                {selectedItems.map((item, idx) => {
+                  const dur = item.duration || 10;
+                  const prevTotal = selectedItems.slice(0, idx).reduce((a, it) => a + (it.duration || 10), 0);
+                  return (
+                    <div key={`ruler-${idx}`} style={{ 
+                      position: 'absolute',
+                      left: `${20 + idx * 180}px`,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', 
+                    }}>
+                      <span style={{ fontSize: '0.6rem', color: '#525262', fontWeight: '600', fontFamily: 'monospace' }}>
+                        {prevTotal >= 60 ? `${Math.floor(prevTotal / 60)}:${(prevTotal % 60).toString().padStart(2, '0')}` : `0:${prevTotal.toString().padStart(2, '0')}`}
+                      </span>
+                      <div style={{ height: '6px', width: '1px', background: '#3f3f46' }}></div>
                     </div>
-                  {/* Pseudo-transição */}
-                  {idx < selectedItems.length - 1 && (
-                     <div style={{ position: 'absolute', right: '-12px', top: '50%', transform: 'translateY(-50%)', width: '24px', height: '24px', background: '#3f3f46', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5, fontSize: '0.5rem', border: '2px solid #18181b' }}>▶</div>
-                  )}
+                  );
+                })}
+              </div>
+              
+              {/* Media Track */}
+              <div style={{ flex: 1, display: 'flex', gap: '4px', alignItems: 'stretch', padding: '8px 20px' }}>
+                {selectedItems.map((item, idx) => {
+                  const isImage = item.media?.type === 'image';
+                  const dur = item.duration || 10;
+                  return (
+                    <div key={`${item.media_id}-${idx}`} 
+                         draggable 
+                         onDragStart={(e) => e.dataTransfer.setData('text/plain', idx)} 
+                         onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.outline = '2px solid #6366f1'; }}
+                         onDragLeave={(e) => { e.currentTarget.style.outline = 'none'; }}
+                         onDrop={(e) => {
+                           e.preventDefault();
+                           e.currentTarget.style.outline = 'none';
+                           const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+                           if (isNaN(fromIdx)) return;
+                           const newItems = [...selectedItems];
+                           const [moved] = newItems.splice(fromIdx, 1);
+                           newItems.splice(idx, 0, moved);
+                           setSelectedItems(newItems);
+                         }}
+                         onClick={(e) => { e.stopPropagation(); setSelectedElement(`media-${idx}`); }}
+                         style={{ 
+                      width: `${Math.max(170, dur * 12)}px`, minWidth: '170px',
+                      background: selectedElement === `media-${idx}` ? '#1e1b4b' : '#1a1a1f', 
+                      borderRadius: '10px', overflow: 'hidden', position: 'relative',
+                      border: selectedElement === `media-${idx}` ? '2px solid #6366f1' : '1px solid #27272a', 
+                      flexShrink: 0, cursor: 'grab',
+                      display: 'flex', flexDirection: 'column',
+                      transition: 'border-color 0.2s, background 0.2s'
+                    }}>
+                      {/* Thumbnail */}
+                      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0 }}>
+                        {isImage ? (
+                          <img src={item.media?.url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
+                        ) : (
+                          <div style={{ height: '100%', background: 'linear-gradient(135deg, #1a1a2e, #16213e)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ fontSize: '1.8rem', opacity: 0.4 }}>🎬</span>
+                          </div>
+                        )}
+                        {/* Type badge */}
+                        <div style={{ position: 'absolute', top: '6px', left: '6px', padding: '2px 8px', borderRadius: '4px', fontSize: '0.6rem', fontWeight: '800', letterSpacing: '0.5px',
+                          background: isImage ? 'rgba(34,197,94,0.9)' : 'rgba(99,102,241,0.9)', color: '#fff' }}>
+                          {isImage ? 'IMG' : 'VID'}
+                        </div>
+                        {/* Remove btn */}
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); removeMedia(idx); }} 
+                          style={{ position: 'absolute', top: '5px', right: '5px', width: '22px', height: '22px', background: 'rgba(239,68,68,0.85)', border: 'none', borderRadius: '6px', color: '#fff', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.7, transition: 'opacity 0.2s' }}
+                          onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                          onMouseLeave={e => e.currentTarget.style.opacity = '0.7'}
+                        >✕</button>
+                      </div>
+                      
+                      {/* Bottom Info Bar */}
+                      <div style={{ padding: '6px 10px', background: '#111113', borderTop: '1px solid #27272a', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {/* Name */}
+                        <div style={{ fontSize: '0.7rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#e4e4e7' }}>
+                          {item.media?.name}
+                        </div>
+                        {/* Controls Row */}
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          {/* Duration */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', background: '#1a1a1f', borderRadius: '6px', padding: '3px 8px', border: '1px solid #27272a' }}>
+                            <span style={{ fontSize: '0.6rem', color: '#6366f1' }}>⏱</span>
+                            <input 
+                              type="number" min="1" 
+                              value={dur} 
+                              onChange={(e) => updateDuration(idx, e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{ width: '28px', background: 'transparent', border: 'none', color: '#e4e4e7', fontSize: '0.72rem', fontWeight: '700', textAlign: 'center', outline: 'none' }} 
+                            />
+                            <span style={{ fontSize: '0.6rem', color: '#52525b' }}>s</span>
+                          </div>
+                          {/* Transition */}
+                          <select 
+                            value={item.transition || 'fade'} 
+                            onChange={(e) => { e.stopPropagation(); updateTransition(idx, e.target.value); }}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ flex: 1, background: '#1a1a1f', border: '1px solid #27272a', borderRadius: '6px', color: '#a1a1aa', fontSize: '0.68rem', padding: '3px 6px', cursor: 'pointer', outline: 'none' }}
+                          >
+                            <option value="fade">✦ Fade</option>
+                            <option value="slide">→ Slide</option>
+                            <option value="zoom">⊕ Zoom</option>
+                            <option value="cinematic">◎ Cinema</option>
+                            <option value="none">— Sem</option>
+                          </select>
+                        </div>
+                      </div>
+                      
+                      {/* Transition connector */}
+                      {idx < selectedItems.length - 1 && (
+                        <div style={{ 
+                          position: 'absolute', right: '-14px', top: '35%', transform: 'translateY(-50%)', 
+                          width: '24px', height: '24px', background: '#27272a', borderRadius: '50%', 
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5, 
+                          fontSize: '0.6rem', border: '2px solid #18181b', color: '#6366f1'
+                        }}>
+                          {(item.transition || 'fade') === 'fade' ? '✦' : (item.transition === 'slide' ? '→' : (item.transition === 'zoom' ? '⊕' : '▶'))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {/* Add media button */}
+                <div onClick={() => setActiveTab('medias')} style={{ 
+                  width: '100px', minWidth: '100px', border: '2px dashed #27272a', borderRadius: '10px', 
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
+                  cursor: 'pointer', color: '#52525b', flexShrink: 0, gap: '6px',
+                  transition: 'border-color 0.2s, color 0.2s'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.color = '#818cf8'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#27272a'; e.currentTarget.style.color = '#52525b'; }}
+                >
+                  <span style={{ fontSize: '1.5rem' }}>+</span>
+                  <span style={{ fontSize: '0.65rem', fontWeight: '700' }}>Mídia</span>
                 </div>
-              ))}
-              <div onClick={() => setActiveTab('medias')} style={{ height: '100px', width: '100px', border: '2px dashed #3f3f46', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#a1a1aa', flexShrink: 0 }}>
-                + Mídia
               </div>
             </div>
           </div>
@@ -944,11 +1097,81 @@ const PlaylistEditor = () => {
                selectedElement === 'weather' ? '⛅ Propriedades: Clima' :
                selectedElement === 'social' ? '📱 Propriedades: Social' :
                selectedElement === 'ticker' ? '📰 Propriedades: Notícias' :
+               selectedElement?.startsWith('media-') ? '🖼️ Propriedades: Mídia' :
                '⚙️ Config. da Cena'}
             </h3>
           </div>
 
           <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+            {/* Media properties panel when timeline item selected */}
+            {selectedElement?.startsWith('media-') && (() => {
+              const mediaIdx = parseInt(selectedElement.split('-')[1]);
+              const mediaItem = selectedItems[mediaIdx];
+              if (!mediaItem) return null;
+              const isImage = mediaItem.media?.type === 'image';
+              return (
+                <>
+                  {/* Thumbnail preview */}
+                  <div style={{ borderRadius: '12px', overflow: 'hidden', aspectRatio: '16/9', background: '#09090b', border: '1px solid #27272a' }}>
+                    {isImage ? (
+                      <img src={mediaItem.media?.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #1a1a2e, #16213e)' }}>
+                        <span style={{ fontSize: '2.5rem' }}>🎬</span>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: '700', color: '#e4e4e7' }}>{mediaItem.media?.name}</div>
+                  
+                  {/* Duration */}
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Tempo de Exibição</span>
+                      <span style={{ color: '#6366f1' }}>{mediaItem.duration || 10}s</span>
+                    </label>
+                    <input type="range" min="1" max="120" value={mediaItem.duration || 10} onChange={e => updateDuration(mediaIdx, e.target.value)} style={{ width: '100%', accentColor: '#6366f1' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', color: '#52525b', marginTop: '4px' }}>
+                      <span>1s</span><span>30s</span><span>60s</span><span>120s</span>
+                    </div>
+                  </div>
+
+                  {/* Transition */}
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Efeito de Transição</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      {[
+                        { v: 'fade', icon: '✦', label: 'Fade' },
+                        { v: 'slide', icon: '→', label: 'Slide' },
+                        { v: 'zoom', icon: '⊕', label: 'Zoom' },
+                        { v: 'cinematic', icon: '◎', label: 'Cinematic' },
+                        { v: 'none', icon: '—', label: 'Nenhum' },
+                      ].map(t => (
+                        <div key={t.v} onClick={() => updateTransition(mediaIdx, t.v)} style={{
+                          padding: '10px', borderRadius: '10px', cursor: 'pointer', textAlign: 'center',
+                          background: (mediaItem.transition || 'fade') === t.v ? 'rgba(99,102,241,0.15)' : '#1a1a1f',
+                          border: (mediaItem.transition || 'fade') === t.v ? '2px solid #6366f1' : '1px solid #27272a',
+                          transition: 'all 0.2s'
+                        }}>
+                          <div style={{ fontSize: '1.2rem', marginBottom: '4px' }}>{t.icon}</div>
+                          <div style={{ fontSize: '0.7rem', fontWeight: '700', color: (mediaItem.transition || 'fade') === t.v ? '#818cf8' : '#71717a' }}>{t.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Position */}
+                  <div style={{ fontSize: '0.75rem', color: '#52525b', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Posição: {mediaIdx + 1} de {selectedItems.length}</span>
+                    <span>Tipo: {isImage ? 'Imagem' : 'Vídeo'}</span>
+                  </div>
+
+                  <button onClick={() => { removeMedia(mediaIdx); setSelectedElement(null); }} style={{ padding: '10px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#ef4444', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}>
+                    🗑️ Remover Mídia
+                  </button>
+                </>
+              );
+            })()}
             
             {!selectedElement && (
               <>
@@ -1016,15 +1239,20 @@ const PlaylistEditor = () => {
                    </select>
                  </div>
                  <div>
-                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Estilo do Card</label>
-                   <select value={clockCardStyle} onChange={e => setClockCardStyle(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
-                     <option value="dark">Escuro (Padrão)</option>
-                     <option value="light">Claro</option>
-                     <option value="minimalist">Minimalista</option>
-                     <option value="glass_pro">Glass Pro</option>
-                     <option value="neon">Neon</option>
-                     <option value="border_classic">Borda Clássica</option>
-                   </select>
+                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Estilo do Card</label>
+                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                     {CARD_STYLE_PREVIEWS.map(s => (
+                       <div key={s.value} onClick={() => setClockCardStyle(s.value)} style={{
+                         padding: '10px', borderRadius: '10px', cursor: 'pointer',
+                         background: s.color, border: clockCardStyle === s.value ? '2px solid #6366f1' : s.border,
+                         boxShadow: clockCardStyle === s.value ? '0 0 12px rgba(99,102,241,0.3)' : 'none',
+                         transition: 'all 0.2s'
+                       }}>
+                         <div style={{ fontSize: '0.72rem', fontWeight: '800', color: s.textColor }}>{s.label}</div>
+                         <div style={{ fontSize: '0.58rem', color: s.textColor, opacity: 0.6, marginTop: '2px' }}>{s.desc}</div>
+                       </div>
+                     ))}
+                   </div>
                  </div>
                 {useCustomPos && (
                   <button onClick={() => setUseCustomPos(false)} style={{ padding: '8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem', cursor: 'pointer' }}>
@@ -1045,15 +1273,24 @@ const PlaylistEditor = () => {
                    <input type="range" min="10" max="200" value={weatherSize} onChange={e => setWeatherSize(parseInt(e.target.value))} style={{ width: '100px' }} />
                  </div>
                  <div>
-                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Estilo do Card</label>
-                   <select value={weatherCardStyle} onChange={e => setWeatherCardStyle(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
-                     <option value="dark">Escuro (Padrão)</option>
-                     <option value="light">Claro</option>
-                     <option value="minimalist">Minimalista</option>
-                     <option value="glass_pro">Glass Pro</option>
-                     <option value="neon">Neon</option>
-                     <option value="border_classic">Borda Clássica</option>
-                   </select>
+                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Estilo do Card</label>
+                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                     {CARD_STYLE_PREVIEWS.map(s => (
+                       <div key={s.value} onClick={() => setWeatherCardStyle(s.value)} style={{
+                         padding: '10px', borderRadius: '10px', cursor: 'pointer',
+                         background: s.color, border: weatherCardStyle === s.value ? '2px solid #6366f1' : s.border,
+                         boxShadow: weatherCardStyle === s.value ? '0 0 12px rgba(99,102,241,0.3)' : 'none',
+                         transition: 'all 0.2s'
+                       }}>
+                         <div style={{ fontSize: '0.72rem', fontWeight: '800', color: s.textColor }}>{s.label}</div>
+                         <div style={{ fontSize: '0.58rem', color: s.textColor, opacity: 0.6, marginTop: '2px' }}>{s.desc}</div>
+                       </div>
+                     ))}
+                   </div>
+                 </div>
+                 <div>
+                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Localização (Cidade/Estado)</label>
+                   <input value={weatherCity} onChange={e => setWeatherCity(e.target.value)} placeholder="Ex: Cuiabá - MT" style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }} />
                  </div>
                 {useCustomPos && (
                   <button onClick={() => setUseCustomPos(false)} style={{ padding: '8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem', cursor: 'pointer' }}>
@@ -1074,15 +1311,20 @@ const PlaylistEditor = () => {
                   </select>
                 </div>
                  <div>
-                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Estilo do Card</label>
-                   <select value={socialCardStyle} onChange={e => setSocialCardStyle(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
-                     <option value="dark">Escuro (Padrão)</option>
-                     <option value="light">Claro</option>
-                     <option value="minimalist">Minimalista</option>
-                     <option value="glass_pro">Glass Pro</option>
-                     <option value="neon">Neon</option>
-                     <option value="border_classic">Borda Clássica</option>
-                   </select>
+                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Estilo do Card</label>
+                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                     {CARD_STYLE_PREVIEWS.map(s => (
+                       <div key={s.value} onClick={() => setSocialCardStyle(s.value)} style={{
+                         padding: '10px', borderRadius: '10px', cursor: 'pointer',
+                         background: s.color, border: socialCardStyle === s.value ? '2px solid #6366f1' : s.border,
+                         boxShadow: socialCardStyle === s.value ? '0 0 12px rgba(99,102,241,0.3)' : 'none',
+                         transition: 'all 0.2s'
+                       }}>
+                         <div style={{ fontSize: '0.72rem', fontWeight: '800', color: s.textColor }}>{s.label}</div>
+                         <div style={{ fontSize: '0.58rem', color: s.textColor, opacity: 0.6, marginTop: '2px' }}>{s.desc}</div>
+                       </div>
+                     ))}
+                   </div>
                  </div>
                 <div>
                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Posição na Tela</label>

@@ -180,6 +180,76 @@ const Settings = () => {
           </div>
         </form>
       </div>
+
+      <div className="card" style={{ marginTop: '24px' }}>
+        <h2 style={{ marginBottom: '24px' }}>Gerenciamento de Versão (APK/GitHub)</h2>
+        <div className="input-group" style={{ marginBottom: '24px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+            Configure aqui a versão mais recente do aplicativo Android. Quando você alterar a versão aqui, todos os dispositivos conectados receberão uma notificação para baixar o novo arquivo.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+            <div className="input-group">
+              <label>Repositório GitHub (Opcional) <span className="info-icon" title="Ex: jotapezao/Midiamaisapk - Se preenchido, o sistema buscará o APK automaticamente nos Releases">?</span></label>
+              <input 
+                type="text" 
+                value={settings.github_repo || ''} 
+                onChange={e => setSettings({...settings, github_repo: e.target.value})} 
+                placeholder="usuario/repositorio"
+              />
+            </div>
+
+            <div className="input-group">
+              <label>Versão Manual (Fall-back) <span className="info-icon" title="Usado se o repositório não for configurado">?</span></label>
+              <input 
+                type="text" 
+                value={settings.latest_app_version || ''} 
+                onChange={e => setSettings({...settings, latest_app_version: e.target.value})} 
+                placeholder="1.0.1"
+              />
+            </div>
+          </div>
+
+          <div className="input-group">
+            <label>Link Direto do APK (Manual) <span className="info-icon" title="O link para download se não usar o GitHub automático">?</span></label>
+            <input 
+              type="text" 
+              value={settings.app_download_url || ''} 
+              onChange={e => setSettings({...settings, app_download_url: e.target.value})} 
+              placeholder="https://github.com/usuario/repo/releases/latest/download/app.apk"
+            />
+          </div>
+
+          <div className="input-group">
+            <label>Mensagem da Atualização <span className="info-icon" title="O que aparecerá para o usuário final na tela do dispositivo">?</span></label>
+            <input 
+              type="text" 
+              value={settings.app_update_message || ''} 
+              onChange={e => setSettings({...settings, app_update_message: e.target.value})} 
+              placeholder="Temos uma nova versão disponível com melhorias!"
+            />
+          </div>
+
+          <div className="input-group" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <input 
+              type="checkbox" 
+              id="force_update"
+              checked={settings.app_force_update || false} 
+              onChange={e => setSettings({...settings, app_force_update: e.target.checked})}
+              style={{ width: '18px', height: '18px' }}
+            />
+            <label htmlFor="force_update" style={{ marginBottom: 0, cursor: 'pointer' }}>Forçar Atualização (Bloqueia o uso até atualizar)</label>
+          </div>
+
+          <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? 'Atualizar Versão' : 'Salvar Configurações de Versão'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

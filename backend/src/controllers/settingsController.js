@@ -18,15 +18,27 @@ async function getSettings(req, res) {
 
 // PUT /api/settings (admin only)
 async function updateSettings(req, res) {
-  const { system_name, whatsapp_number, support_text, primary_color, logo_url } = req.body;
+  const { 
+    system_name, whatsapp_number, support_text, primary_color, logo_url,
+    latest_app_version, app_download_url, app_update_message, app_force_update,
+    github_repo
+  } = req.body;
   try {
     const { rows } = await pool.query(
       `UPDATE system_settings 
        SET system_name = $1, whatsapp_number = $2, support_text = $3, 
-           primary_color = $4, logo_url = $5, updated_at = NOW()
+           primary_color = $4, logo_url = $5, 
+           latest_app_version = $6, app_download_url = $7, 
+           app_update_message = $8, app_force_update = $9,
+           github_repo = $10,
+           updated_at = NOW()
        WHERE id = 1
        RETURNING *`,
-      [system_name, whatsapp_number, support_text, primary_color, logo_url]
+      [
+        system_name, whatsapp_number, support_text, primary_color, logo_url,
+        latest_app_version, app_download_url, app_update_message, app_force_update,
+        github_repo
+      ]
     );
     res.json(rows[0]);
   } catch (err) {
