@@ -152,6 +152,24 @@ async function create(req, res) {
   }
 }
 
+async function notifyDevices(req, playlistId) {
+  try {
+    const io = req.app.get('io');
+    if (!io) return;
+
+    // Find which client owns this playlist
+    const { rows } = await pool.query('SELECT client_id FROM playlists WHERE id = $1', [playlistId]);
+    if (rows.length > 0) {
+      const clientId = rows[0].client_id;
+      // Emit to all clients in this specific client room
+      io.to(`client:${clientId}`).emit('playlist:updated', { playlistId });
+      console.log(`[WS] Notified devices for client ${clientId} about playlist ${playlistId} update`);
+    }
+  } catch (err) {
+    console.error('[notifyDevices error]', err.message);
+  }
+}
+
 // PUT /api/playlists/:id
 async function update(req, res) {
   const { 
@@ -241,6 +259,9 @@ async function update(req, res) {
       }
     }
 
+    // Trigger proactive update notification
+    notifyDevices(req, playlist.id);
+
     res.json(playlist);
   } catch (err) {
     console.error('[Playlist update]', err.message);
@@ -275,6 +296,10 @@ async function setItems(req, res) {
         );
       }
     }
+    
+    // Trigger proactive update notification
+    notifyDevices(req, playlistId);
+
     res.json({ message: 'Itens atualizados!' });
   } catch (err) {
     console.error('[setItems]', err.message);

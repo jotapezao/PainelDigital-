@@ -104,10 +104,16 @@ io.on('connection', (socket) => {
 
       // Update device status in DB
       const { pool } = require('./database/db');
-      await pool.query(
-        'UPDATE devices SET status = $1, last_seen = NOW() WHERE id = $2',
+      const { rows } = await pool.query(
+        'UPDATE devices SET status = $1, last_seen = NOW() WHERE id = $2 RETURNING client_id',
         ['online', deviceId]
       );
+
+      if (rows.length > 0 && rows[0].client_id) {
+        const clientId = rows[0].client_id;
+        socket.join(`client:${clientId}`);
+        console.log(`[WS] Device ${deviceId} joined room client:${clientId}`);
+      }
 
       // Notify admins
       io.emit('device:status', { deviceId, status: 'online' });

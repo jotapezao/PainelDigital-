@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { io } from 'socket.io-client';
 
 
 const Player = () => {
@@ -19,6 +20,24 @@ const Player = () => {
   useEffect(() => {
     fetchPlaylist();
     
+    // Connect Socket for real-time updates
+    const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const socket = io(socketUrl, {
+      auth: { token: localStorage.getItem('token') }
+    });
+
+    socket.on('connect', () => {
+      console.log('[WS] Connected to server');
+      if (user && user.id) {
+        socket.emit('device:register', { deviceId: user.id });
+      }
+    });
+
+    socket.on('playlist:updated', () => {
+      console.log('[WS] Playlist update received! Refreshing...');
+      fetchPlaylist();
+    });
+
     // Skip heartbeat if in preview mode
     let heartbeat;
     if (!previewId) {
@@ -26,15 +45,15 @@ const Player = () => {
         try {
           await api.post('/devices/heartbeat', {
             player_status: isStarted ? 'playing' : 'stopped',
-            ip_address: null, // browser doesn't expose IP directly
+            ip_address: null, 
             current_media: currentMediaRef.current
           });
         } catch (e) {
           console.error('Falha no sinal de vida');
         }
       };
-      sendHeartbeat(); // Immediate heartbeat
-      heartbeat = setInterval(sendHeartbeat, 20000); // 20 seconds
+      sendHeartbeat(); 
+      heartbeat = setInterval(sendHeartbeat, 20000); 
     }
 
     const interval = setInterval(fetchPlaylist, 2 * 60 * 1000);
@@ -42,8 +61,9 @@ const Player = () => {
     return () => {
       if (heartbeat) clearInterval(heartbeat);
       clearInterval(interval);
+      socket.disconnect();
     };
-  }, [previewId, isStarted]);
+  }, [previewId, isStarted, user]);
 
   const fetchPlaylist = async () => {
     try {
@@ -298,7 +318,7 @@ const Player = () => {
   const isMobile = windowWidth < 768;
   const responsiveScale = (originalSize) => {
     const baseScale = (originalSize || 100) / 100;
-    return isMobile ? baseScale * 0.7 : baseScale;
+    return isMobile ? baseScale * 0.45 : baseScale;
   };
 
   const rotationStyles = rotation !== 0 ? {

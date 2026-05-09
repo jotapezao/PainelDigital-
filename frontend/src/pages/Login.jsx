@@ -149,47 +149,72 @@ const Login = () => {
           .login-header p {
             display: none;
           }
+        }
+
+        @media (max-width: 900px) and (orientation: landscape) {
+          .login-card {
+            flex-direction: row;
+            max-width: 850px;
+            height: 90vh;
+            padding: 20px;
+            gap: 20px;
+            align-items: stretch;
+          }
+          .login-header {
+            flex: 0.4;
+            margin-bottom: 0 !important;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+          }
           .login-logo {
-            margin: 0 0 15px 0 !important;
-            width: 60px !important;
-            height: 60px !important;
+            width: 50px !important;
+            height: 50px !important;
+            margin-bottom: 10px !important;
+          }
+          .login-title {
+            font-size: 1.4rem !important;
           }
           form {
             flex: 0.6;
-            margin-top: 0 !important;
+            overflow-y: auto;
+            padding-right: 10px;
           }
           .login-button {
-            margin-top: 12px !important;
+            margin-top: 15px !important;
+            padding: 12px !important;
           }
-          .login-title {
-            font-size: 1.5rem !important;
+          .tv-mode-banner {
+            display: none;
           }
         }
 
         @media (max-width: 480px) {
           .login-card {
-            padding: 28px 24px;
+            padding: 24px 20px;
             border-radius: 24px;
-            width: 95%;
+            width: 92%;
+            margin: 10px auto;
           }
           .login-header {
-            margin-bottom: 24px !important;
+            margin-bottom: 20px !important;
           }
           .login-logo {
-            width: 64px !important;
-            height: 64px !important;
-            margin-bottom: 16px !important;
+            width: 60px !important;
+            height: 60px !important;
+            margin-bottom: 12px !important;
           }
           .login-title {
-            font-size: 1.8rem !important;
+            font-size: 1.6rem !important;
           }
           .login-input {
-            padding: 12px 16px !important;
-            font-size: 0.95rem !important;
+            padding: 12px 14px !important;
+            font-size: 0.9rem !important;
           }
           .login-button {
             padding: 14px !important;
-            margin-top: 20px !important;
+            margin-top: 16px !important;
+            font-size: 0.95rem !important;
           }
         }
         .login-input {
