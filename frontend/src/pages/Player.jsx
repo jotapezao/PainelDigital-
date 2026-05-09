@@ -670,6 +670,11 @@ const Player = () => {
       <div style={{ position: 'absolute', top: playlist.layout === 'with_header' ? (isMobile ? '90px' : '140px') : (isMobile ? '20px' : '40px'), left: isMobile ? '20px' : '50px', zIndex: 5 }}>
         <h2 style={{ color: '#fff', opacity: 0.6, fontSize: isMobile ? '1.2rem' : '2rem', margin: 0, fontWeight: '900', fontFamily: 'Outfit', textShadow: '0 4px 20px rgba(0,0,0,0.6)' }}>{playlist.client_name}</h2>
       </div>
+
+      {/* Versão para controle de Build */}
+      <div style={{ position: 'absolute', bottom: '10px', left: '10px', fontSize: '10px', color: 'rgba(255,255,255,0.2)', zIndex: 9999 }}>
+        BUILD v3.0.6
+      </div>
     </div>
   );
 };
