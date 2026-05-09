@@ -11,20 +11,25 @@ const Player = () => {
   const { user, logout } = useAuth();
   const [playlist, setPlaylist] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [mediaNonce, setMediaNonce] = useState(0);
   const [isStarted, setIsStarted] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
+  
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const currentMediaRef = useRef(null);
-  
-  // Responsive states (Moved to top to fix React Hook Error #310)
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const timerRef = useRef(null);
+  const logoutTimerRef = useRef(null);
+  const clicksRef = useRef(0);
+  const clickTimerRef = useRef(null);
+
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  const isMobile = windowWidth < 768;
 
   useEffect(() => {
     fetchPlaylist();
@@ -74,6 +79,22 @@ const Player = () => {
     };
   }, [previewId, isStarted, user]);
 
+  useEffect(() => {
+    if (!playlist || playlist.items.length === 0) return;
+
+    const currentItem = playlist.items[currentIndex];
+    currentMediaRef.current = currentItem.media_name || currentItem.name || 'Mídia Desconhecida';
+    
+    if (currentItem.type === 'image') {
+      const duration = (currentItem.duration_seconds || 10) * 1000;
+      timerRef.current = setTimeout(nextMedia, duration);
+    }
+    
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [currentIndex, mediaNonce, playlist]);
+
   const fetchPlaylist = async () => {
     try {
       let response;
@@ -115,14 +136,9 @@ const Player = () => {
     }
   };
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [mediaNonce, setMediaNonce] = useState(0);
-  const timerRef = useRef(null);
-  const logoutTimerRef = useRef(null);
-
   const nextMedia = () => {
     setCurrentIndex((prev) => {
-      const next = (prev + 1) % playlist.items.length;
+      const next = (prev + 1) % (playlist?.items?.length || 1);
       if (next === prev) {
         setMediaNonce(n => n + 1);
       }
@@ -133,22 +149,6 @@ const Player = () => {
   const handleVideoEnd = () => {
     nextMedia();
   };
-
-  useEffect(() => {
-    if (!playlist || playlist.items.length === 0) return;
-
-    const currentItem = playlist.items[currentIndex];
-    currentMediaRef.current = currentItem.media_name || currentItem.name || 'Mídia Desconhecida';
-    
-    if (currentItem.type === 'image') {
-      const duration = (currentItem.duration_seconds || 10) * 1000;
-      timerRef.current = setTimeout(nextMedia, duration);
-    }
-    
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [currentIndex, mediaNonce, playlist]);
 
   if (loading) {
     return (
@@ -166,9 +166,6 @@ const Player = () => {
   };
 
   // Show logout hint on triple-click anywhere on the player
-  const clicksRef = useRef(0);
-  const clickTimerRef = useRef(null);
-  
   const handleTripleClick = () => {
     clicksRef.current++;
     clearTimeout(clickTimerRef.current);
