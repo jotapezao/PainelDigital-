@@ -28,6 +28,15 @@ const Player = () => {
   const [showTicker, setShowTicker] = useState(true);
   const tickerTimerRef = useRef(null);
 
+  const [showClockWidget, setShowClockWidget] = useState(true);
+  const [showWeatherWidget, setShowWeatherWidget] = useState(true);
+  const [showSocialWidget, setShowSocialWidget] = useState(true);
+  const [weatherData, setWeatherData] = useState({ temp: '--', icon: '⛅' });
+
+  const clockTimerRef = useRef(null);
+  const weatherTimerRef = useRef(null);
+  const socialTimerRef = useRef(null);
+
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
@@ -123,6 +132,76 @@ const Player = () => {
       if (tickerTimerRef.current) clearTimeout(tickerTimerRef.current);
     };
   }, [playlist]);
+
+  useEffect(() => {
+    if (!playlist) return;
+
+    const setupWidgetCycle = (intervalMin, durationMin, setShow, timerRef) => {
+      if (!intervalMin && !durationMin) {
+        setShow(true);
+        return () => {};
+      }
+      
+      const runCycle = () => {
+        setShow(true);
+        timerRef.current = setTimeout(() => setShow(false), (durationMin || 1) * 60 * 1000);
+      };
+      
+      runCycle();
+      const cycleInterval = setInterval(runCycle, ((intervalMin || 0) + (durationMin || 1)) * 60 * 1000);
+      
+      return () => {
+        clearInterval(cycleInterval);
+        if (timerRef.current) clearTimeout(timerRef.current);
+      };
+    };
+
+    const cleanupClock = setupWidgetCycle(playlist.clock_interval, playlist.clock_duration, setShowClockWidget, clockTimerRef);
+    const cleanupWeather = setupWidgetCycle(playlist.weather_interval, playlist.weather_duration, setShowWeatherWidget, weatherTimerRef);
+    const cleanupSocial = setupWidgetCycle(playlist.social_interval, playlist.social_duration, setShowSocialWidget, socialTimerRef);
+
+    return () => {
+      cleanupClock();
+      cleanupWeather();
+      cleanupSocial();
+    };
+  }, [playlist]);
+
+  useEffect(() => {
+    const fetchWeather = async () => {
+      if (!playlist || !playlist.show_weather || !playlist.weather_city) return;
+      try {
+        const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(playlist.weather_city)}&count=1&language=pt&format=json`);
+        const geoData = await geoRes.json();
+        if (geoData.results && geoData.results.length > 0) {
+          const { latitude, longitude } = geoData.results[0];
+          const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`);
+          const weatherJson = await weatherRes.json();
+          if (weatherJson.current_weather) {
+            const code = weatherJson.current_weather.weathercode;
+            let icon = '⛅';
+            if (code <= 1) icon = '☀️';
+            else if (code <= 3) icon = '⛅';
+            else if (code <= 49) icon = '☁️';
+            else if (code <= 69) icon = '🌧️';
+            else if (code <= 79) icon = '❄️';
+            else if (code <= 99) icon = '⛈️';
+            
+            setWeatherData({
+              temp: Math.round(weatherJson.current_weather.temperature),
+              icon
+            });
+          }
+        }
+      } catch (e) {
+        console.error('Weather fetch error:', e);
+      }
+    };
+
+    fetchWeather();
+    const interval = setInterval(fetchWeather, 30 * 60 * 1000); // Update every 30 mins
+    return () => clearInterval(interval);
+  }, [playlist?.weather_city, playlist?.show_weather]);
 
   const fetchPlaylist = async () => {
     try {
@@ -250,9 +329,24 @@ const Player = () => {
   const currentItem = playlist.items[currentIndex];
   const mediaUrl = currentItem.url || currentItem.filename;
 
-  const bottomOffset = (playlist.footer_text || playlist.layout === 'with_footer') ? `${(playlist.ticker_height || 80) + 40}px` : '40px';
+  const getScreenRatio = () => {
+    if (!playlist) return 1;
+    const editorW = playlist.orientation === 'portrait' ? 540 : 960;
+    const editorH = playlist.orientation === 'portrait' ? 960 : 540;
+    const scaleX = windowWidth / editorW;
+    const scaleY = window.innerHeight / editorH;
+    return Math.min(scaleX, scaleY);
+  };
 
-  const getPositionStyles = (posStr, offset = '40px', bOffset = bottomOffset) => {
+  const defaultOffsetPx = isMobile ? 20 : (40 * getScreenRatio());
+  const defaultOffset = `${defaultOffsetPx}px`;
+
+  const bottomOffsetPx = (playlist?.footer_text || playlist?.layout === 'with_footer') 
+    ? ((playlist.ticker_height || 80) + 40) * getScreenRatio() 
+    : defaultOffsetPx;
+  const bottomOffset = `${bottomOffsetPx}px`;
+
+  const getPositionStyles = (posStr, offset = defaultOffset, bOffset = bottomOffset) => {
     const styles = { position: 'absolute', zIndex: 10 };
     if (!posStr) posStr = 'top-right';
     
@@ -377,13 +471,9 @@ const Player = () => {
 
   // Responsive scale factor for widgets on mobile
   // Base resolution of the PlaylistEditor canvas
-  const BASE_WIDTH = 960;
-  const BASE_HEIGHT = 540;
-
   const responsiveScale = (originalSize) => {
     const baseScale = (originalSize || 100) / 100;
-    // On mobile, we reduce the scale to avoid crowding
-    return isMobile ? baseScale * 0.45 : baseScale;
+    return baseScale * getScreenRatio();
   };
 
   const getScaledPos = (x, y) => {
@@ -391,6 +481,7 @@ const Player = () => {
     const editorW = playlist.orientation === 'portrait' ? 540 : 960;
     const editorH = playlist.orientation === 'portrait' ? 960 : 540;
     
+    // Convert coordinate to percentage based on editor dimensions, then apply to current viewport
     const scaleX = windowWidth / editorW;
     const scaleY = window.innerHeight / editorH;
     
@@ -528,7 +619,7 @@ const Player = () => {
               key={`${currentItem.id}-${currentIndex}-${mediaNonce}`}
               src={mediaUrl} 
               className={`transition-${playlist.transition_effect || 'fade'}`}
-              style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'), zIndex: 1, position: 'relative' }}
+              style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'), zIndex: 1, position: 'relative', animationDuration: playlist.transition_duration || '1s' }}
             />
           ) : (
             <video
@@ -539,13 +630,13 @@ const Player = () => {
               onEnded={handleVideoEnd}
               loop={currentItem.duration_seconds > 0}
               className={`transition-${playlist.transition_effect || 'fade'}`}
-              style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'), zIndex: 1, position: 'relative' }}
+              style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'), zIndex: 1, position: 'relative', animationDuration: playlist.transition_duration || '1s' }}
             />
           )}
 
           {/* Relógio Widget */}
-          {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_clock && (
-            <div className="player-widget-clock" style={{
+          {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_clock && showClockWidget && (
+            <div className={`player-widget-clock ${playlist.clock_style || 'digital_transparent'}`} style={{
               ...getWidgetBaseStyle(playlist.clock_card_style || 'dark', playlist.card_transparency),
               ...(playlist.use_custom_pos ? { position: 'absolute', left: `${getScaledPos(playlist.clock_x || 0, playlist.clock_y || 0).x}px`, top: `${getScaledPos(playlist.clock_x || 0, playlist.clock_y || 0).y}px` } : getPositionStyles(playlist.widget_position || 'top-right', isMobile ? '20px' : '40px')),
               transform: `${!playlist.use_custom_pos && (playlist.widget_position || 'top-right').includes('center') ? 'translateX(-50%) ' : ''}scale(${responsiveScale(playlist.clock_size)})`,
@@ -556,23 +647,26 @@ const Player = () => {
           )}
 
           {/* Clima Widget */}
-          {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_weather && (
+          {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_weather && showWeatherWidget && (
             <div className="player-widget-weather" style={{
               ...getWidgetBaseStyle(playlist.weather_card_style || 'dark', playlist.card_transparency),
               ...(playlist.use_custom_pos ? { position: 'absolute', left: `${getScaledPos(playlist.weather_x || 0, playlist.weather_y || 0).x}px`, top: `${getScaledPos(playlist.weather_x || 0, playlist.weather_y || 0).y}px` } : getPositionStyles('top-left', isMobile ? '20px' : '40px')),
               transform: `scale(${responsiveScale(playlist.weather_size)})`,
               transformOrigin: 'top left',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
             }}>
-              <span style={{ fontSize: '2.8rem' }}>⛅</span>
+              <span style={{ fontSize: '2.8rem' }}>{weatherData.icon}</span>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '2.8rem', fontWeight: '800', fontFamily: 'Outfit', lineHeight: 1 }}>26°C</span>
+                <span style={{ fontSize: '2.8rem', fontWeight: '800', fontFamily: 'Outfit', lineHeight: 1 }}>{weatherData.temp}°C</span>
                 <span style={{ fontSize: '1rem', opacity: 0.8, fontWeight: '600' }}>{playlist.weather_city || 'Cuiabá - MT'}</span>
               </div>
             </div>
           )}
 
           {/* Card de Redes Sociais */}
-          {playlist.layout !== 'split' && playlist.show_social && (
+          {playlist.layout !== 'split' && playlist.show_social && showSocialWidget && (
             <div className="player-social-widget" style={{
               ...getWidgetBaseStyle(playlist.social_card_style || 'dark', playlist.card_transparency),
               ...(playlist.use_custom_pos ? { position: 'absolute', left: `${getScaledPos(playlist.social_x || 0, playlist.social_y || 0).x}px`, top: `${getScaledPos(playlist.social_x || 0, playlist.social_y || 0).y}px` } : getPositionStyles(playlist.social_position || 'bottom-right', isMobile ? '20px' : '40px')),
@@ -669,40 +763,128 @@ const Player = () => {
       {(playlist.footer_text || playlist.rss_url || playlist.layout === 'with_footer') && playlist.layout !== 'split' && (() => {
         const textContent = playlist.footer_text || 'Painel Digital • Inovação e Tecnologia • Siga-nos para mais novidades!';
         const text = ` ${textContent} • ${textContent} • ${textContent} `;
-        const label = playlist.ticker_label || 'NOTÍCIAS';
+        const label = playlist.ticker_label || '';
         const speed = playlist.ticker_speed === 'slow' ? '45s' : playlist.ticker_speed === 'fast' ? '15s' : '30s';
         const direction = playlist.ticker_direction || 'rtl';
         const color = playlist.theme_color || '#818cf8';
         const fontColor = playlist.footer_font_color || '#fff';
         const height = isMobile ? (playlist.ticker_height || 85) * 0.6 : (playlist.ticker_height || 85);
         const isVisible = showTicker || playlist.ticker_interval === 0;
+        const styleName = playlist.news_style || 'classic';
+        const isTop = playlist.footer_position === 'top';
+
+        let containerStyle = {};
+        let labelStyle = {};
+
+        switch (styleName) {
+          case 'modern':
+            containerStyle = {
+              backgroundColor: `rgba(${hexToRgb(color)}, ${playlist.footer_opacity ?? 0.85})`,
+              borderRadius: '50px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              margin: isTop ? '20px' : '0 20px 20px 20px',
+              width: 'calc(100% - 40px)'
+            };
+            labelStyle = {
+              background: 'linear-gradient(90deg, rgba(0,0,0,0.6), rgba(0,0,0,0.2))',
+              borderRadius: isTop ? '50px 0 0 50px' : '50px 0 0 50px',
+              color: '#fff'
+            };
+            break;
+          case 'minimal':
+            containerStyle = {
+              backgroundColor: `rgba(0,0,0,${playlist.footer_opacity ?? 0.4})`,
+              borderTop: isTop ? 'none' : `1px solid rgba(255,255,255,0.2)`,
+              borderBottom: isTop ? `1px solid rgba(255,255,255,0.2)` : 'none',
+              backdropFilter: 'blur(20px)'
+            };
+            labelStyle = {
+              background: 'transparent',
+              color: color,
+              borderRight: `2px solid ${color}`
+            };
+            break;
+          case 'neon':
+            containerStyle = {
+              backgroundColor: `rgba(0,0,0,${playlist.footer_opacity ?? 0.8})`,
+              boxShadow: `0 0 20px ${color}, inset 0 0 10px ${color}`,
+              borderTop: isTop ? 'none' : `2px solid ${color}`,
+              borderBottom: isTop ? `2px solid ${color}` : 'none'
+            };
+            labelStyle = {
+              background: color,
+              color: '#000',
+              textShadow: 'none',
+              boxShadow: `0 0 15px ${color}`
+            };
+            break;
+          case 'news_channel':
+            containerStyle = {
+              backgroundColor: '#fff',
+              color: '#000',
+              borderTop: isTop ? 'none' : `4px solid ${color}`,
+              borderBottom: isTop ? `4px solid ${color}` : 'none'
+            };
+            labelStyle = {
+              background: color,
+              color: '#fff',
+              clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0% 100%)',
+              paddingRight: '50px'
+            };
+            break;
+          case 'elegant':
+            containerStyle = {
+              backgroundColor: `rgba(15,15,15,${playlist.footer_opacity ?? 0.95})`,
+              borderTop: isTop ? 'none' : `1px solid ${color}`,
+              borderBottom: isTop ? `1px solid ${color}` : 'none'
+            };
+            labelStyle = {
+              background: 'transparent',
+              color: color,
+              fontFamily: 'Playfair Display, serif',
+              letterSpacing: '4px'
+            };
+            break;
+          default: // classic
+            containerStyle = {
+              backgroundColor: `rgba(${hexToRgb(color)}, ${playlist.footer_opacity ?? 0.85})`,
+              boxShadow: isTop ? '0 10px 40px rgba(0,0,0,0.5)' : '0 -10px 40px rgba(0,0,0,0.5)',
+              borderRadius: playlist.layout === 'floating' ? '20px' : '0'
+            };
+            labelStyle = {
+              background: 'rgba(0,0,0,0.25)',
+              borderRight: '2px solid rgba(255,255,255,0.1)'
+            };
+            break;
+        }
 
         return (
           <div style={{
             height: `${height}px`, 
             width: playlist.use_custom_pos ? (playlist.layout === 'floating' ? '90%' : '100%') : '100%',
-            backgroundColor: `rgba(${hexToRgb(color)}, ${playlist.footer_opacity ?? 0.85})`,
-            color: fontColor, 
+            color: styleName === 'news_channel' ? '#000' : fontColor, 
             display: isVisible ? 'flex' : 'none', 
             alignItems: 'center', overflow: 'hidden',
             whiteSpace: 'nowrap', 
             position: 'absolute',
             left: playlist.use_custom_pos ? `${getScaledPos(playlist.ticker_x || 0, playlist.ticker_y || 0).x}px` : (playlist.layout === 'floating' ? '5%' : 0),
-            top: playlist.use_custom_pos ? `${getScaledPos(playlist.ticker_x || 0, playlist.ticker_y || 0).y}px` : (playlist.footer_position === 'top' ? 0 : 'auto'),
-            bottom: !playlist.use_custom_pos && playlist.footer_position === 'bottom' ? 0 : 'auto',
+            top: playlist.use_custom_pos ? `${getScaledPos(playlist.ticker_x || 0, playlist.ticker_y || 0).y}px` : (isTop ? 0 : 'auto'),
+            bottom: !playlist.use_custom_pos && !isTop ? 0 : 'auto',
             zIndex: 100, backdropFilter: 'blur(12px)',
-            boxShadow: playlist.footer_position === 'top' ? '0 10px 40px rgba(0,0,0,0.5)' : '0 -10px 40px rgba(0,0,0,0.5)',
-            borderRadius: playlist.layout === 'floating' ? '20px' : '0',
             opacity: isVisible ? 1 : 0,
-            transition: 'opacity 0.5s ease'
+            transition: 'opacity 0.5s ease',
+            ...containerStyle
           }}>
-            <div style={{
-              padding: isMobile ? '0 15px' : '0 35px', background: 'rgba(0,0,0,0.25)', height: '100%',
-              display: 'flex', alignItems: 'center', fontWeight: '900', fontSize: isMobile ? '0.7rem' : '1.2rem',
-              textTransform: 'uppercase', letterSpacing: '2px', borderRight: '2px solid rgba(255,255,255,0.1)', zIndex: 101
-            }}>
-              {label}
-            </div>
+            {label && (
+              <div style={{
+                padding: isMobile ? '0 15px' : '0 35px', height: '100%',
+                display: 'flex', alignItems: 'center', fontWeight: '900', fontSize: isMobile ? '0.7rem' : '1.2rem',
+                textTransform: 'uppercase', letterSpacing: '2px', zIndex: 101,
+                ...labelStyle
+              }}>
+                {label}
+              </div>
+            )}
             <div style={{
               display: 'inline-block', paddingLeft: direction === 'rtl' ? '100%' : '0',
               paddingRight: direction === 'ltr' ? '100%' : '0',

@@ -94,6 +94,7 @@ const PlaylistEditor = () => {
   const [footerFontFamily, setFooterFontFamily] = useState('Inter');
   const [rssUrl, setRssUrl] = useState('');
   const [transitionEffect, setTransitionEffect] = useState('fade');
+  const [transitionDuration, setTransitionDuration] = useState('1s');
   const [tickerSpeed, setTickerSpeed] = useState('medium');
   const [tickerDirection, setTickerDirection] = useState('ltr');
   const [tickerHeight, setTickerHeight] = useState(80);
@@ -221,6 +222,7 @@ const PlaylistEditor = () => {
           setFooterFontFamily(p.footer_font_family || 'Inter');
           setRssUrl(p.rss_url || '');
           setTransitionEffect(p.transition_effect || 'fade');
+          setTransitionDuration(p.transition_duration || '1s');
           setTickerSpeed(p.ticker_speed || 'medium');
           setTickerDirection(p.ticker_direction || 'ltr');
           setTickerHeight(p.ticker_height || 80);
@@ -230,7 +232,7 @@ const PlaylistEditor = () => {
           setSocialHandle(p.social_handle || '');
           setSocialPlatform(p.social_platform || 'instagram');
           setCardTransparency(p.card_transparency !== undefined && p.card_transparency !== null ? parseFloat(p.card_transparency) : 0.4);
-          setTickerLabel(p.ticker_label || 'NOTÍCIAS');
+          setTickerLabel(p.ticker_label || '');
           setSocialQrcode(p.social_qrcode || false);
           setWidgetPosition(p.widget_position || 'top-right');
           setSocialPosition(p.social_position || 'bottom-right');
@@ -283,12 +285,42 @@ const PlaylistEditor = () => {
   }, [id, user]);
 
   const addMedia = (media) => {
-    setSelectedItems(prev => [...prev, {
-      media_id: media.id,
-      media: media,
-      duration: media.type === 'video' ? 0 : 10,
-      transition: 'fade'
-    }]);
+    if (media.type === 'video') {
+      const vid = document.createElement('video');
+      vid.src = media.url;
+      let durationSet = false;
+      
+      vid.onloadedmetadata = () => {
+        if (durationSet) return;
+        durationSet = true;
+        const dur = Math.min(Math.round(vid.duration), 3600); // max 60 min
+        setSelectedItems(prev => [...prev, {
+          media_id: media.id,
+          media: media,
+          duration: dur || 10,
+          transition: 'fade'
+        }]);
+      };
+      
+      // Fallback timeout in case metadata fails to load (CORS, etc)
+      setTimeout(() => {
+        if (durationSet) return;
+        durationSet = true;
+        setSelectedItems(prev => [...prev, {
+          media_id: media.id,
+          media: media,
+          duration: media.duration || 60, // Default to 60s fallback
+          transition: 'fade'
+        }]);
+      }, 2000);
+    } else {
+      setSelectedItems(prev => [...prev, {
+        media_id: media.id,
+        media: media,
+        duration: 10, // Default 10s for images
+        transition: 'fade'
+      }]);
+    }
   };
 
   const updateTransition = (idx, transition) => {
@@ -366,6 +398,7 @@ const PlaylistEditor = () => {
         footer_font_color: footerFontColor, footer_position: footerPosition,
         footer_font_family: footerFontFamily, rss_url: rssUrl,
         transition_effect: transitionEffect,
+        transition_duration: transitionDuration,
         ticker_speed: tickerSpeed,
         ticker_direction: tickerDirection,
         ticker_height: parseInt(tickerHeight) || 80,
@@ -643,18 +676,55 @@ const PlaylistEditor = () => {
                 </div>
                 {layout !== 'fullscreen' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid #27272a', paddingTop: '12px' }}>
-                    <div>
-                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Destaque da Barra (Label):</label>
-                      <input value={tickerLabel} onChange={e => setTickerLabel(e.target.value)} placeholder="Ex: AVISO" style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Cor do Ticker:</label>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <input type="color" value={themeColor} onChange={e => setThemeColor(e.target.value)} style={{ width: '30px', height: '30px', border: 'none', background: 'none', cursor: 'pointer' }} />
-                        <input value={themeColor} onChange={e => setThemeColor(e.target.value)} style={{ flex: 1, padding: '4px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.7rem' }} />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Destaque da Barra:</label>
+                        <input value={tickerLabel} onChange={e => setTickerLabel(e.target.value)} placeholder="Vazio por padrão" style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Cor do Destaque:</label>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <input type="color" value={themeColor} onChange={e => setThemeColor(e.target.value)} style={{ width: '30px', height: '30px', border: 'none', background: 'none', cursor: 'pointer' }} />
+                          <input value={themeColor} onChange={e => setThemeColor(e.target.value)} style={{ flex: 1, padding: '4px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.7rem' }} />
+                        </div>
                       </div>
                     </div>
-                    <textarea value={footerText} onChange={e => setFooterText(e.target.value)} placeholder="Texto informativo aqui..." rows={2} style={{ width: '100%', padding: '8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff', resize: 'none', fontSize: '0.8rem' }} />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Estilo da Faixa:</label>
+                        <select value={newsStyle} onChange={e => setNewsStyle(e.target.value)} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                          <option value="classic">Clássico (Opaco)</option>
+                          <option value="modern">Moderno (Pílula/Arredondado)</option>
+                          <option value="minimal">Minimalista (Transparente)</option>
+                          <option value="neon">Neon (Glow)</option>
+                          <option value="news_channel">Canal de Notícias (CNN)</option>
+                          <option value="elegant">Elegante (Fino/Premium)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Posição:</label>
+                        <select value={footerPosition} onChange={e => setFooterPosition(e.target.value)} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                          <option value="bottom">Rodapé (Embaixo)</option>
+                          <option value="top">Cabeçalho (Em cima)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Velocidade do Texto:</label>
+                      <select value={tickerSpeed} onChange={e => setTickerSpeed(e.target.value)} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                        <option value="slow">Lento</option>
+                        <option value="medium">Normal</option>
+                        <option value="fast">Rápido</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Cor do Texto:</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input type="color" value={footerFontColor} onChange={e => setFooterFontColor(e.target.value)} style={{ width: '30px', height: '30px', border: 'none', background: 'none', cursor: 'pointer' }} />
+                        <input value={footerFontColor} onChange={e => setFooterFontColor(e.target.value)} style={{ flex: 1, padding: '4px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.7rem' }} />
+                      </div>
+                    </div>
+                    <textarea value={footerText} onChange={e => setFooterText(e.target.value)} placeholder="Texto informativo ou link RSS..." rows={2} style={{ width: '100%', padding: '8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff', resize: 'none', fontSize: '0.8rem' }} />
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                       <div>
                         <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>A cada (min):</label>
@@ -752,12 +822,21 @@ const PlaylistEditor = () => {
 
               <div>
                 <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#fff', marginBottom: '12px', display: 'block' }}>Transições Cinematográficas</label>
-                <select value={transitionEffect} onChange={e => setTransitionEffect(e.target.value)} style={{ width: '100%', padding: '10px', background: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#fff' }}>
-                  <option value="fade">Fade Suave</option>
-                  <option value="slide">Slide Inteligente</option>
-                  <option value="zoom">Zoom Parallax</option>
-                  <option value="cinematic">Cinematic Blur Cross</option>
-                </select>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '8px' }}>
+                  <select value={transitionEffect} onChange={e => setTransitionEffect(e.target.value)} style={{ width: '100%', padding: '10px', background: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#fff' }}>
+                    <option value="fade">Fade Suave</option>
+                    <option value="slide">Slide Inteligente</option>
+                    <option value="zoom">Zoom Parallax</option>
+                    <option value="cinematic">Cinematic Blur Cross</option>
+                  </select>
+                  <select value={transitionDuration} onChange={e => setTransitionDuration(e.target.value)} style={{ width: '100%', padding: '10px', background: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#fff' }}>
+                    <option value="0.2s">Rápido 0.2s</option>
+                    <option value="0.5s">Normal 0.5s</option>
+                    <option value="1s">Suave 1.0s</option>
+                    <option value="1.5s">Lento 1.5s</option>
+                    <option value="2.5s">Cinema 2.5s</option>
+                  </select>
+                </div>
               </div>
             </div>
           )}
@@ -907,7 +986,7 @@ const PlaylistEditor = () => {
 
                 {/* Weather Widget */}
                 {showWeather && (
-                  <div 
+                    <div 
                     onMouseDown={(e) => handleMouseDown(e, 'weather')}
                     style={{ 
                       ...getWidgetBaseStyle(weatherCardStyle, cardTransparency),
@@ -918,45 +997,146 @@ const PlaylistEditor = () => {
                       transformOrigin: 'top left',
                       border: selectedElement === 'weather' ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.1)', 
                       cursor: 'move',
-                      userSelect: 'none'
+                      userSelect: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px'
                     }}>
-                    <span style={{ fontSize: '3rem' }}>⛅</span>
-                    <div>
-                      <div style={{ fontSize: '2rem', fontWeight: '900', lineHeight: 1, fontFamily: 'Outfit' }}>24°C</div>
-                      <div style={{ fontSize: '0.8rem', opacity: 0.8, marginTop: '2px' }}>{weatherCity}</div>
+                    <span style={{ fontSize: '2.8rem' }}>⛅</span>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ fontSize: '2.8rem', fontWeight: '800', lineHeight: 1, fontFamily: 'Outfit' }}>26°C</div>
+                      <div style={{ fontSize: '1rem', opacity: 0.8, fontWeight: '600' }}>{weatherCity}</div>
                     </div>
                   </div>
                 )}
 
                 {/* Footer / Ticker - Agora Draggable */}
-                {(layout === 'with_footer' || layout === 'floating') && (
-                  <div 
-                    onMouseDown={(e) => handleMouseDown(e, 'ticker')}
-                    style={{ 
-                      position: 'absolute', 
-                      left: useCustomPos ? `${tickerX}px` : (layout === 'floating' ? '5%' : '0'),
-                      top: useCustomPos ? `${tickerY}px` : (footerPosition === 'top' ? (layout === 'floating' ? '40px' : 0) : 'auto'),
-                      bottom: !useCustomPos && footerPosition === 'bottom' ? (layout === 'floating' ? '40px' : 0) : 'auto', 
-                      width: layout === 'floating' ? '90%' : '100%', 
-                      height: `${tickerHeight}px`,
-                      borderRadius: layout === 'floating' ? '24px' : '0',
-                      overflow: 'hidden',
-                      background: `rgba(0,0,0,${footerOpacity})`, backdropFilter: tickerBlur ? 'blur(16px)' : 'none', 
-                      border: layout === 'floating' ? '1px solid rgba(255,255,255,0.1)' : 'none',
-                      display: 'flex', alignItems: 'center', zIndex: 20, 
-                      boxShadow: layout === 'floating' ? '0 20px 40px rgba(0,0,0,0.5)' : 'none', 
-                      cursor: 'move',
-                      outline: selectedElement === 'ticker' ? '2px solid #6366f1' : 'none'
-                    }}
-                  >
-                    {tickerLabel && <div style={{ padding: '0 30px', background: themeColor, height: '100%', display: 'flex', alignItems: 'center', fontWeight: '900', fontSize: '1.2rem', color: '#fff' }}>{tickerLabel}</div>}
-                    <div style={{ flex: 1, padding: '0 30px', fontSize: footerFontSize, color: footerFontColor, fontWeight: tickerFontWeight, whiteSpace: 'nowrap', overflow: 'hidden' }}>
-                      <div style={{ display: 'inline-block', animation: `marquee ${tickerSpeed === 'fast' ? '10s' : tickerSpeed === 'slow' ? '30s' : '20s'} linear infinite` }}>
-                        {footerText || 'Aviso importante! Digite seu texto nas propriedades e ele irá rolar aqui...'}
+                {(layout === 'with_footer' || layout === 'floating') && (() => {
+                  const styleName = newsStyle || 'classic';
+                  const isTop = footerPosition === 'top';
+                  const color = themeColor || '#818cf8';
+                  
+                  let containerStyle = {};
+                  let labelStyle = {};
+
+                  switch (styleName) {
+                    case 'modern':
+                      containerStyle = {
+                        backgroundColor: `rgba(${parseInt(color.slice(1,3),16)},${parseInt(color.slice(3,5),16)},${parseInt(color.slice(5,7),16)}, ${footerOpacity})`,
+                        borderRadius: '50px',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                        width: 'calc(100% - 40px)',
+                        left: useCustomPos ? `${tickerX}px` : '20px',
+                        top: useCustomPos ? `${tickerY}px` : (isTop ? '20px' : 'auto'),
+                        bottom: !useCustomPos && !isTop ? '20px' : 'auto'
+                      };
+                      labelStyle = {
+                        background: 'linear-gradient(90deg, rgba(0,0,0,0.6), rgba(0,0,0,0.2))',
+                        borderRadius: '50px 0 0 50px',
+                        color: '#fff'
+                      };
+                      break;
+                    case 'minimal':
+                      containerStyle = {
+                        backgroundColor: `rgba(0,0,0,${footerOpacity})`,
+                        borderTop: isTop ? 'none' : `1px solid rgba(255,255,255,0.2)`,
+                        borderBottom: isTop ? `1px solid rgba(255,255,255,0.2)` : 'none',
+                        backdropFilter: 'blur(20px)'
+                      };
+                      labelStyle = {
+                        background: 'transparent',
+                        color: color,
+                        borderRight: `2px solid ${color}`
+                      };
+                      break;
+                    case 'neon':
+                      containerStyle = {
+                        backgroundColor: `rgba(0,0,0,${footerOpacity})`,
+                        boxShadow: `0 0 20px ${color}, inset 0 0 10px ${color}`,
+                        borderTop: isTop ? 'none' : `2px solid ${color}`,
+                        borderBottom: isTop ? `2px solid ${color}` : 'none'
+                      };
+                      labelStyle = {
+                        background: color,
+                        color: '#000',
+                        boxShadow: `0 0 15px ${color}`
+                      };
+                      break;
+                    case 'news_channel':
+                      containerStyle = {
+                        backgroundColor: '#fff',
+                        borderTop: isTop ? 'none' : `4px solid ${color}`,
+                        borderBottom: isTop ? `4px solid ${color}` : 'none'
+                      };
+                      labelStyle = {
+                        background: color,
+                        color: '#fff',
+                        clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0% 100%)',
+                        paddingRight: '40px'
+                      };
+                      break;
+                    case 'elegant':
+                      containerStyle = {
+                        backgroundColor: `rgba(15,15,15,${footerOpacity})`,
+                        borderTop: isTop ? 'none' : `1px solid ${color}`,
+                        borderBottom: isTop ? `1px solid ${color}` : 'none'
+                      };
+                      labelStyle = {
+                        background: 'transparent',
+                        color: color,
+                        fontFamily: 'Playfair Display, serif',
+                        letterSpacing: '4px'
+                      };
+                      break;
+                    default: // classic
+                      containerStyle = {
+                        backgroundColor: `rgba(${parseInt(color.slice(1,3),16)},${parseInt(color.slice(3,5),16)},${parseInt(color.slice(5,7),16)}, ${footerOpacity})`,
+                        boxShadow: isTop ? '0 10px 40px rgba(0,0,0,0.5)' : '0 -10px 40px rgba(0,0,0,0.5)',
+                        borderRadius: layout === 'floating' ? '20px' : '0'
+                      };
+                      labelStyle = {
+                        background: 'rgba(0,0,0,0.25)',
+                        borderRight: '2px solid rgba(255,255,255,0.1)'
+                      };
+                      break;
+                  }
+
+                  return (
+                    <div 
+                      onMouseDown={(e) => handleMouseDown(e, 'ticker')}
+                      style={{ 
+                        position: 'absolute', 
+                        left: containerStyle.left || (useCustomPos ? `${tickerX}px` : (layout === 'floating' ? '5%' : '0')),
+                        top: containerStyle.top || (useCustomPos ? `${tickerY}px` : (isTop ? (layout === 'floating' ? '40px' : 0) : 'auto')),
+                        bottom: containerStyle.bottom || (!useCustomPos && !isTop ? (layout === 'floating' ? '40px' : 0) : 'auto'), 
+                        width: containerStyle.width || (layout === 'floating' ? '90%' : '100%'), 
+                        height: `${tickerHeight}px`,
+                        overflow: 'hidden',
+                        color: styleName === 'news_channel' ? '#000' : footerFontColor,
+                        display: 'flex', alignItems: 'center', zIndex: 20, 
+                        cursor: 'move',
+                        outline: selectedElement === 'ticker' ? '2px solid #6366f1' : 'none',
+                        ...containerStyle
+                      }}
+                    >
+                      {tickerLabel && (
+                        <div style={{ 
+                          padding: '0 30px', height: '100%', 
+                          display: 'flex', alignItems: 'center', fontWeight: '900', fontSize: '1.2rem', 
+                          textTransform: 'uppercase', letterSpacing: '2px',
+                          ...labelStyle 
+                        }}>
+                          {tickerLabel}
+                        </div>
+                      )}
+                      <div style={{ flex: 1, padding: '0 30px', fontSize: footerFontSize, fontWeight: tickerFontWeight, whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                        <div style={{ display: 'inline-block', animation: `marquee ${tickerSpeed === 'fast' ? '10s' : tickerSpeed === 'slow' ? '30s' : '20s'} linear infinite` }}>
+                          {footerText || 'Aviso importante! Digite seu texto nas propriedades e ele irá rolar aqui...'}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
              </div>
           </div>
 
