@@ -86,7 +86,8 @@ const Player = () => {
     const currentItem = playlist.items[currentIndex];
     currentMediaRef.current = currentItem.media_name || currentItem.name || 'Mídia Desconhecida';
     
-    if (currentItem.type === 'image') {
+    // Looping and duration logic
+    if (currentItem.type === 'image' || (currentItem.type === 'video' && currentItem.duration_seconds > 0)) {
       const duration = (currentItem.duration_seconds || 10) * 1000;
       timerRef.current = setTimeout(nextMedia, duration);
     }
@@ -474,7 +475,9 @@ const Player = () => {
               key={`${currentItem.id}-${currentIndex}-${mediaNonce}`}
               ref={videoRef}
               src={mediaUrl}
-              autoPlay muted onEnded={handleVideoEnd}
+              autoPlay muted 
+              onEnded={handleVideoEnd}
+              loop={currentItem.duration_seconds > 0}
               className={`transition-${playlist.transition_effect || 'fade'}`}
               style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'), zIndex: 1, position: 'relative' }}
             />
@@ -623,18 +626,22 @@ const Player = () => {
         const fontColor = playlist.footer_font_color || '#fff';
         const height = isMobile ? (playlist.ticker_height || 85) * 0.6 : (playlist.ticker_height || 85);
 
-        const isFullscreen = playlist.layout === 'fullscreen';
+        const isFullscreen = playlist.layout === 'fullscreen' || playlist.use_custom_pos;
 
         return (
           <div style={{
-            height: `${height}px`, width: '100%',
+            height: `${height}px`, 
+            width: playlist.use_custom_pos ? (playlist.layout === 'floating' ? '90%' : '100%') : '100%',
             backgroundColor: `rgba(${hexToRgb(color)}, ${playlist.footer_opacity ?? 0.85})`,
             color: fontColor, display: 'flex', alignItems: 'center', overflow: 'hidden',
-            whiteSpace: 'nowrap', position: isFullscreen ? 'absolute' : 'relative',
-            bottom: isFullscreen ? (playlist.footer_position === 'top' ? 'auto' : 0) : 'auto',
-            top: isFullscreen ? (playlist.footer_position === 'top' ? 0 : 'auto') : 'auto',
+            whiteSpace: 'nowrap', 
+            position: 'absolute',
+            left: playlist.use_custom_pos ? `${getScaledPos(playlist.ticker_x || 0, playlist.ticker_y || 0).x}px` : (playlist.layout === 'floating' ? '5%' : 0),
+            top: playlist.use_custom_pos ? `${getScaledPos(playlist.ticker_x || 0, playlist.ticker_y || 0).y}px` : (playlist.footer_position === 'top' ? 0 : 'auto'),
+            bottom: !playlist.use_custom_pos && playlist.footer_position === 'bottom' ? 0 : 'auto',
             zIndex: 100, backdropFilter: 'blur(12px)',
-            boxShadow: playlist.footer_position === 'top' ? '0 10px 40px rgba(0,0,0,0.5)' : '0 -10px 40px rgba(0,0,0,0.5)'
+            boxShadow: playlist.footer_position === 'top' ? '0 10px 40px rgba(0,0,0,0.5)' : '0 -10px 40px rgba(0,0,0,0.5)',
+            borderRadius: playlist.layout === 'floating' ? '20px' : '0'
           }}>
             <div style={{
               padding: isMobile ? '0 15px' : '0 35px', background: 'rgba(0,0,0,0.25)', height: '100%',

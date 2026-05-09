@@ -531,7 +531,9 @@ const PlaylistEditor = () => {
                   <div style={{ width: '36px', height: '20px', borderRadius: '10px', background: layout !== 'fullscreen' ? '#6366f1' : '#3f3f46', position: 'relative' }}>
                     <div style={{ position: 'absolute', top: '2px', left: layout !== 'fullscreen' ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: '0.2s' }}></div>
                   </div>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid #27272a', paddingTop: '12px' }}>
+                </div>
+                {layout !== 'fullscreen' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid #27272a', paddingTop: '12px' }}>
                     <div>
                       <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Destaque da Barra (Label):</label>
                       <input value={tickerLabel} onChange={e => setTickerLabel(e.target.value)} placeholder="Ex: AVISO" style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
@@ -553,9 +555,6 @@ const PlaylistEditor = () => {
                         <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir por (min):</label>
                         <input type="number" value={tickerDuration} onChange={e => setTickerDuration(parseInt(e.target.value))} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
                       </div>
-                    </div>
-                  </div>
-div>
                     </div>
                   </div>
                 )}
