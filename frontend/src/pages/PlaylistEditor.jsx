@@ -607,7 +607,11 @@ const PlaylistEditor = () => {
                     border: selectedItems.some(i => i.media_id === m.id) ? '2px solid #6366f1' : '1px solid #27272a',
                     aspectRatio: '16/9', background: '#000'
                   }}>
-                    {m.type === 'image' ? <img src={m.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1', fontSize: '0.7rem', fontWeight: '800' }}>VÍDEO</div>}
+                    {m.type === 'image' ? (
+                      <img src={m.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <video src={m.url + "#t=0.1"} preload="metadata" muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    )}
                     <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '16px 8px 6px', background: 'linear-gradient(transparent, rgba(0,0,0,0.9))', fontSize: '0.65rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {m.name}
                     </div>
@@ -1119,7 +1123,7 @@ const PlaylistEditor = () => {
                         ...containerStyle
                       }}
                     >
-                      {tickerLabel && (
+                      {tickerLabel && tickerLabel.trim() !== "" && (
                         <div style={{ 
                           padding: '0 30px', height: '100%', 
                           display: 'flex', alignItems: 'center', fontWeight: '900', fontSize: '1.2rem', 
@@ -1236,8 +1240,11 @@ const PlaylistEditor = () => {
                       }}>
                       {/* Thumbnail */}
                       <div style={{ flex: 1, position: 'relative', overflow: 'hidden', borderRadius: '6px 6px 0 0', minHeight: 0 }}>
-                        {isImg ? <img src={item.media?.url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
-                          : <div style={{ height: '100%', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: '1.2rem', opacity: 0.3 }}>🎬</span></div>}
+                        {isImg ? (
+                          <img src={item.media?.url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
+                        ) : (
+                          <video src={item.media?.url + "#t=0.1"} preload="metadata" muted style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
+                        )}
                         {/* Badge */}
                         <div style={{ position: 'absolute', top: '3px', left: '3px', padding: '1px 5px', borderRadius: '3px', fontSize: '0.5rem', fontWeight: '800', background: isImg ? '#16a34a' : '#6366f1', color: '#fff' }}>{isImg ? 'IMG' : 'VID'}</div>
                         {/* Duration badge */}
@@ -1623,6 +1630,11 @@ const PlaylistEditor = () => {
                     <input type="number" value={tickerDuration} onChange={e => setTickerDuration(parseInt(e.target.value))} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }} />
                   </div>
                 </div>
+                {useCustomPos && (
+                  <button onClick={() => setUseCustomPos(false)} style={{ padding: '10px', background: 'rgba(99,102,241,0.1)', border: '1px solid #6366f1', borderRadius: '8px', color: '#818cf8', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '600', marginTop: '10px', width: '100%' }}>
+                    🔄 Resetar para Posição Padrão
+                  </button>
+                )}
               </>
             )}
 
