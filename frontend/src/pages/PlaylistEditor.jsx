@@ -166,6 +166,10 @@ const PlaylistEditor = () => {
   const [useCustomPos, setUseCustomPos] = useState(false);
   const [dragging, setDragging] = useState(null);
   const [weatherCity, setWeatherCity] = useState('Cuiabá - MT');
+  const [timelineZoom, setTimelineZoom] = useState(1);
+  const [timelineHeight, setTimelineHeight] = useState(220);
+  const [timelineView, setTimelineView] = useState('normal'); // 'compact' | 'normal' | 'expanded'
+  const [resizingMedia, setResizingMedia] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -927,51 +931,99 @@ const PlaylistEditor = () => {
              </div>
           </div>
 
-          {/* TIMELINE ESTILO PREMIERE/EDITOR DE VÍDEO */}
-          <div style={{ height: '240px', background: '#18181b', borderTop: '1px solid #27272a', display: 'flex', flexDirection: 'column', zIndex: 10 }}>
+          {/* TIMELINE PRO */}
+          <div style={{ height: `${timelineHeight}px`, background: '#18181b', borderTop: '1px solid #27272a', display: 'flex', flexDirection: 'column', zIndex: 10, position: 'relative', transition: 'height 0.2s ease' }}>
+            {/* Resize handle top */}
+            <div 
+              onMouseDown={(e) => {
+                e.preventDefault();
+                const startY = e.clientY;
+                const startH = timelineHeight;
+                const onMove = (ev) => setTimelineHeight(Math.max(120, Math.min(500, startH - (ev.clientY - startY))));
+                const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+              }}
+              style={{ height: '6px', cursor: 'ns-resize', background: 'transparent', position: 'absolute', top: '-3px', left: 0, right: 0, zIndex: 20 }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.4)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            />
+
             {/* Timeline Header */}
-            <div style={{ padding: '10px 24px', borderBottom: '1px solid #27272a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <h3 style={{ fontSize: '0.8rem', fontWeight: '800', textTransform: 'uppercase', color: '#a1a1aa', margin: 0 }}>Timeline</h3>
-                <span style={{ fontSize: '0.7rem', color: '#52525b' }}>{selectedItems.length} mídias</span>
+            <div style={{ padding: '6px 16px', borderBottom: '1px solid #27272a', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <h3 style={{ fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase', color: '#a1a1aa', margin: 0 }}>Timeline</h3>
+                <span style={{ fontSize: '0.65rem', color: '#52525b', background: '#27272a', padding: '2px 8px', borderRadius: '10px' }}>{selectedItems.length} mídias</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 12px', background: 'rgba(99,102,241,0.1)', borderRadius: '20px', border: '1px solid rgba(99,102,241,0.2)' }}>
-                  <span style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Duração Total:</span>
-                  <span style={{ fontSize: '0.8rem', color: '#818cf8', fontWeight: '800', fontFamily: 'Outfit' }}>
-                    {totalDuration >= 60 ? `${Math.floor(totalDuration / 60)}m ${totalDuration % 60}s` : `${totalDuration}s`}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {/* View mode toggle */}
+                <div style={{ display: 'flex', background: '#27272a', borderRadius: '6px', overflow: 'hidden' }}>
+                  {[
+                    { v: 'compact', icon: '▬', tip: 'Compacto' },
+                    { v: 'normal', icon: '▭', tip: 'Normal' },
+                    { v: 'expanded', icon: '⬜', tip: 'Expandido' },
+                  ].map(m => (
+                    <button key={m.v} onClick={() => { setTimelineView(m.v); setTimelineHeight(m.v === 'compact' ? 140 : m.v === 'expanded' ? 360 : 220); }}
+                      title={m.tip}
+                      style={{ background: timelineView === m.v ? '#3f3f46' : 'transparent', border: 'none', color: timelineView === m.v ? '#fff' : '#71717a', padding: '3px 10px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '700' }}>
+                      {m.icon}
+                    </button>
+                  ))}
+                </div>
+                {/* Zoom controls */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#27272a', borderRadius: '6px', padding: '2px 4px' }}>
+                  <button onClick={() => setTimelineZoom(z => Math.max(0.3, z - 0.15))} style={{ background: 'none', border: 'none', color: '#a1a1aa', cursor: 'pointer', fontSize: '0.85rem', padding: '0 6px', lineHeight: 1 }}>−</button>
+                  <span style={{ fontSize: '0.65rem', color: '#71717a', minWidth: '32px', textAlign: 'center' }}>{Math.round(timelineZoom * 100)}%</span>
+                  <button onClick={() => setTimelineZoom(z => Math.min(3, z + 0.15))} style={{ background: 'none', border: 'none', color: '#a1a1aa', cursor: 'pointer', fontSize: '0.85rem', padding: '0 6px', lineHeight: 1 }}>+</button>
+                </div>
+                {/* Duration badge */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 10px', background: 'rgba(99,102,241,0.1)', borderRadius: '14px', border: '1px solid rgba(99,102,241,0.2)' }}>
+                  <span style={{ fontSize: '0.65rem', color: '#818cf8', fontWeight: '800', fontFamily: 'monospace' }}>
+                    {totalDuration >= 3600 ? `${Math.floor(totalDuration/3600)}h${Math.floor((totalDuration%3600)/60).toString().padStart(2,'0')}m` : totalDuration >= 60 ? `${Math.floor(totalDuration / 60)}m${(totalDuration % 60).toString().padStart(2,'0')}s` : `${totalDuration}s`}
                   </span>
                 </div>
               </div>
             </div>
             
             {/* Timeline Content */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowX: 'auto', overflowY: 'hidden', background: '#0f0f11' }}>
-              {/* Régua proporcional */}
-              <div style={{ height: '28px', borderBottom: '1px solid #1e1e22', position: 'relative', minWidth: `${Math.max(selectedItems.length * 180, 800)}px`, display: 'flex', alignItems: 'flex-end', padding: '0 20px' }}>
-                {selectedItems.map((item, idx) => {
-                  const dur = item.duration || 10;
-                  const prevTotal = selectedItems.slice(0, idx).reduce((a, it) => a + (it.duration || 10), 0);
-                  return (
-                    <div key={`ruler-${idx}`} style={{ 
-                      position: 'absolute',
-                      left: `${20 + idx * 180}px`,
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', 
-                    }}>
-                      <span style={{ fontSize: '0.6rem', color: '#525262', fontWeight: '600', fontFamily: 'monospace' }}>
-                        {prevTotal >= 60 ? `${Math.floor(prevTotal / 60)}:${(prevTotal % 60).toString().padStart(2, '0')}` : `0:${prevTotal.toString().padStart(2, '0')}`}
-                      </span>
-                      <div style={{ height: '6px', width: '1px', background: '#3f3f46' }}></div>
-                    </div>
-                  );
-                })}
+            <div style={{ flex: 1, overflowX: 'auto', overflowY: 'hidden', background: '#0f0f11' }}
+              onMouseMove={(e) => {
+                if (!resizingMedia) return;
+                const dx = (e.clientX - resizingMedia.startX) / (timelineZoom * 8);
+                const newDur = Math.max(1, Math.round(resizingMedia.startDur + dx));
+                updateDuration(resizingMedia.idx, newDur);
+              }}
+              onMouseUp={() => setResizingMedia(null)}
+              onMouseLeave={() => setResizingMedia(null)}
+            >
+              {/* Ruler */}
+              <div style={{ height: '22px', borderBottom: '1px solid #1e1e22', position: 'relative', minWidth: `${Math.max(selectedItems.reduce((a,it) => a + Math.max(80, (it.duration||10) * 8 * timelineZoom), 0) + 140, 600)}px`, padding: '0 16px' }}>
+                {(() => {
+                  let acc = 0;
+                  return selectedItems.map((item, idx) => {
+                    const pos = acc;
+                    const w = Math.max(80, (item.duration || 10) * 8 * timelineZoom);
+                    acc += w + 3;
+                    return (
+                      <div key={`r-${idx}`} style={{ position: 'absolute', left: `${16 + pos}px`, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                        <span style={{ fontSize: '0.55rem', color: '#3f3f46', fontFamily: 'monospace', fontWeight: '600' }}>
+                          {(() => { const t = selectedItems.slice(0,idx).reduce((a,i) => a+(i.duration||10),0); return t >= 60 ? `${Math.floor(t/60)}:${(t%60).toString().padStart(2,'0')}` : `0:${t.toString().padStart(2,'0')}`; })()}
+                        </span>
+                        <div style={{ height: '4px', width: '1px', background: '#3f3f46' }}></div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
               
-              {/* Media Track */}
-              <div style={{ flex: 1, display: 'flex', gap: '4px', alignItems: 'stretch', padding: '8px 20px' }}>
+              {/* Track */}
+              <div style={{ display: 'flex', gap: '3px', alignItems: 'stretch', padding: '6px 16px', minHeight: `${timelineHeight - 70}px` }}>
                 {selectedItems.map((item, idx) => {
                   const isImage = item.media?.type === 'image';
                   const dur = item.duration || 10;
+                  const itemW = Math.max(80, dur * 8 * timelineZoom);
+                  const isCompact = timelineView === 'compact';
+                  const isSelected = selectedElement === `media-${idx}`;
                   return (
                     <div key={`${item.media_id}-${idx}`} 
                          draggable 
@@ -990,80 +1042,70 @@ const PlaylistEditor = () => {
                          }}
                          onClick={(e) => { e.stopPropagation(); setSelectedElement(`media-${idx}`); }}
                          style={{ 
-                      width: `${Math.max(170, dur * 12)}px`, minWidth: '170px',
-                      background: selectedElement === `media-${idx}` ? '#1e1b4b' : '#1a1a1f', 
-                      borderRadius: '10px', overflow: 'hidden', position: 'relative',
-                      border: selectedElement === `media-${idx}` ? '2px solid #6366f1' : '1px solid #27272a', 
+                      width: `${itemW}px`, minWidth: '80px',
+                      background: isSelected ? '#1e1b4b' : '#1a1a1f', 
+                      borderRadius: '8px', overflow: 'hidden', position: 'relative',
+                      border: isSelected ? '2px solid #6366f1' : '1px solid #27272a', 
                       flexShrink: 0, cursor: 'grab',
                       display: 'flex', flexDirection: 'column',
-                      transition: 'border-color 0.2s, background 0.2s'
+                      transition: 'border-color 0.15s, background 0.15s'
                     }}>
-                      {/* Thumbnail */}
+                      {/* Thumbnail area */}
                       <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0 }}>
                         {isImage ? (
-                          <img src={item.media?.url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
+                          <img src={item.media?.url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55 }} />
                         ) : (
                           <div style={{ height: '100%', background: 'linear-gradient(135deg, #1a1a2e, #16213e)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span style={{ fontSize: '1.8rem', opacity: 0.4 }}>🎬</span>
+                            <span style={{ fontSize: isCompact ? '1rem' : '1.5rem', opacity: 0.35 }}>🎬</span>
                           </div>
                         )}
-                        {/* Type badge */}
-                        <div style={{ position: 'absolute', top: '6px', left: '6px', padding: '2px 8px', borderRadius: '4px', fontSize: '0.6rem', fontWeight: '800', letterSpacing: '0.5px',
-                          background: isImage ? 'rgba(34,197,94,0.9)' : 'rgba(99,102,241,0.9)', color: '#fff' }}>
-                          {isImage ? 'IMG' : 'VID'}
+                        {/* Type + duration overlay */}
+                        <div style={{ position: 'absolute', top: '4px', left: '4px', display: 'flex', gap: '4px' }}>
+                          <span style={{ padding: '1px 6px', borderRadius: '3px', fontSize: '0.55rem', fontWeight: '800',
+                            background: isImage ? 'rgba(34,197,94,0.9)' : 'rgba(99,102,241,0.9)', color: '#fff' }}>
+                            {isImage ? 'IMG' : 'VID'}
+                          </span>
                         </div>
-                        {/* Remove btn */}
+                        {/* Duration overlay */}
+                        <div style={{ position: 'absolute', bottom: '4px', right: '4px', padding: '1px 6px', borderRadius: '3px', fontSize: '0.6rem', fontWeight: '800', background: 'rgba(0,0,0,0.8)', color: '#818cf8', fontFamily: 'monospace' }}>
+                          {dur}s
+                        </div>
+                        {/* Remove btn - appears on hover */}
                         <button 
-                          onClick={(e) => { e.stopPropagation(); removeMedia(idx); }} 
-                          style={{ position: 'absolute', top: '5px', right: '5px', width: '22px', height: '22px', background: 'rgba(239,68,68,0.85)', border: 'none', borderRadius: '6px', color: '#fff', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.7, transition: 'opacity 0.2s' }}
+                          onClick={(e) => { e.stopPropagation(); removeMedia(idx); if(isSelected) setSelectedElement(null); }} 
+                          style={{ position: 'absolute', top: '3px', right: '3px', width: '18px', height: '18px', background: 'rgba(239,68,68,0.8)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '0.6rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.15s' }}
                           onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-                          onMouseLeave={e => e.currentTarget.style.opacity = '0.7'}
+                          onMouseLeave={e => e.currentTarget.style.opacity = '0'}
                         >✕</button>
                       </div>
                       
-                      {/* Bottom Info Bar */}
-                      <div style={{ padding: '6px 10px', background: '#111113', borderTop: '1px solid #27272a', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        {/* Name */}
-                        <div style={{ fontSize: '0.7rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#e4e4e7' }}>
-                          {item.media?.name}
-                        </div>
-                        {/* Controls Row */}
-                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                          {/* Duration */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', background: '#1a1a1f', borderRadius: '6px', padding: '3px 8px', border: '1px solid #27272a' }}>
-                            <span style={{ fontSize: '0.6rem', color: '#6366f1' }}>⏱</span>
-                            <input 
-                              type="number" min="1" 
-                              value={dur} 
-                              onChange={(e) => updateDuration(idx, e.target.value)}
-                              onClick={(e) => e.stopPropagation()}
-                              style={{ width: '28px', background: 'transparent', border: 'none', color: '#e4e4e7', fontSize: '0.72rem', fontWeight: '700', textAlign: 'center', outline: 'none' }} 
-                            />
-                            <span style={{ fontSize: '0.6rem', color: '#52525b' }}>s</span>
+                      {/* Info bar - hidden in compact mode */}
+                      {!isCompact && (
+                        <div style={{ padding: '4px 8px', background: '#111113', borderTop: '1px solid #27272a', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                          <div style={{ fontSize: '0.65rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#d4d4d8', flex: 1 }}>
+                            {item.media?.name}
                           </div>
-                          {/* Transition */}
-                          <select 
-                            value={item.transition || 'fade'} 
-                            onChange={(e) => { e.stopPropagation(); updateTransition(idx, e.target.value); }}
-                            onClick={(e) => e.stopPropagation()}
-                            style={{ flex: 1, background: '#1a1a1f', border: '1px solid #27272a', borderRadius: '6px', color: '#a1a1aa', fontSize: '0.68rem', padding: '3px 6px', cursor: 'pointer', outline: 'none' }}
-                          >
-                            <option value="fade">✦ Fade</option>
-                            <option value="slide">→ Slide</option>
-                            <option value="zoom">⊕ Zoom</option>
-                            <option value="cinematic">◎ Cinema</option>
-                            <option value="none">— Sem</option>
-                          </select>
+                          <span style={{ fontSize: '0.55rem', color: '#52525b' }}>
+                            {(item.transition || 'fade') === 'fade' ? '✦' : (item.transition === 'slide' ? '→' : (item.transition === 'zoom' ? '⊕' : '◎'))}
+                          </span>
                         </div>
-                      </div>
+                      )}
+
+                      {/* Drag-to-resize handle (right edge) */}
+                      <div 
+                        onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); setResizingMedia({ idx, startX: e.clientX, startDur: dur }); }}
+                        style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '6px', cursor: 'ew-resize', background: 'transparent', zIndex: 10 }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.5)'}
+                        onMouseLeave={e => { if(!resizingMedia) e.currentTarget.style.background = 'transparent'; }}
+                      />
                       
                       {/* Transition connector */}
                       {idx < selectedItems.length - 1 && (
                         <div style={{ 
-                          position: 'absolute', right: '-14px', top: '35%', transform: 'translateY(-50%)', 
-                          width: '24px', height: '24px', background: '#27272a', borderRadius: '50%', 
+                          position: 'absolute', right: '-11px', top: '50%', transform: 'translateY(-50%)', 
+                          width: '18px', height: '18px', background: '#27272a', borderRadius: '50%', 
                           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5, 
-                          fontSize: '0.6rem', border: '2px solid #18181b', color: '#6366f1'
+                          fontSize: '0.5rem', border: '2px solid #0f0f11', color: '#6366f1'
                         }}>
                           {(item.transition || 'fade') === 'fade' ? '✦' : (item.transition === 'slide' ? '→' : (item.transition === 'zoom' ? '⊕' : '▶'))}
                         </div>
@@ -1071,18 +1113,18 @@ const PlaylistEditor = () => {
                     </div>
                   );
                 })}
-                {/* Add media button */}
+                {/* Add media */}
                 <div onClick={() => setActiveTab('medias')} style={{ 
-                  width: '100px', minWidth: '100px', border: '2px dashed #27272a', borderRadius: '10px', 
+                  width: '70px', minWidth: '70px', border: '2px dashed #27272a', borderRadius: '8px', 
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
-                  cursor: 'pointer', color: '#52525b', flexShrink: 0, gap: '6px',
+                  cursor: 'pointer', color: '#52525b', flexShrink: 0, gap: '4px',
                   transition: 'border-color 0.2s, color 0.2s'
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.color = '#818cf8'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = '#27272a'; e.currentTarget.style.color = '#52525b'; }}
                 >
-                  <span style={{ fontSize: '1.5rem' }}>+</span>
-                  <span style={{ fontSize: '0.65rem', fontWeight: '700' }}>Mídia</span>
+                  <span style={{ fontSize: '1.2rem' }}>+</span>
+                  <span style={{ fontSize: '0.55rem', fontWeight: '700' }}>Mídia</span>
                 </div>
               </div>
             </div>
