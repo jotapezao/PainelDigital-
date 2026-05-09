@@ -16,12 +16,21 @@ const Player = () => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const currentMediaRef = useRef(null);
+  
+  // Responsive states (Moved to top to fix React Hook Error #310)
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  const isMobile = windowWidth < 768;
 
   useEffect(() => {
     fetchPlaylist();
     
     // Connect Socket for real-time updates
-    const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const socketUrl = (import.meta.env.VITE_API_URL || 'https://midiamais.up.railway.app/api').replace('/api', '');
     const socket = io(socketUrl, {
       auth: { token: localStorage.getItem('token') }
     });
@@ -308,15 +317,6 @@ const Player = () => {
   const rotation = playlist?.rotation || 0;
 
   // Responsive scale factor for widgets on mobile
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const isMobile = windowWidth < 768;
-  
   // Base resolution of the PlaylistEditor canvas
   const BASE_WIDTH = 960;
   const BASE_HEIGHT = 540;
