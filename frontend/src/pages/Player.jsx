@@ -234,7 +234,9 @@ const Player = () => {
   const getSocialStyle = (styleType, platform) => {
     const transparency = playlist.card_transparency ?? 0.4;
     const base = {
-      ...getPositionStyles(playlist.social_position || 'bottom-right'), 
+      ...(playlist.use_custom_pos ? { position: 'absolute', left: `${playlist.social_x}px`, top: `${playlist.social_y}px` } : getPositionStyles(playlist.social_position || 'bottom-right')), 
+      transform: `${!playlist.use_custom_pos && (playlist.social_position || 'bottom-right').includes('center') ? 'translateX(-50%) ' : ''}scale(${(playlist.social_size || 100) / 100})`,
+      transformOrigin: playlist.use_custom_pos ? 'top left' : `${(playlist.social_position || 'bottom-right').split('-')[0]} ${(playlist.social_position || 'bottom-right').split('-')[1]}`,
       padding: '16px 24px',
       zIndex: 20, display: 'flex', gap: '15px', alignItems: 'center',
       color: '#fff', transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -387,31 +389,40 @@ const Player = () => {
             />
           )}
 
-          {/* Relógio / Clima */}
-          {playlist.layout !== 'split' && playlist.layout !== 'with_header' && (playlist.show_clock || playlist.show_weather) && (
-            <div className="player-widget" style={{
-              ...getPositionStyles(playlist.widget_position || 'top-right'), padding: '24px 36px',
+          {/* Relógio Widget */}
+          {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_clock && (
+            <div className="player-widget-clock" style={{
+              ...(playlist.use_custom_pos ? { position: 'absolute', left: `${playlist.clock_x}px`, top: `${playlist.clock_y}px` } : getPositionStyles(playlist.widget_position || 'top-right')),
+              transform: `${!playlist.use_custom_pos && (playlist.widget_position || 'top-right').includes('center') ? 'translateX(-50%) ' : ''}scale(${(playlist.clock_size || 100) / 100})`,
+              transformOrigin: playlist.use_custom_pos ? 'top left' : `${(playlist.widget_position || 'top-right').split('-')[0]} ${(playlist.widget_position || 'top-right').split('-')[1]}`,
+              padding: '24px 36px',
               background: `rgba(0,0,0,${playlist.card_transparency ?? 0.4})`, backdropFilter: 'blur(16px)', borderRadius: '28px',
               color: '#fff', border: `1px solid rgba(255,255,255,0.1)`, boxShadow: '0 15px 45px rgba(0,0,0,0.4)',
               textAlign: (playlist.widget_position || 'top-right').includes('right') ? 'right' : (playlist.widget_position || 'top-right').includes('center') ? 'center' : 'left',
-              zIndex: 25, display: 'flex', flexDirection: 'column', gap: '12px'
+              zIndex: 25, display: 'flex', flexDirection: 'column'
             }}>
-              {playlist.show_clock && (
-                <div style={{ borderBottom: playlist.show_weather ? '1px solid rgba(255,255,255,0.1)' : 'none', paddingBottom: playlist.show_weather ? '12px' : '0' }}>
-                  <div style={{ fontSize: '4rem', fontWeight: '900', lineHeight: 1, fontFamily: 'Outfit', letterSpacing: '-2px' }}>
-                    {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                  <div style={{ fontSize: '1.25rem', opacity: 0.8, marginTop: '6px', fontWeight: '600' }}>
-                    {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
-                  </div>
-                </div>
-              )}
-              {playlist.show_weather && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: (playlist.widget_position || 'top-right').includes('right') ? 'flex-end' : (playlist.widget_position || 'top-right').includes('center') ? 'center' : 'flex-start', gap: '16px' }}>
-                  <span style={{ fontSize: '2.8rem' }}>⛅</span>
-                  <span style={{ fontSize: '2.8rem', fontWeight: '800', fontFamily: 'Outfit' }}>26°C</span>
-                </div>
-              )}
+              <div style={{ fontSize: '4rem', fontWeight: '900', lineHeight: 1, fontFamily: 'Outfit', letterSpacing: '-2px' }}>
+                {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+              </div>
+              <div style={{ fontSize: '1.25rem', opacity: 0.8, marginTop: '6px', fontWeight: '600' }}>
+                {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+              </div>
+            </div>
+          )}
+
+          {/* Clima Widget */}
+          {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_weather && (
+            <div className="player-widget-weather" style={{
+              ...(playlist.use_custom_pos ? { position: 'absolute', left: `${playlist.weather_x}px`, top: `${playlist.weather_y}px` } : getPositionStyles('top-left')),
+              transform: `scale(${(playlist.weather_size || 100) / 100})`,
+              transformOrigin: 'top left',
+              padding: '20px 30px',
+              background: `rgba(0,0,0,${playlist.card_transparency ?? 0.4})`, backdropFilter: 'blur(16px)', borderRadius: '28px',
+              color: '#fff', border: `1px solid rgba(255,255,255,0.1)`, boxShadow: '0 15px 45px rgba(0,0,0,0.4)',
+              zIndex: 25, display: 'flex', alignItems: 'center', gap: '16px'
+            }}>
+              <span style={{ fontSize: '2.8rem' }}>⛅</span>
+              <span style={{ fontSize: '2.8rem', fontWeight: '800', fontFamily: 'Outfit' }}>26°C</span>
             </div>
           )}
 

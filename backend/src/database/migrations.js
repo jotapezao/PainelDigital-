@@ -372,6 +372,29 @@ async function runMigrations() {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='clock_style') THEN 
           ALTER TABLE playlists ADD COLUMN clock_style VARCHAR(50) DEFAULT 'digital_transparent'; 
         END IF;
+
+        -- POSIÇÕES CUSTOMIZADAS (DRAG AND DROP)
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='clock_x') THEN 
+          ALTER TABLE playlists ADD COLUMN clock_x INTEGER DEFAULT 0; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='clock_y') THEN 
+          ALTER TABLE playlists ADD COLUMN clock_y INTEGER DEFAULT 0; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='weather_x') THEN 
+          ALTER TABLE playlists ADD COLUMN weather_x INTEGER DEFAULT 0; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='weather_y') THEN 
+          ALTER TABLE playlists ADD COLUMN weather_y INTEGER DEFAULT 0; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='social_x') THEN 
+          ALTER TABLE playlists ADD COLUMN social_x INTEGER DEFAULT 0; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='social_y') THEN 
+          ALTER TABLE playlists ADD COLUMN social_y INTEGER DEFAULT 0; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='use_custom_pos') THEN 
+          ALTER TABLE playlists ADD COLUMN use_custom_pos BOOLEAN DEFAULT false; 
+        END IF;
         
         -- Add transition column to playlist_items
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlist_items' AND column_name='transition') THEN 

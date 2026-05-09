@@ -89,6 +89,14 @@ const PlaylistEditor = () => {
   const [clockDuration, setClockDuration] = useState(0);
   const [weatherDuration, setWeatherDuration] = useState(0);
   const [socialDuration, setSocialDuration] = useState(0);
+  const [clockX, setClockX] = useState(0);
+  const [clockY, setClockY] = useState(0);
+  const [weatherX, setWeatherX] = useState(0);
+  const [weatherY, setWeatherY] = useState(0);
+  const [socialX, setSocialX] = useState(0);
+  const [socialY, setSocialY] = useState(0);
+  const [useCustomPos, setUseCustomPos] = useState(false);
+  const [dragging, setDragging] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -176,6 +184,13 @@ const PlaylistEditor = () => {
           setWeatherEffect(p.weather_effect || 'fade');
           setSocialEffect(p.social_effect || 'fade');
           setClockStyle(p.clock_style || 'digital_transparent');
+          setClockX(p.clock_x || 0);
+          setClockY(p.clock_y || 0);
+          setWeatherX(p.weather_x || 0);
+          setWeatherY(p.weather_y || 0);
+          setSocialX(p.social_x || 0);
+          setSocialY(p.social_y || 0);
+          setUseCustomPos(p.use_custom_pos || false);
         }
       } catch (err) {
         addToast('error', 'Erro', 'Falha ao carregar dados do plano.');
@@ -280,6 +295,10 @@ const PlaylistEditor = () => {
         weather_effect: weatherEffect,
         social_effect: socialEffect,
         clock_style: clockStyle,
+        clock_x: Math.round(clockX), clock_y: Math.round(clockY), 
+        weather_x: Math.round(weatherX), weather_y: Math.round(weatherY), 
+        social_x: Math.round(socialX), social_y: Math.round(socialY), 
+        use_custom_pos: useCustomPos,
         items: selectedItems.map((item, i) => ({
           media_id: item.media_id,
           duration_seconds: item.media?.type === 'video' ? 0 : (item.duration || 10),
@@ -325,6 +344,40 @@ const PlaylistEditor = () => {
         break;
     }
     addToast('info', 'Preset Aplicado', `Configurações do modo ${preset} aplicadas.`);
+  };
+
+  const handleMouseDown = (e, type) => {
+    e.stopPropagation();
+    setDragging({
+      type,
+      startX: e.clientX,
+      startY: e.clientY,
+      initialX: type === 'clock' ? clockX : type === 'weather' ? weatherX : socialX,
+      initialY: type === 'clock' ? clockY : type === 'weather' ? weatherY : socialY,
+    });
+    setUseCustomPos(true);
+    setSelectedElement(type);
+  };
+
+  const handleMouseMove = (e) => {
+    if (!dragging) return;
+    const dx = (e.clientX - dragging.startX) / canvasZoom;
+    const dy = (e.clientY - dragging.startY) / canvasZoom;
+
+    if (dragging.type === 'clock') {
+      setClockX(dragging.initialX + dx);
+      setClockY(dragging.initialY + dy);
+    } else if (dragging.type === 'weather') {
+      setWeatherX(dragging.initialX + dx);
+      setWeatherY(dragging.initialY + dy);
+    } else if (dragging.type === 'social') {
+      setSocialX(dragging.initialX + dx);
+      setSocialY(dragging.initialY + dy);
+    }
+  };
+
+  const handleMouseUp = () => {
+    setDragging(null);
   };
 
 
@@ -445,7 +498,7 @@ const PlaylistEditor = () => {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Tamanho: {clockSize}%</label>
-                      <input type="range" min="50" max="200" value={clockSize} onChange={e => setClockSize(parseInt(e.target.value))} style={{ width: '100px' }} />
+                      <input type="range" min="10" max="200" value={clockSize} onChange={e => setClockSize(parseInt(e.target.value))} style={{ width: '100px' }} />
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                       <div>
@@ -513,7 +566,7 @@ const PlaylistEditor = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid #27272a', paddingTop: '12px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Tamanho: {weatherSize}%</label>
-                      <input type="range" min="50" max="200" value={weatherSize} onChange={e => setWeatherSize(parseInt(e.target.value))} style={{ width: '100px' }} />
+                      <input type="range" min="10" max="200" value={weatherSize} onChange={e => setWeatherSize(parseInt(e.target.value))} style={{ width: '100px' }} />
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                       <div>
@@ -571,13 +624,8 @@ const PlaylistEditor = () => {
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Tamanho da Fonte</label>
-                <select value={footerFontSize} onChange={e => setFooterFontSize(e.target.value)} style={{ width: '100%', padding: '10px', background: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#fff', marginBottom: '16px' }}>
-                  <option value="1rem">Pequeno</option>
-                  <option value="1.5rem">Médio</option>
-                  <option value="2rem">Grande</option>
-                  <option value="2.5rem">Extra Grande</option>
-                </select>
+                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Tamanho da Fonte (CSS)</label>
+                <input type="text" value={footerFontSize} onChange={e => setFooterFontSize(e.target.value)} placeholder="Ex: 1.5rem ou 24px" style={{ width: '100%', padding: '10px', background: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#fff', marginBottom: '16px' }} />
               </div>
               <div>
                 <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Cor do Texto</label>
@@ -632,7 +680,13 @@ const PlaylistEditor = () => {
           </div>
 
           {/* Canvas Area */}
-          <div style={{ flex: 1, background: '#09090b', backgroundImage: 'radial-gradient(#27272a 1px, transparent 1px)', backgroundSize: '30px 30px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto', padding: '40px' }} onClick={() => setSelectedElement(null)}>
+          <div 
+            style={{ flex: 1, background: '#09090b', backgroundImage: 'radial-gradient(#27272a 1px, transparent 1px)', backgroundSize: '30px 30px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto', padding: '40px' }} 
+            onClick={() => setSelectedElement(null)}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          >
              <div style={{ 
                width: orientation === 'horizontal' ? '960px' : '540px',
                height: orientation === 'horizontal' ? '540px' : '960px',
@@ -655,13 +709,20 @@ const PlaylistEditor = () => {
 
                 {/* Clock Widget */}
                 {showClock && (
-                  <div onClick={() => setSelectedElement('clock')} style={{ 
-                    position: 'absolute', [widgetPosition.split('-')[0]]: '40px', [widgetPosition.split('-')[1]]: widgetPosition.includes('center') ? '50%' : '40px',
-                    transform: `${widgetPosition.includes('center') ? 'translateX(-50%) ' : ''}scale(${clockSize / 100})`,
-                    transformOrigin: `${widgetPosition.split('-')[0]} ${widgetPosition.split('-')[1]}`,
+                  <div 
+                    onMouseDown={(e) => handleMouseDown(e, 'clock')}
+                    style={{ 
+                    position: 'absolute', 
+                    left: useCustomPos ? `${clockX}px` : (widgetPosition.split('-')[1] === 'right' ? 'auto' : widgetPosition.includes('center') ? '50%' : '40px'),
+                    top: useCustomPos ? `${clockY}px` : (widgetPosition.split('-')[0] === 'bottom' ? 'auto' : '40px'),
+                    right: !useCustomPos && widgetPosition.split('-')[1] === 'right' ? '40px' : 'auto',
+                    bottom: !useCustomPos && widgetPosition.split('-')[0] === 'bottom' ? '40px' : 'auto',
+                    transform: `${!useCustomPos && widgetPosition.includes('center') ? 'translateX(-50%) ' : ''}scale(${clockSize / 100})`,
+                    transformOrigin: useCustomPos ? 'top left' : `${widgetPosition.split('-')[0]} ${widgetPosition.split('-')[1]}`,
                     background: `rgba(0,0,0,${cardTransparency})`, padding: '24px 36px', borderRadius: '24px', color: '#fff', backdropFilter: 'blur(20px)',
                     border: selectedElement === 'clock' ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.1)', cursor: 'move',
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.4)'
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+                    userSelect: 'none'
                   }}>
                     <div style={{ fontSize: '3rem', fontWeight: '900', lineHeight: 1, fontFamily: 'Outfit' }}>14:55</div>
                     <div style={{ fontSize: '1rem', opacity: 0.8, marginTop: '4px' }}>Segunda, 24 Out</div>
@@ -670,17 +731,24 @@ const PlaylistEditor = () => {
 
                 {/* Social Widget */}
                 {showSocial && (
-                  <div onClick={() => setSelectedElement('social')} style={{ 
-                    position: 'absolute', [socialPosition.split('-')[0]]: '40px', [socialPosition.split('-')[1]]: socialPosition.includes('center') ? '50%' : '40px',
-                    transform: `${socialPosition.includes('center') ? 'translateX(-50%) ' : ''}scale(${socialSize / 100})`,
-                    transformOrigin: `${socialPosition.split('-')[0]} ${socialPosition.split('-')[1]}`,
+                  <div 
+                    onMouseDown={(e) => handleMouseDown(e, 'social')}
+                    style={{ 
+                    position: 'absolute', 
+                    left: useCustomPos ? `${socialX}px` : (socialPosition.split('-')[1] === 'right' ? 'auto' : socialPosition.includes('center') ? '50%' : '40px'),
+                    top: useCustomPos ? `${socialY}px` : (socialPosition.split('-')[0] === 'bottom' ? 'auto' : '40px'),
+                    right: !useCustomPos && socialPosition.split('-')[1] === 'right' ? '40px' : 'auto',
+                    bottom: !useCustomPos && socialPosition.split('-')[0] === 'bottom' ? '40px' : 'auto',
+                    transform: `${!useCustomPos && socialPosition.includes('center') ? 'translateX(-50%) ' : ''}scale(${socialSize / 100})`,
+                    transformOrigin: useCustomPos ? 'top left' : `${socialPosition.split('-')[0]} ${socialPosition.split('-')[1]}`,
                     background: socialCardStyle === 'style2' ? '#fff' : socialCardStyle === 'style3' ? 'transparent' : `rgba(0,0,0,${cardTransparency})`, 
                     padding: '16px 24px', borderRadius: '20px', 
                     color: socialCardStyle === 'style2' ? '#000' : '#fff', 
                     backdropFilter: socialCardStyle === 'style3' ? 'none' : 'blur(20px)',
                     border: selectedElement === 'social' ? '2px solid #6366f1' : (socialCardStyle === 'style3' ? 'none' : '1px solid rgba(255,255,255,0.1)'), 
                     cursor: 'move', display: 'flex', alignItems: 'center', gap: '16px', 
-                    boxShadow: socialCardStyle === 'style3' ? 'none' : '0 20px 40px rgba(0,0,0,0.4)'
+                    boxShadow: socialCardStyle === 'style3' ? 'none' : '0 20px 40px rgba(0,0,0,0.4)',
+                    userSelect: 'none'
                   }}>
                     {socialQrcode && <div style={{ width: '60px', height: '60px', background: socialCardStyle === 'style2' ? '#f4f4f5' : '#fff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontSize: '0.6rem', fontWeight: '900' }}>QR</div>}
                     <div>
@@ -692,12 +760,18 @@ const PlaylistEditor = () => {
 
                 {/* Weather Widget */}
                 {showWeather && (
-                  <div onClick={() => setSelectedElement('weather')} style={{ 
-                    position: 'absolute', top: '40px', left: '40px',
-                    transform: `scale(${weatherSize / 100})`, transformOrigin: 'top left',
+                  <div 
+                    onMouseDown={(e) => handleMouseDown(e, 'weather')}
+                    style={{ 
+                    position: 'absolute', 
+                    left: useCustomPos ? `${weatherX}px` : '40px',
+                    top: useCustomPos ? `${weatherY}px` : '40px',
+                    transform: `scale(${weatherSize / 100})`, 
+                    transformOrigin: 'top left',
                     background: `rgba(0,0,0,${cardTransparency})`, padding: '20px', borderRadius: '24px', color: '#fff', backdropFilter: 'blur(20px)',
                     border: selectedElement === 'weather' ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.1)', cursor: 'move',
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', gap: '20px'
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', gap: '20px',
+                    userSelect: 'none'
                   }}>
                     <span style={{ fontSize: '3rem', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.3))' }}>⛅</span>
                     <div>
@@ -871,6 +945,25 @@ const PlaylistEditor = () => {
                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Efeito Glassmorphism (Blur)</label>
                   <input type="range" min="0" max="1" step="0.1" value={cardTransparency} onChange={e => setCardTransparency(e.target.value)} style={{ width: '100%' }} />
                 </div>
+                {useCustomPos && (
+                  <button onClick={() => setUseCustomPos(false)} style={{ padding: '8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem', cursor: 'pointer' }}>
+                    🔄 Resetar para Posição Automática
+                  </button>
+                )}
+              </>
+            )}
+
+            {selectedElement === 'weather' && (
+              <>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Transparência do Card</label>
+                  <input type="range" min="0" max="1" step="0.1" value={cardTransparency} onChange={e => setCardTransparency(e.target.value)} style={{ width: '100%' }} />
+                </div>
+                {useCustomPos && (
+                  <button onClick={() => setUseCustomPos(false)} style={{ padding: '8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem', cursor: 'pointer' }}>
+                    🔄 Resetar para Posição Automática
+                  </button>
+                )}
               </>
             )}
 
@@ -910,6 +1003,11 @@ const PlaylistEditor = () => {
                   <input type="checkbox" checked={socialQrcode} onChange={e => setSocialQrcode(e.target.checked)} style={{ width: '16px', height: '16px' }} />
                   Gerar QR Code Automático
                 </label>
+                {useCustomPos && (
+                  <button onClick={() => setUseCustomPos(false)} style={{ padding: '8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem', cursor: 'pointer', marginTop: '12px' }}>
+                    🔄 Resetar para Posição Automática
+                  </button>
+                )}
               </>
             )}
 
