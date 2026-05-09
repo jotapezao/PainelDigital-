@@ -12,6 +12,7 @@ const Player = () => {
   const [playlist, setPlaylist] = useState(null);
   const [loading, setLoading] = useState(true);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const isMobile = windowWidth < 768;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [mediaNonce, setMediaNonce] = useState(0);
   const [isStarted, setIsStarted] = useState(false);
