@@ -316,9 +316,29 @@ const Player = () => {
   }, []);
 
   const isMobile = windowWidth < 768;
+  
+  // Base resolution of the PlaylistEditor canvas
+  const BASE_WIDTH = 960;
+  const BASE_HEIGHT = 540;
+
   const responsiveScale = (originalSize) => {
     const baseScale = (originalSize || 100) / 100;
+    // On mobile, we reduce the scale to avoid crowding
     return isMobile ? baseScale * 0.45 : baseScale;
+  };
+
+  const getScaledPos = (x, y) => {
+    if (!playlist) return { x: 0, y: 0 };
+    const editorW = playlist.orientation === 'portrait' ? 540 : 960;
+    const editorH = playlist.orientation === 'portrait' ? 960 : 540;
+    
+    const scaleX = windowWidth / editorW;
+    const scaleY = window.innerHeight / editorH;
+    
+    return {
+      x: x * scaleX,
+      y: y * scaleY
+    };
   };
 
   const rotationStyles = rotation !== 0 ? {
@@ -463,9 +483,11 @@ const Player = () => {
           )}
 
           {/* Relógio Widget */}
-          {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_clock && (
+          {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_clock && (() => {
+            const pos = getScaledPos(playlist.clock_x || 0, playlist.clock_y || 0);
+            return (
             <div className="player-widget-clock" style={{
-              ...(playlist.use_custom_pos ? { position: 'absolute', left: `${playlist.clock_x}px`, top: `${playlist.clock_y}px` } : getPositionStyles(playlist.widget_position || 'top-right', isMobile ? '20px' : '40px')),
+              ...(playlist.use_custom_pos ? { position: 'absolute', left: `${pos.x}px`, top: `${pos.y}px` } : getPositionStyles(playlist.widget_position || 'top-right', isMobile ? '20px' : '40px')),
               transform: `${!playlist.use_custom_pos && (playlist.widget_position || 'top-right').includes('center') ? 'translateX(-50%) ' : ''}scale(${responsiveScale(playlist.clock_size)})`,
               transformOrigin: playlist.use_custom_pos ? 'top left' : `${(playlist.widget_position || 'top-right').split('-')[0]} ${(playlist.widget_position || 'top-right').split('-')[1]}`,
               padding: '24px 36px',
@@ -481,12 +503,15 @@ const Player = () => {
                 {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* Clima Widget */}
-          {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_weather && (
+          {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_weather && (() => {
+            const pos = getScaledPos(playlist.weather_x || 0, playlist.weather_y || 0);
+            return (
             <div className="player-widget-weather" style={{
-              ...(playlist.use_custom_pos ? { position: 'absolute', left: `${playlist.weather_x}px`, top: `${playlist.weather_y}px` } : getPositionStyles('top-left', isMobile ? '20px' : '40px')),
+              ...(playlist.use_custom_pos ? { position: 'absolute', left: `${pos.x}px`, top: `${pos.y}px` } : getPositionStyles('top-left', isMobile ? '20px' : '40px')),
               transform: `scale(${responsiveScale(playlist.weather_size)})`,
               transformOrigin: 'top left',
               padding: '20px 30px',
@@ -497,11 +522,19 @@ const Player = () => {
               <span style={{ fontSize: '2.8rem' }}>⛅</span>
               <span style={{ fontSize: '2.8rem', fontWeight: '800', fontFamily: 'Outfit' }}>26°C</span>
             </div>
-          )}
+            );
+          })()}
 
           {/* Card de Redes Sociais */}
-          {playlist.layout !== 'split' && playlist.show_social && (
-            <div className="player-social-widget" style={getSocialStyle(playlist.social_card_style, playlist.social_platform)}>
+          {playlist.layout !== 'split' && playlist.show_social && (() => {
+            const pos = getScaledPos(playlist.social_x || 0, playlist.social_y || 0);
+            return (
+            <div className="player-social-widget" style={{
+              ...getSocialStyle(playlist.social_card_style, playlist.social_platform),
+              ...(playlist.use_custom_pos ? { position: 'absolute', left: `${pos.x}px`, top: `${pos.y}px` } : getPositionStyles(playlist.social_position || 'bottom-right', isMobile ? '20px' : '40px')),
+              transform: `${!playlist.use_custom_pos && (playlist.social_position || 'bottom-right').includes('center') ? 'translateX(-50%) ' : ''}scale(${responsiveScale(playlist.social_size)})`,
+              transformOrigin: playlist.use_custom_pos ? 'top left' : `${(playlist.social_position || 'bottom-right').split('-')[0]} ${(playlist.social_position || 'bottom-right').split('-')[1]}`,
+            }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
                 <div style={{ fontSize: '1.1rem', opacity: 0.8, fontWeight: '700', letterSpacing: '0.5px' }}>Conecte-se conosco:</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
@@ -522,7 +555,8 @@ const Player = () => {
                 </div>
               )}
             </div>
-          )}
+            );
+          })()}
 
           {/* Barra de Progresso */}
           {playlist.show_progress_bar !== false && (

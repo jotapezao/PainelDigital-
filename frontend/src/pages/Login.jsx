@@ -191,30 +191,27 @@ const Login = () => {
 
         @media (max-width: 480px) {
           .login-card {
-            padding: 24px 20px;
-            border-radius: 24px;
-            width: 92%;
-            margin: 10px auto;
-          }
-          .login-header {
-            margin-bottom: 20px !important;
+            padding: 32px 24px;
+            border-radius: 28px;
+            width: 90%;
+            margin: auto;
           }
           .login-logo {
-            width: 60px !important;
-            height: 60px !important;
-            margin-bottom: 12px !important;
+            width: 64px !important;
+            height: 64px !important;
           }
           .login-title {
-            font-size: 1.6rem !important;
+            font-size: 1.75rem !important;
           }
           .login-input {
-            padding: 12px 14px !important;
-            font-size: 0.9rem !important;
+            padding: 12px 16px !important;
+            font-size: 0.95rem !important;
+            margin-top: 6px;
           }
           .login-button {
-            padding: 14px !important;
-            margin-top: 16px !important;
-            font-size: 0.95rem !important;
+            padding: 15px !important;
+            margin-top: 24px !important;
+            font-size: 1rem !important;
           }
         }
         .login-input {

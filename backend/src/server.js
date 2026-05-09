@@ -102,17 +102,28 @@ io.on('connection', (socket) => {
       connectedDevices.set(deviceId, socket.id);
       socket.deviceId = deviceId;
 
-      // Update device status in DB
+      // Update device status in DB (if it's a TV device)
       const { pool } = require('./database/db');
-      const { rows } = await pool.query(
+      let clientId = null;
+      
+      const deviceCheck = await pool.query(
         'UPDATE devices SET status = $1, last_seen = NOW() WHERE id = $2 RETURNING client_id',
         ['online', deviceId]
       );
+      
+      if (deviceCheck.rows.length > 0) {
+        clientId = deviceCheck.rows[0].client_id;
+      } else {
+        // If not a device, check if it's a user
+        const userCheck = await pool.query('SELECT client_id FROM users WHERE id = $1', [deviceId]);
+        if (userCheck.rows.length > 0) {
+          clientId = userCheck.rows[0].client_id;
+        }
+      }
 
-      if (rows.length > 0 && rows[0].client_id) {
-        const clientId = rows[0].client_id;
+      if (clientId) {
         socket.join(`client:${clientId}`);
-        console.log(`[WS] Device ${deviceId} joined room client:${clientId}`);
+        console.log(`[WS] Entity ${deviceId} joined room client:${clientId}`);
       }
 
       // Notify admins
