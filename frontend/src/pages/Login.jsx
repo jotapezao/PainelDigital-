@@ -386,6 +386,10 @@ const Login = () => {
             </button>
           </form>
         </div>
+        
+        <div style={{ marginTop: '24px', textAlign: 'center' }}>
+          <p style={{ fontSize: '0.7rem', color: '#3f3f46', fontWeight: '600', letterSpacing: '1px' }}>VERSION 3.0.5 • PAINEL DIGITAL</p>
+        </div>
       </div>
     </div>
   );

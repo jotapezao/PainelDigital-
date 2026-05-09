@@ -10,6 +10,13 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
+        // Force clear cache to ensure the latest web code is always loaded
+        try {
+            this.getBridge().getWebView().clearCache(true);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
         // Mantém a tela sempre ligada
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         
