@@ -271,7 +271,7 @@ const Player = () => {
   };
 
   const getSocialUrl = () => {
-    if (!playlist.social_handle) return 'https://seusite.com.br';
+    if (!playlist?.social_handle) return 'https://seusite.com.br';
     if (playlist.social_handle.startsWith('http')) return playlist.social_handle;
     
     let handle = playlist.social_handle?.replace('@', '');
@@ -286,36 +286,71 @@ const Player = () => {
     }
   };
 
-  const getSocialStyle = (styleType, platform) => {
-    const transparency = playlist.card_transparency ?? 0.4;
+  // Helper para estilos de Cards padronizados (6 ESTILOS PREMIUM)
+  const getWidgetBaseStyle = (styleType, transparency = 0.5) => {
     const base = {
-      ...(playlist.use_custom_pos ? { position: 'absolute', left: `${playlist.social_x}px`, top: `${playlist.social_y}px` } : getPositionStyles(playlist.social_position || 'bottom-right', isMobile ? '20px' : '40px')), 
-      transform: `${!playlist.use_custom_pos && (playlist.social_position || 'bottom-right').includes('center') ? 'translateX(-50%) ' : ''}scale(${responsiveScale(playlist.social_size)})`,
-      transformOrigin: playlist.use_custom_pos ? 'top left' : `${(playlist.social_position || 'bottom-right').split('-')[0]} ${(playlist.social_position || 'bottom-right').split('-')[1]}`,
-      padding: '16px 24px',
-      zIndex: 20, display: 'flex', gap: '15px', alignItems: 'center',
-      color: '#fff', transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-      backdropFilter: 'blur(16px)',
-      boxShadow: '0 15px 35px rgba(0,0,0,0.3)',
+      padding: isMobile ? '12px 18px' : '24px 36px',
+      borderRadius: '28px',
+      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '20px',
+      zIndex: 25,
+      boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+      border: '1px solid rgba(255,255,255,0.1)',
+      color: '#fff'
     };
-    
+
     switch (styleType) {
-      case 'style2': // Escuro
-        return { ...base, background: `rgba(0,0,0,${transparency + 0.3})`, borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)' };
-      case 'style3': // Vibrante
-        const bg = platform === 'instagram' ? 'linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)' :
-                   platform === 'youtube' ? 'linear-gradient(135deg, #ff0000, #cc0000)' :
-                   platform === 'twitter' ? 'linear-gradient(135deg, #1da1f2, #0d8bd9)' :
-                   platform === 'facebook' ? 'linear-gradient(135deg, #1877f2, #145dbf)' :
-                   platform === 'tiktok' ? 'linear-gradient(135deg, #000000, #333333)' :
-                   `linear-gradient(135deg, ${playlist.theme_color || '#818cf8'}, #ec4899)`;
-        return { ...base, background: bg, borderRadius: '24px', opacity: transparency + 0.2 };
-      case 'style4': // Claro
-        return { ...base, background: `rgba(255,255,255,${transparency + 0.4})`, color: '#111', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.4)' };
-      case 'style1': // Vidro
+      case 'minimalist':
+        return { ...base, background: 'none', border: 'none', boxShadow: 'none', backdropFilter: 'none' };
+      case 'light':
+        return { ...base, background: `rgba(255,255,255,${transparency + 0.3})`, color: '#18181b', border: '1px solid rgba(0,0,0,0.1)', backdropFilter: 'blur(10px)' };
+      case 'dark':
+        return { ...base, background: `rgba(0,0,0,${transparency + 0.2})`, color: '#fff', backdropFilter: 'blur(16px)' };
+      case 'glass_pro':
+        return { ...base, background: 'rgba(255,255,255,0.1)', color: '#fff', backdropFilter: 'blur(30px)', border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)' };
+      case 'neon':
+        const themeColor = playlist?.theme_color || '#6366f1';
+        return { ...base, background: 'none', color: '#fff', border: `2px solid ${themeColor}`, boxShadow: `0 0 20px ${themeColor}66`, backdropFilter: 'blur(5px)' };
+      case 'border_classic':
+        return { ...base, background: `rgba(0,0,0,${transparency})`, color: '#fff', border: `4px solid ${playlist?.theme_color || '#6366f1'}`, borderRadius: '12px' };
       default:
-        return { ...base, background: `rgba(255,255,255,${transparency * 0.4})`, borderRadius: '20px', border: '1px solid rgba(255,255,255,0.2)' };
+        return base;
     }
+  };
+
+  const renderClock = () => {
+    const time = new Date();
+    const clockStyle = playlist?.clock_style || 'digital_solid';
+    const themeColor = playlist?.theme_color || '#6366f1';
+
+    if (clockStyle === 'analog_modern') {
+      const seconds = time.getSeconds() * 6;
+      const minutes = time.getMinutes() * 6;
+      const hours = (time.getHours() % 12) * 30 + time.getMinutes() * 0.5;
+
+      return (
+        <div style={{ width: isMobile ? '120px' : '200px', height: isMobile ? '120px' : '200px', borderRadius: '50%', border: `4px solid ${themeColor}`, position: 'relative', background: 'rgba(0,0,0,0.2)', backdropFilter: 'blur(10px)' }}>
+          <div style={{ position: 'absolute', width: '4px', height: '35%', background: '#fff', left: '50%', top: '15%', transformOrigin: 'bottom', transform: `translateX(-50%) rotate(${hours}deg)`, borderRadius: '4px' }} />
+          <div style={{ position: 'absolute', width: '3px', height: '45%', background: '#fff', left: '50%', top: '5%', transformOrigin: 'bottom', transform: `translateX(-50%) rotate(${minutes}deg)`, borderRadius: '3px' }} />
+          <div style={{ position: 'absolute', width: '2px', height: '48%', background: themeColor, left: '50%', top: '2%', transformOrigin: 'bottom', transform: `translateX(-50%) rotate(${seconds}deg)` }} />
+          <div style={{ position: 'absolute', width: '10px', height: '10px', background: '#fff', borderRadius: '50%', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }} />
+        </div>
+      );
+    }
+
+    const isBold = clockStyle === 'big_bold';
+    return (
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: isBold ? (isMobile ? '3.5rem' : '7rem') : (isMobile ? '2.5rem' : '5rem'), fontWeight: isBold ? '900' : '800', lineHeight: 1, fontFamily: 'Outfit', letterSpacing: '-2px' }}>
+          {time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+        </div>
+        <div style={{ fontSize: isBold ? '1.2rem' : '1rem', opacity: 0.8, marginTop: '6px', fontWeight: '600' }}>
+          {time.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+        </div>
+      </div>
+    );
   };
 
   const getSocialIcon = (platform, styleType) => {
@@ -513,34 +548,22 @@ const Player = () => {
           {/* Relógio Widget */}
           {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_clock && (
             <div className="player-widget-clock" style={{
+              ...getWidgetBaseStyle(playlist.clock_card_style || 'dark', playlist.card_transparency),
               ...(playlist.use_custom_pos ? { position: 'absolute', left: `${getScaledPos(playlist.clock_x || 0, playlist.clock_y || 0).x}px`, top: `${getScaledPos(playlist.clock_x || 0, playlist.clock_y || 0).y}px` } : getPositionStyles(playlist.widget_position || 'top-right', isMobile ? '20px' : '40px')),
               transform: `${!playlist.use_custom_pos && (playlist.widget_position || 'top-right').includes('center') ? 'translateX(-50%) ' : ''}scale(${responsiveScale(playlist.clock_size)})`,
               transformOrigin: playlist.use_custom_pos ? 'top left' : `${(playlist.widget_position || 'top-right').split('-')[0]} ${(playlist.widget_position || 'top-right').split('-')[1]}`,
-              padding: '24px 36px',
-              background: `rgba(0,0,0,${playlist.card_transparency ?? 0.4})`, backdropFilter: 'blur(16px)', borderRadius: '28px',
-              color: '#fff', border: `1px solid rgba(255,255,255,0.1)`, boxShadow: '0 15px 45px rgba(0,0,0,0.4)',
-              textAlign: (playlist.widget_position || 'top-right').includes('right') ? 'right' : (playlist.widget_position || 'top-right').includes('center') ? 'center' : 'left',
-              zIndex: 25, display: 'flex', flexDirection: 'column'
             }}>
-              <div style={{ fontSize: '4rem', fontWeight: '900', lineHeight: 1, fontFamily: 'Outfit', letterSpacing: '-2px' }}>
-                {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-              </div>
-              <div style={{ fontSize: '1.25rem', opacity: 0.8, marginTop: '6px', fontWeight: '600' }}>
-                {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
-              </div>
+              {renderClock()}
             </div>
           )}
 
           {/* Clima Widget */}
           {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_weather && (
             <div className="player-widget-weather" style={{
+              ...getWidgetBaseStyle(playlist.weather_card_style || 'dark', playlist.card_transparency),
               ...(playlist.use_custom_pos ? { position: 'absolute', left: `${getScaledPos(playlist.weather_x || 0, playlist.weather_y || 0).x}px`, top: `${getScaledPos(playlist.weather_x || 0, playlist.weather_y || 0).y}px` } : getPositionStyles('top-left', isMobile ? '20px' : '40px')),
               transform: `scale(${responsiveScale(playlist.weather_size)})`,
               transformOrigin: 'top left',
-              padding: '20px 30px',
-              background: `rgba(0,0,0,${playlist.card_transparency ?? 0.4})`, backdropFilter: 'blur(16px)', borderRadius: '28px',
-              color: '#fff', border: `1px solid rgba(255,255,255,0.1)`, boxShadow: '0 15px 45px rgba(0,0,0,0.4)',
-              zIndex: 25, display: 'flex', alignItems: 'center', gap: '16px'
             }}>
               <span style={{ fontSize: '2.8rem' }}>⛅</span>
               <span style={{ fontSize: '2.8rem', fontWeight: '800', fontFamily: 'Outfit' }}>26°C</span>
@@ -550,7 +573,7 @@ const Player = () => {
           {/* Card de Redes Sociais */}
           {playlist.layout !== 'split' && playlist.show_social && (
             <div className="player-social-widget" style={{
-              ...getSocialStyle(playlist.social_card_style, playlist.social_platform),
+              ...getWidgetBaseStyle(playlist.social_card_style || 'dark', playlist.card_transparency),
               ...(playlist.use_custom_pos ? { position: 'absolute', left: `${getScaledPos(playlist.social_x || 0, playlist.social_y || 0).x}px`, top: `${getScaledPos(playlist.social_x || 0, playlist.social_y || 0).y}px` } : getPositionStyles(playlist.social_position || 'bottom-right', isMobile ? '20px' : '40px')),
               transform: `${!playlist.use_custom_pos && (playlist.social_position || 'bottom-right').includes('center') ? 'translateX(-50%) ' : ''}scale(${responsiveScale(playlist.social_size)})`,
               transformOrigin: playlist.use_custom_pos ? 'top left' : `${(playlist.social_position || 'bottom-right').split('-')[0]} ${(playlist.social_position || 'bottom-right').split('-')[1]}`,

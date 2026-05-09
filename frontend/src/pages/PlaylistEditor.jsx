@@ -47,7 +47,9 @@ const PlaylistEditor = () => {
   const [socialQrcode, setSocialQrcode] = useState(false);
   const [widgetPosition, setWidgetPosition] = useState('top-right');
   const [socialPosition, setSocialPosition] = useState('bottom-right');
-  const [socialCardStyle, setSocialCardStyle] = useState('style1');
+  const [clockCardStyle, setClockCardStyle] = useState('dark');
+  const [weatherCardStyle, setWeatherCardStyle] = useState('dark');
+  const [socialCardStyle, setSocialCardStyle] = useState('dark');
   const [showProgressBar, setShowProgressBar] = useState(true);
   const [rotation, setRotation] = useState(0);
   
@@ -161,7 +163,9 @@ const PlaylistEditor = () => {
           setSocialQrcode(p.social_qrcode || false);
           setWidgetPosition(p.widget_position || 'top-right');
           setSocialPosition(p.social_position || 'bottom-right');
-          setSocialCardStyle(p.social_card_style || 'style1');
+          setSocialCardStyle(p.social_card_style || 'dark');
+          setClockCardStyle(p.clock_card_style || 'dark');
+          setWeatherCardStyle(p.weather_card_style || 'dark');
           setShowProgressBar(p.show_progress_bar !== false);
           // V2 fields
           setLogoUrl(p.logo_url || '');
@@ -277,6 +281,8 @@ const PlaylistEditor = () => {
         widget_position: widgetPosition,
         social_position: socialPosition,
         social_card_style: socialCardStyle,
+        clock_card_style: clockCardStyle,
+        weather_card_style: weatherCardStyle,
         show_progress_bar: showProgressBar,
         rotation: parseInt(rotation) || 0,
         // V2
@@ -304,7 +310,6 @@ const PlaylistEditor = () => {
         weather_x: Math.round(weatherX), weather_y: Math.round(weatherY), 
         social_x: Math.round(socialX), social_y: Math.round(socialY), 
         ticker_x: Math.round(tickerX), ticker_y: Math.round(tickerY),
-        ticker_height: tickerHeight,
         use_custom_pos: useCustomPos,
         items: selectedItems.map((item, i) => ({
           media_id: item.media_id,
@@ -998,10 +1003,29 @@ const PlaylistEditor = () => {
                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Efeito Glassmorphism (Blur)</label>
                   <input type="range" min="0" max="1" step="0.1" value={cardTransparency} onChange={e => setCardTransparency(e.target.value)} style={{ width: '100%' }} />
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa' }}>Tamanho: {clockSize}%</label>
-                  <input type="range" min="10" max="200" value={clockSize} onChange={e => setClockSize(parseInt(e.target.value))} style={{ width: '100px' }} />
-                </div>
+                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa' }}>Tamanho: {clockSize}%</label>
+                   <input type="range" min="10" max="200" value={clockSize} onChange={e => setClockSize(parseInt(e.target.value))} style={{ width: '100px' }} />
+                 </div>
+                 <div>
+                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Modelo do Relógio</label>
+                   <select value={clockStyle} onChange={e => setClockStyle(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
+                     <option value="digital_solid">Digital Moderno</option>
+                     <option value="analog_modern">Analógico Classic</option>
+                     <option value="big_bold">Big Bold (Focado)</option>
+                   </select>
+                 </div>
+                 <div>
+                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Estilo do Card</label>
+                   <select value={clockCardStyle} onChange={e => setClockCardStyle(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
+                     <option value="dark">Escuro (Padrão)</option>
+                     <option value="light">Claro</option>
+                     <option value="minimalist">Minimalista</option>
+                     <option value="glass_pro">Glass Pro</option>
+                     <option value="neon">Neon</option>
+                     <option value="border_classic">Borda Clássica</option>
+                   </select>
+                 </div>
                 {useCustomPos && (
                   <button onClick={() => setUseCustomPos(false)} style={{ padding: '8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem', cursor: 'pointer' }}>
                     🔄 Resetar para Posição Automática
@@ -1016,10 +1040,21 @@ const PlaylistEditor = () => {
                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Transparência do Card</label>
                   <input type="range" min="0" max="1" step="0.1" value={cardTransparency} onChange={e => setCardTransparency(e.target.value)} style={{ width: '100%' }} />
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa' }}>Tamanho: {weatherSize}%</label>
-                  <input type="range" min="10" max="200" value={weatherSize} onChange={e => setWeatherSize(parseInt(e.target.value))} style={{ width: '100px' }} />
-                </div>
+                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa' }}>Tamanho: {weatherSize}%</label>
+                   <input type="range" min="10" max="200" value={weatherSize} onChange={e => setWeatherSize(parseInt(e.target.value))} style={{ width: '100px' }} />
+                 </div>
+                 <div>
+                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Estilo do Card</label>
+                   <select value={weatherCardStyle} onChange={e => setWeatherCardStyle(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
+                     <option value="dark">Escuro (Padrão)</option>
+                     <option value="light">Claro</option>
+                     <option value="minimalist">Minimalista</option>
+                     <option value="glass_pro">Glass Pro</option>
+                     <option value="neon">Neon</option>
+                     <option value="border_classic">Borda Clássica</option>
+                   </select>
+                 </div>
                 {useCustomPos && (
                   <button onClick={() => setUseCustomPos(false)} style={{ padding: '8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem', cursor: 'pointer' }}>
                     🔄 Resetar para Posição Automática
@@ -1038,14 +1073,17 @@ const PlaylistEditor = () => {
                     <option value="youtube">YouTube</option>
                   </select>
                 </div>
-                <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Estilo do Card</label>
-                  <select value={socialCardStyle} onChange={e => setSocialCardStyle(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
-                    <option value="style1">Escuro Glassmorphism</option>
-                    <option value="style2">Claro Opaco</option>
-                    <option value="style3">Minimalista (Sem Fundo)</option>
-                  </select>
-                </div>
+                 <div>
+                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Estilo do Card</label>
+                   <select value={socialCardStyle} onChange={e => setSocialCardStyle(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
+                     <option value="dark">Escuro (Padrão)</option>
+                     <option value="light">Claro</option>
+                     <option value="minimalist">Minimalista</option>
+                     <option value="glass_pro">Glass Pro</option>
+                     <option value="neon">Neon</option>
+                     <option value="border_classic">Borda Clássica</option>
+                   </select>
+                 </div>
                 <div>
                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Posição na Tela</label>
                   <select value={socialPosition} onChange={e => setSocialPosition(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
