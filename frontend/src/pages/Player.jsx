@@ -25,6 +25,8 @@ const Player = () => {
   const logoutTimerRef = useRef(null);
   const clicksRef = useRef(0);
   const clickTimerRef = useRef(null);
+  const [showTicker, setShowTicker] = useState(true);
+  const tickerTimerRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -96,6 +98,31 @@ const Player = () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [currentIndex, mediaNonce, playlist]);
+
+  useEffect(() => {
+    if (!playlist || (playlist.ticker_interval === 0 && playlist.ticker_duration === 0)) {
+      setShowTicker(true);
+      return;
+    }
+
+    const intervalMin = playlist.ticker_interval || 0;
+    const durationMin = playlist.ticker_duration || 1;
+
+    const runCycle = () => {
+      setShowTicker(true);
+      tickerTimerRef.current = setTimeout(() => {
+        setShowTicker(false);
+      }, durationMin * 60 * 1000);
+    };
+
+    runCycle();
+    const cycleInterval = setInterval(runCycle, (intervalMin + durationMin) * 60 * 1000);
+
+    return () => {
+      clearInterval(cycleInterval);
+      if (tickerTimerRef.current) clearTimeout(tickerTimerRef.current);
+    };
+  }, [playlist]);
 
   const fetchPlaylist = async () => {
     try {
@@ -616,7 +643,6 @@ const Player = () => {
 
       {/* Faixa de Notícias / Ticker */}
       {(playlist.footer_text || playlist.rss_url || playlist.layout === 'with_footer') && playlist.layout !== 'split' && (() => {
-        const style = playlist.news_style || 'ticker-classic';
         const textContent = playlist.footer_text || 'Painel Digital • Inovação e Tecnologia • Siga-nos para mais novidades!';
         const text = ` ${textContent} • ${textContent} • ${textContent} `;
         const label = playlist.ticker_label || 'NOTÍCIAS';
@@ -625,15 +651,16 @@ const Player = () => {
         const color = playlist.theme_color || '#818cf8';
         const fontColor = playlist.footer_font_color || '#fff';
         const height = isMobile ? (playlist.ticker_height || 85) * 0.6 : (playlist.ticker_height || 85);
-
-        const isFullscreen = playlist.layout === 'fullscreen' || playlist.use_custom_pos;
+        const isVisible = showTicker || playlist.ticker_interval === 0;
 
         return (
           <div style={{
             height: `${height}px`, 
             width: playlist.use_custom_pos ? (playlist.layout === 'floating' ? '90%' : '100%') : '100%',
             backgroundColor: `rgba(${hexToRgb(color)}, ${playlist.footer_opacity ?? 0.85})`,
-            color: fontColor, display: 'flex', alignItems: 'center', overflow: 'hidden',
+            color: fontColor, 
+            display: isVisible ? 'flex' : 'none', 
+            alignItems: 'center', overflow: 'hidden',
             whiteSpace: 'nowrap', 
             position: 'absolute',
             left: playlist.use_custom_pos ? `${getScaledPos(playlist.ticker_x || 0, playlist.ticker_y || 0).x}px` : (playlist.layout === 'floating' ? '5%' : 0),
@@ -641,7 +668,9 @@ const Player = () => {
             bottom: !playlist.use_custom_pos && playlist.footer_position === 'bottom' ? 0 : 'auto',
             zIndex: 100, backdropFilter: 'blur(12px)',
             boxShadow: playlist.footer_position === 'top' ? '0 10px 40px rgba(0,0,0,0.5)' : '0 -10px 40px rgba(0,0,0,0.5)',
-            borderRadius: playlist.layout === 'floating' ? '20px' : '0'
+            borderRadius: playlist.layout === 'floating' ? '20px' : '0',
+            opacity: isVisible ? 1 : 0,
+            transition: 'opacity 0.5s ease'
           }}>
             <div style={{
               padding: isMobile ? '0 15px' : '0 35px', background: 'rgba(0,0,0,0.25)', height: '100%',

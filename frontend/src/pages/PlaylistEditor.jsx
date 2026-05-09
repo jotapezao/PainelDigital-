@@ -192,6 +192,9 @@ const PlaylistEditor = () => {
           setWeatherY(p.weather_y || 0);
           setSocialX(p.social_x || 0);
           setSocialY(p.social_y || 0);
+          setTickerX(p.ticker_x || 0);
+          setTickerY(p.ticker_y || 640);
+          setTickerHeight(p.ticker_height || 85);
           setUseCustomPos(p.use_custom_pos || false);
         }
       } catch (err) {
@@ -301,6 +304,7 @@ const PlaylistEditor = () => {
         weather_x: Math.round(weatherX), weather_y: Math.round(weatherY), 
         social_x: Math.round(socialX), social_y: Math.round(socialY), 
         ticker_x: Math.round(tickerX), ticker_y: Math.round(tickerY),
+        ticker_height: tickerHeight,
         use_custom_pos: useCustomPos,
         items: selectedItems.map((item, i) => ({
           media_id: item.media_id,
@@ -1099,6 +1103,22 @@ const PlaylistEditor = () => {
                     <option value="medium">Normal</option>
                     <option value="fast">Rápido (Breaking News)</option>
                   </select>
+                </div>
+                <div style={{ marginTop: '12px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', display: 'flex', justifyContent: 'space-between' }}>
+                    Altura da Barra: <span>{tickerHeight}px</span>
+                  </label>
+                  <input type="range" min="40" max="250" value={tickerHeight} onChange={e => setTickerHeight(parseInt(e.target.value))} style={{ width: '100%', marginTop: '8px' }} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>A cada (min):</label>
+                    <input type="number" value={tickerInterval} onChange={e => setTickerInterval(parseInt(e.target.value))} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir por (min):</label>
+                    <input type="number" value={tickerDuration} onChange={e => setTickerDuration(parseInt(e.target.value))} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }} />
+                  </div>
                 </div>
               </>
             )}
