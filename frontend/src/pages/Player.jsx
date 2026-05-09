@@ -95,10 +95,13 @@ const Player = () => {
     if (!playlist || playlist.items.length === 0) return;
 
     const currentItem = playlist.items[currentIndex];
-    currentMediaRef.current = currentItem.media_name || currentItem.name || 'Mídia Desconhecida';
+    const itemMedia = currentItem.media || currentItem;
+    const type = itemMedia.type || 'video';
+    
+    currentMediaRef.current = itemMedia.name || currentItem.name || 'Mídia Desconhecida';
     
     // Looping and duration logic
-    if (currentItem.type === 'image' || (currentItem.type === 'video' && currentItem.duration_seconds > 0)) {
+    if (type === 'image' || (type === 'video' && currentItem.duration_seconds > 0)) {
       const duration = (currentItem.duration_seconds || 10) * 1000;
       timerRef.current = setTimeout(nextMedia, duration);
     }
@@ -327,7 +330,9 @@ const Player = () => {
   }
 
   const currentItem = playlist.items[currentIndex];
-  const mediaUrl = currentItem.url || currentItem.filename;
+  const itemMedia = currentItem.media || currentItem;
+  const mediaUrl = itemMedia.url || itemMedia.filename;
+  const mediaType = itemMedia.type || 'video';
 
   const getScreenRatio = () => {
     if (!playlist) return 1;
@@ -607,14 +612,14 @@ const Player = () => {
           display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000'
         }}>
           {playlist.scale_mode === 'blur-fill' && (
-            currentItem.type === 'image' ? (
+            mediaType === 'image' ? (
               <img src={mediaUrl} style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
             ) : (
               <video src={mediaUrl} muted autoPlay loop style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
             )
           )}
 
-          {currentItem.type === 'image' ? (
+          {mediaType === 'image' ? (
             <img 
               key={`${currentItem.id}-${currentIndex}-${mediaNonce}`}
               src={mediaUrl} 
@@ -875,7 +880,7 @@ const Player = () => {
             transition: 'opacity 0.5s ease',
             ...containerStyle
           }}>
-            {label && (
+            {label && label.trim() !== "" && (
               <div style={{
                 padding: isMobile ? '0 15px' : '0 35px', height: '100%',
                 display: 'flex', alignItems: 'center', fontWeight: '900', fontSize: isMobile ? '0.7rem' : '1.2rem',
