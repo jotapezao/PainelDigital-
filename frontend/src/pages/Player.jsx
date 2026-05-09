@@ -166,21 +166,21 @@ const Player = () => {
   };
 
   // Show logout hint on triple-click anywhere on the player
-  const handleTripleClick = (() => {
-    let clicks = 0;
-    let timer;
-    return () => {
-      clicks++;
-      clearTimeout(timer);
-      timer = setTimeout(() => { clicks = 0; }, 600);
-      if (clicks >= 3) {
-        clicks = 0;
-        setShowLogout(true);
-        clearTimeout(logoutTimerRef.current);
-        logoutTimerRef.current = setTimeout(() => setShowLogout(false), 6000);
-      }
-    };
-  })();
+  const clicksRef = useRef(0);
+  const clickTimerRef = useRef(null);
+  
+  const handleTripleClick = () => {
+    clicksRef.current++;
+    clearTimeout(clickTimerRef.current);
+    clickTimerRef.current = setTimeout(() => { clicksRef.current = 0; }, 600);
+    
+    if (clicksRef.current >= 3) {
+      clicksRef.current = 0;
+      setShowLogout(true);
+      if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
+      logoutTimerRef.current = setTimeout(() => setShowLogout(false), 6000);
+    }
+  };
 
   const autoStart = searchParams.get('autoStart') === 'true';
   const isClient = user?.role === 'client';
@@ -483,11 +483,9 @@ const Player = () => {
           )}
 
           {/* Relógio Widget */}
-          {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_clock && (() => {
-            const pos = getScaledPos(playlist.clock_x || 0, playlist.clock_y || 0);
-            return (
+          {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_clock && (
             <div className="player-widget-clock" style={{
-              ...(playlist.use_custom_pos ? { position: 'absolute', left: `${pos.x}px`, top: `${pos.y}px` } : getPositionStyles(playlist.widget_position || 'top-right', isMobile ? '20px' : '40px')),
+              ...(playlist.use_custom_pos ? { position: 'absolute', left: `${getScaledPos(playlist.clock_x || 0, playlist.clock_y || 0).x}px`, top: `${getScaledPos(playlist.clock_x || 0, playlist.clock_y || 0).y}px` } : getPositionStyles(playlist.widget_position || 'top-right', isMobile ? '20px' : '40px')),
               transform: `${!playlist.use_custom_pos && (playlist.widget_position || 'top-right').includes('center') ? 'translateX(-50%) ' : ''}scale(${responsiveScale(playlist.clock_size)})`,
               transformOrigin: playlist.use_custom_pos ? 'top left' : `${(playlist.widget_position || 'top-right').split('-')[0]} ${(playlist.widget_position || 'top-right').split('-')[1]}`,
               padding: '24px 36px',
@@ -503,15 +501,12 @@ const Player = () => {
                 {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
               </div>
             </div>
-            );
-          })()}
+          )}
 
           {/* Clima Widget */}
-          {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_weather && (() => {
-            const pos = getScaledPos(playlist.weather_x || 0, playlist.weather_y || 0);
-            return (
+          {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_weather && (
             <div className="player-widget-weather" style={{
-              ...(playlist.use_custom_pos ? { position: 'absolute', left: `${pos.x}px`, top: `${pos.y}px` } : getPositionStyles('top-left', isMobile ? '20px' : '40px')),
+              ...(playlist.use_custom_pos ? { position: 'absolute', left: `${getScaledPos(playlist.weather_x || 0, playlist.weather_y || 0).x}px`, top: `${getScaledPos(playlist.weather_x || 0, playlist.weather_y || 0).y}px` } : getPositionStyles('top-left', isMobile ? '20px' : '40px')),
               transform: `scale(${responsiveScale(playlist.weather_size)})`,
               transformOrigin: 'top left',
               padding: '20px 30px',
@@ -522,16 +517,13 @@ const Player = () => {
               <span style={{ fontSize: '2.8rem' }}>⛅</span>
               <span style={{ fontSize: '2.8rem', fontWeight: '800', fontFamily: 'Outfit' }}>26°C</span>
             </div>
-            );
-          })()}
+          )}
 
           {/* Card de Redes Sociais */}
-          {playlist.layout !== 'split' && playlist.show_social && (() => {
-            const pos = getScaledPos(playlist.social_x || 0, playlist.social_y || 0);
-            return (
+          {playlist.layout !== 'split' && playlist.show_social && (
             <div className="player-social-widget" style={{
               ...getSocialStyle(playlist.social_card_style, playlist.social_platform),
-              ...(playlist.use_custom_pos ? { position: 'absolute', left: `${pos.x}px`, top: `${pos.y}px` } : getPositionStyles(playlist.social_position || 'bottom-right', isMobile ? '20px' : '40px')),
+              ...(playlist.use_custom_pos ? { position: 'absolute', left: `${getScaledPos(playlist.social_x || 0, playlist.social_y || 0).x}px`, top: `${getScaledPos(playlist.social_x || 0, playlist.social_y || 0).y}px` } : getPositionStyles(playlist.social_position || 'bottom-right', isMobile ? '20px' : '40px')),
               transform: `${!playlist.use_custom_pos && (playlist.social_position || 'bottom-right').includes('center') ? 'translateX(-50%) ' : ''}scale(${responsiveScale(playlist.social_size)})`,
               transformOrigin: playlist.use_custom_pos ? 'top left' : `${(playlist.social_position || 'bottom-right').split('-')[0]} ${(playlist.social_position || 'bottom-right').split('-')[1]}`,
             }}>
@@ -555,8 +547,7 @@ const Player = () => {
                 </div>
               )}
             </div>
-            );
-          })()}
+          )}
 
           {/* Barra de Progresso */}
           {playlist.show_progress_bar !== false && (
@@ -673,7 +664,7 @@ const Player = () => {
 
       {/* Versão para controle de Build */}
       <div style={{ position: 'absolute', bottom: '10px', left: '10px', fontSize: '10px', color: 'rgba(255,255,255,0.2)', zIndex: 9999 }}>
-        BUILD v3.0.6
+        BUILD v3.0.7
       </div>
     </div>
   );
