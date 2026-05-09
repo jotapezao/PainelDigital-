@@ -33,10 +33,9 @@ async function list(req, res) {
       params
     );
 
-    // No R2, as URLs já estão salvas ou podem ser geradas via R2_PUBLIC_URL
-    const publicUrl = process.env.R2_PUBLIC_URL.endsWith('/') 
-      ? process.env.R2_PUBLIC_URL 
-      : `${process.env.R2_PUBLIC_URL}/`;
+    // Se não houver R2_PUBLIC_URL, usa a rota local de uploads como fallback
+    const rawUrl = process.env.R2_PUBLIC_URL || '/uploads';
+    const publicUrl = rawUrl.endsWith('/') ? rawUrl : `${rawUrl}/`;
 
     const medias = rows.map(m => ({
       ...m,

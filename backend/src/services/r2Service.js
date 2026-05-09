@@ -26,9 +26,8 @@ const uploadFile = async (file) => {
     await r2Client.send(new PutObjectCommand(uploadParams));
     
     // Retorna a URL pública configurada
-    const publicUrl = process.env.R2_PUBLIC_URL.endsWith('/') 
-      ? process.env.R2_PUBLIC_URL 
-      : `${process.env.R2_PUBLIC_URL}/`;
+    const rawUrl = process.env.R2_PUBLIC_URL || '/uploads';
+    const publicUrl = rawUrl.endsWith('/') ? rawUrl : `${rawUrl}/`;
       
     return {
       fileName: fileName,
@@ -62,9 +61,8 @@ const listFiles = async () => {
 
   try {
     const data = await r2Client.send(new ListObjectsV2Command(listParams));
-    const publicUrl = process.env.R2_PUBLIC_URL.endsWith('/') 
-      ? process.env.R2_PUBLIC_URL 
-      : `${process.env.R2_PUBLIC_URL}/`;
+    const rawUrl = process.env.R2_PUBLIC_URL || '/uploads';
+    const publicUrl = rawUrl.endsWith('/') ? rawUrl : `${rawUrl}/`;
 
     return (data.Contents || []).map(file => ({
       name: file.Key,

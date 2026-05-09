@@ -54,9 +54,8 @@ async function getById(req, res) {
       [req.params.id]
     );
 
-    const publicUrl = (process.env.R2_PUBLIC_URL || '').endsWith('/') 
-      ? process.env.R2_PUBLIC_URL 
-      : `${process.env.R2_PUBLIC_URL || ''}/`;
+    const rawUrl = process.env.R2_PUBLIC_URL || '/uploads';
+    const publicUrl = rawUrl.endsWith('/') ? rawUrl : `${rawUrl}/`;
 
     playlist.items = items.map(item => ({
       ...item,
@@ -366,9 +365,8 @@ async function getActive(req, res) {
       return res.status(404).json({ error: 'Playlist sem mídias.' });
     }
 
-    const publicUrl = (process.env.R2_PUBLIC_URL || '').endsWith('/') 
-      ? process.env.R2_PUBLIC_URL 
-      : `${process.env.R2_PUBLIC_URL || ''}/`;
+    const rawUrl = process.env.R2_PUBLIC_URL || '/uploads';
+    const publicUrl = rawUrl.endsWith('/') ? rawUrl : `${rawUrl}/`;
 
     playlist.items = items.map(item => ({
       ...item,
