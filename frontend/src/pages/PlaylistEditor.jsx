@@ -167,9 +167,11 @@ const PlaylistEditor = () => {
   const [dragging, setDragging] = useState(null);
   const [weatherCity, setWeatherCity] = useState('Cuiabá - MT');
   const [timelineZoom, setTimelineZoom] = useState(1);
-  const [timelineHeight, setTimelineHeight] = useState(220);
-  const [timelineView, setTimelineView] = useState('normal'); // 'compact' | 'normal' | 'expanded'
+  const [timelineHeight, setTimelineHeight] = useState(240);
   const [resizingMedia, setResizingMedia] = useState(null);
+  const [clipboard, setClipboard] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null);
+  const [timeInput, setTimeInput] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -320,6 +322,33 @@ const PlaylistEditor = () => {
       [copy[idx + 1], copy[idx]] = [copy[idx], copy[idx + 1]];
       return copy;
     });
+  };
+
+  const duplicateMedia = (idx) => {
+    setSelectedItems(prev => {
+      const copy = [...prev];
+      const item = { ...copy[idx], media: { ...copy[idx].media } };
+      copy.splice(idx + 1, 0, item);
+      return copy;
+    });
+  };
+
+  const copyMedia = (idx) => {
+    setClipboard({ ...selectedItems[idx], media: { ...selectedItems[idx].media } });
+  };
+
+  const pasteMedia = (afterIdx) => {
+    if (!clipboard) return;
+    setSelectedItems(prev => {
+      const copy = [...prev];
+      const item = { ...clipboard, media: { ...clipboard.media } };
+      copy.splice(afterIdx + 1, 0, item);
+      return copy;
+    });
+  };
+
+  const setAllDurations = (seconds) => {
+    setSelectedItems(prev => prev.map(item => ({ ...item, duration: seconds })));
   };
 
   const handleSave = async () => {
@@ -931,203 +960,175 @@ const PlaylistEditor = () => {
              </div>
           </div>
 
-          {/* TIMELINE PRO */}
-          <div style={{ height: `${timelineHeight}px`, background: '#18181b', borderTop: '1px solid #27272a', display: 'flex', flexDirection: 'column', zIndex: 10, position: 'relative', transition: 'height 0.2s ease' }}>
-            {/* Resize handle top */}
-            <div 
-              onMouseDown={(e) => {
-                e.preventDefault();
-                const startY = e.clientY;
-                const startH = timelineHeight;
-                const onMove = (ev) => setTimelineHeight(Math.max(120, Math.min(500, startH - (ev.clientY - startY))));
-                const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
-                document.addEventListener('mousemove', onMove);
-                document.addEventListener('mouseup', onUp);
-              }}
-              style={{ height: '6px', cursor: 'ns-resize', background: 'transparent', position: 'absolute', top: '-3px', left: 0, right: 0, zIndex: 20 }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.4)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            />
+          {/* TIMELINE CAPCUT-STYLE */}
+          <div style={{ height: `${timelineHeight}px`, background: '#111113', borderTop: '2px solid #27272a', display: 'flex', flexDirection: 'column', zIndex: 10, position: 'relative' }}
+            onClick={() => setContextMenu(null)}
+          >
+            {/* Resize handle */}
+            <div onMouseDown={(e) => { e.preventDefault(); const sY = e.clientY, sH = timelineHeight; const mv = (ev) => setTimelineHeight(Math.max(140, Math.min(500, sH - (ev.clientY - sY)))); const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); }; document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up); }}
+              style={{ height: '5px', cursor: 'ns-resize', position: 'absolute', top: '-2px', left: 0, right: 0, zIndex: 20, background: 'transparent' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#6366f1'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'} />
 
-            {/* Timeline Header */}
-            <div style={{ padding: '6px 16px', borderBottom: '1px solid #27272a', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <h3 style={{ fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase', color: '#a1a1aa', margin: 0 }}>Timeline</h3>
-                <span style={{ fontSize: '0.65rem', color: '#52525b', background: '#27272a', padding: '2px 8px', borderRadius: '10px' }}>{selectedItems.length} mídias</span>
+            {/* Header */}
+            <div style={{ padding: '4px 16px', background: '#18181b', borderBottom: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, minHeight: '36px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#71717a', textTransform: 'uppercase', letterSpacing: '1px' }}>Timeline</span>
+                <span style={{ fontSize: '0.6rem', color: '#3f3f46', background: '#1a1a1f', padding: '2px 8px', borderRadius: '8px' }}>{selectedItems.length} clips</span>
+                {clipboard && <span style={{ fontSize: '0.55rem', color: '#22c55e', background: 'rgba(34,197,94,0.1)', padding: '2px 8px', borderRadius: '8px' }}>📋 Copiado</span>}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {/* View mode toggle */}
-                <div style={{ display: 'flex', background: '#27272a', borderRadius: '6px', overflow: 'hidden' }}>
-                  {[
-                    { v: 'compact', icon: '▬', tip: 'Compacto' },
-                    { v: 'normal', icon: '▭', tip: 'Normal' },
-                    { v: 'expanded', icon: '⬜', tip: 'Expandido' },
-                  ].map(m => (
-                    <button key={m.v} onClick={() => { setTimelineView(m.v); setTimelineHeight(m.v === 'compact' ? 140 : m.v === 'expanded' ? 360 : 220); }}
-                      title={m.tip}
-                      style={{ background: timelineView === m.v ? '#3f3f46' : 'transparent', border: 'none', color: timelineView === m.v ? '#fff' : '#71717a', padding: '3px 10px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '700' }}>
-                      {m.icon}
-                    </button>
-                  ))}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {/* Batch duration */}
+                <select onChange={e => { if(e.target.value) { setAllDurations(parseInt(e.target.value)); e.target.value = ''; }}} style={{ background: '#1a1a1f', border: '1px solid #27272a', borderRadius: '6px', color: '#a1a1aa', fontSize: '0.6rem', padding: '3px 6px', cursor: 'pointer', outline: 'none' }}>
+                  <option value="">⏱ Definir todos</option>
+                  <option value="5">5s cada</option>
+                  <option value="10">10s cada</option>
+                  <option value="15">15s cada</option>
+                  <option value="30">30s cada</option>
+                  <option value="60">60s cada</option>
+                </select>
+                {/* Zoom */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '2px', background: '#1a1a1f', borderRadius: '6px', padding: '2px 4px', border: '1px solid #27272a' }}>
+                  <button onClick={() => setTimelineZoom(z => Math.max(0.3, +(z - 0.2).toFixed(1)))} style={{ background: 'none', border: 'none', color: '#71717a', cursor: 'pointer', fontSize: '0.8rem', padding: '0 5px', lineHeight: 1 }}>−</button>
+                  <input type="range" min="0.3" max="3" step="0.1" value={timelineZoom} onChange={e => setTimelineZoom(parseFloat(e.target.value))} style={{ width: '60px', height: '12px', accentColor: '#6366f1' }} />
+                  <button onClick={() => setTimelineZoom(z => Math.min(3, +(z + 0.2).toFixed(1)))} style={{ background: 'none', border: 'none', color: '#71717a', cursor: 'pointer', fontSize: '0.8rem', padding: '0 5px', lineHeight: 1 }}>+</button>
+                  <span style={{ fontSize: '0.55rem', color: '#52525b', minWidth: '28px', textAlign: 'center' }}>{Math.round(timelineZoom * 100)}%</span>
                 </div>
-                {/* Zoom controls */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#27272a', borderRadius: '6px', padding: '2px 4px' }}>
-                  <button onClick={() => setTimelineZoom(z => Math.max(0.3, z - 0.15))} style={{ background: 'none', border: 'none', color: '#a1a1aa', cursor: 'pointer', fontSize: '0.85rem', padding: '0 6px', lineHeight: 1 }}>−</button>
-                  <span style={{ fontSize: '0.65rem', color: '#71717a', minWidth: '32px', textAlign: 'center' }}>{Math.round(timelineZoom * 100)}%</span>
-                  <button onClick={() => setTimelineZoom(z => Math.min(3, z + 0.15))} style={{ background: 'none', border: 'none', color: '#a1a1aa', cursor: 'pointer', fontSize: '0.85rem', padding: '0 6px', lineHeight: 1 }}>+</button>
-                </div>
-                {/* Duration badge */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 10px', background: 'rgba(99,102,241,0.1)', borderRadius: '14px', border: '1px solid rgba(99,102,241,0.2)' }}>
+                {/* Total */}
+                <div style={{ padding: '3px 10px', background: '#1a1a1f', borderRadius: '8px', border: '1px solid #27272a' }}>
                   <span style={{ fontSize: '0.65rem', color: '#818cf8', fontWeight: '800', fontFamily: 'monospace' }}>
-                    {totalDuration >= 3600 ? `${Math.floor(totalDuration/3600)}h${Math.floor((totalDuration%3600)/60).toString().padStart(2,'0')}m` : totalDuration >= 60 ? `${Math.floor(totalDuration / 60)}m${(totalDuration % 60).toString().padStart(2,'0')}s` : `${totalDuration}s`}
+                    {totalDuration >= 3600 ? `${Math.floor(totalDuration/3600)}h${Math.floor((totalDuration%3600)/60).toString().padStart(2,'0')}m` : totalDuration >= 60 ? `${Math.floor(totalDuration / 60)}:${(totalDuration % 60).toString().padStart(2, '0')}` : `0:${totalDuration.toString().padStart(2, '0')}`}
                   </span>
                 </div>
               </div>
             </div>
-            
-            {/* Timeline Content */}
-            <div style={{ flex: 1, overflowX: 'auto', overflowY: 'hidden', background: '#0f0f11' }}
-              onMouseMove={(e) => {
-                if (!resizingMedia) return;
-                const dx = (e.clientX - resizingMedia.startX) / (timelineZoom * 8);
-                const newDur = Math.max(1, Math.round(resizingMedia.startDur + dx));
-                updateDuration(resizingMedia.idx, newDur);
-              }}
+
+            {/* Track area */}
+            <div style={{ flex: 1, overflowX: 'auto', overflowY: 'hidden', position: 'relative' }}
+              onMouseMove={(e) => { if (!resizingMedia) return; const dx = e.clientX - resizingMedia.startX; const newDur = Math.max(1, Math.round(resizingMedia.startDur + dx / (8 * timelineZoom))); updateDuration(resizingMedia.idx, newDur); }}
               onMouseUp={() => setResizingMedia(null)}
               onMouseLeave={() => setResizingMedia(null)}
             >
               {/* Ruler */}
-              <div style={{ height: '22px', borderBottom: '1px solid #1e1e22', position: 'relative', minWidth: `${Math.max(selectedItems.reduce((a,it) => a + Math.max(80, (it.duration||10) * 8 * timelineZoom), 0) + 140, 600)}px`, padding: '0 16px' }}>
-                {(() => {
-                  let acc = 0;
-                  return selectedItems.map((item, idx) => {
-                    const pos = acc;
-                    const w = Math.max(80, (item.duration || 10) * 8 * timelineZoom);
-                    acc += w + 3;
-                    return (
-                      <div key={`r-${idx}`} style={{ position: 'absolute', left: `${16 + pos}px`, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                        <span style={{ fontSize: '0.55rem', color: '#3f3f46', fontFamily: 'monospace', fontWeight: '600' }}>
-                          {(() => { const t = selectedItems.slice(0,idx).reduce((a,i) => a+(i.duration||10),0); return t >= 60 ? `${Math.floor(t/60)}:${(t%60).toString().padStart(2,'0')}` : `0:${t.toString().padStart(2,'0')}`; })()}
-                        </span>
-                        <div style={{ height: '4px', width: '1px', background: '#3f3f46' }}></div>
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
-              
-              {/* Track */}
-              <div style={{ display: 'flex', gap: '3px', alignItems: 'stretch', padding: '6px 16px', minHeight: `${timelineHeight - 70}px` }}>
-                {selectedItems.map((item, idx) => {
-                  const isImage = item.media?.type === 'image';
-                  const dur = item.duration || 10;
-                  const itemW = Math.max(80, dur * 8 * timelineZoom);
-                  const isCompact = timelineView === 'compact';
-                  const isSelected = selectedElement === `media-${idx}`;
-                  return (
-                    <div key={`${item.media_id}-${idx}`} 
-                         draggable 
-                         onDragStart={(e) => e.dataTransfer.setData('text/plain', idx)} 
-                         onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.outline = '2px solid #6366f1'; }}
-                         onDragLeave={(e) => { e.currentTarget.style.outline = 'none'; }}
-                         onDrop={(e) => {
-                           e.preventDefault();
-                           e.currentTarget.style.outline = 'none';
-                           const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
-                           if (isNaN(fromIdx)) return;
-                           const newItems = [...selectedItems];
-                           const [moved] = newItems.splice(fromIdx, 1);
-                           newItems.splice(idx, 0, moved);
-                           setSelectedItems(newItems);
-                         }}
-                         onClick={(e) => { e.stopPropagation(); setSelectedElement(`media-${idx}`); }}
-                         style={{ 
-                      width: `${itemW}px`, minWidth: '80px',
-                      background: isSelected ? '#1e1b4b' : '#1a1a1f', 
-                      borderRadius: '8px', overflow: 'hidden', position: 'relative',
-                      border: isSelected ? '2px solid #6366f1' : '1px solid #27272a', 
-                      flexShrink: 0, cursor: 'grab',
-                      display: 'flex', flexDirection: 'column',
-                      transition: 'border-color 0.15s, background 0.15s'
-                    }}>
-                      {/* Thumbnail area */}
-                      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0 }}>
-                        {isImage ? (
-                          <img src={item.media?.url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55 }} />
-                        ) : (
-                          <div style={{ height: '100%', background: 'linear-gradient(135deg, #1a1a2e, #16213e)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span style={{ fontSize: isCompact ? '1rem' : '1.5rem', opacity: 0.35 }}>🎬</span>
-                          </div>
-                        )}
-                        {/* Type + duration overlay */}
-                        <div style={{ position: 'absolute', top: '4px', left: '4px', display: 'flex', gap: '4px' }}>
-                          <span style={{ padding: '1px 6px', borderRadius: '3px', fontSize: '0.55rem', fontWeight: '800',
-                            background: isImage ? 'rgba(34,197,94,0.9)' : 'rgba(99,102,241,0.9)', color: '#fff' }}>
-                            {isImage ? 'IMG' : 'VID'}
+              {(() => {
+                const pxPerSec = 8 * timelineZoom;
+                const totalPx = selectedItems.reduce((a, it) => a + Math.max(60, (it.duration || 10) * pxPerSec), 0) + 100;
+                const rulerInterval = timelineZoom >= 1.5 ? 5 : timelineZoom >= 0.8 ? 10 : 30;
+                return (
+                  <div style={{ height: '24px', borderBottom: '1px solid #1a1a1f', position: 'relative', minWidth: `${Math.max(totalPx, 600)}px` }}>
+                    {Array.from({ length: Math.ceil(totalDuration / rulerInterval) + 1 }, (_, i) => {
+                      const sec = i * rulerInterval;
+                      return (
+                        <div key={`tick-${i}`} style={{ position: 'absolute', left: `${16 + sec * pxPerSec}px`, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.5rem', color: '#3f3f46', fontFamily: 'monospace' }}>
+                            {sec >= 60 ? `${Math.floor(sec / 60)}:${(sec % 60).toString().padStart(2, '0')}` : `0:${sec.toString().padStart(2, '0')}`}
                           </span>
+                          <div style={{ height: '5px', width: '1px', background: '#27272a' }} />
                         </div>
-                        {/* Duration overlay */}
-                        <div style={{ position: 'absolute', bottom: '4px', right: '4px', padding: '1px 6px', borderRadius: '3px', fontSize: '0.6rem', fontWeight: '800', background: 'rgba(0,0,0,0.8)', color: '#818cf8', fontFamily: 'monospace' }}>
-                          {dur}s
-                        </div>
-                        {/* Remove btn - appears on hover */}
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); removeMedia(idx); if(isSelected) setSelectedElement(null); }} 
-                          style={{ position: 'absolute', top: '3px', right: '3px', width: '18px', height: '18px', background: 'rgba(239,68,68,0.8)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '0.6rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.15s' }}
-                          onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-                          onMouseLeave={e => e.currentTarget.style.opacity = '0'}
-                        >✕</button>
-                      </div>
-                      
-                      {/* Info bar - hidden in compact mode */}
-                      {!isCompact && (
-                        <div style={{ padding: '4px 8px', background: '#111113', borderTop: '1px solid #27272a', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                          <div style={{ fontSize: '0.65rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#d4d4d8', flex: 1 }}>
-                            {item.media?.name}
-                          </div>
-                          <span style={{ fontSize: '0.55rem', color: '#52525b' }}>
-                            {(item.transition || 'fade') === 'fade' ? '✦' : (item.transition === 'slide' ? '→' : (item.transition === 'zoom' ? '⊕' : '◎'))}
-                          </span>
-                        </div>
-                      )}
+                      );
+                    })}
+                  </div>
+                );
+              })()}
 
-                      {/* Drag-to-resize handle (right edge) */}
-                      <div 
-                        onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); setResizingMedia({ idx, startX: e.clientX, startDur: dur }); }}
-                        style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '6px', cursor: 'ew-resize', background: 'transparent', zIndex: 10 }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.5)'}
-                        onMouseLeave={e => { if(!resizingMedia) e.currentTarget.style.background = 'transparent'; }}
-                      />
-                      
-                      {/* Transition connector */}
-                      {idx < selectedItems.length - 1 && (
-                        <div style={{ 
-                          position: 'absolute', right: '-11px', top: '50%', transform: 'translateY(-50%)', 
-                          width: '18px', height: '18px', background: '#27272a', borderRadius: '50%', 
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5, 
-                          fontSize: '0.5rem', border: '2px solid #0f0f11', color: '#6366f1'
-                        }}>
-                          {(item.transition || 'fade') === 'fade' ? '✦' : (item.transition === 'slide' ? '→' : (item.transition === 'zoom' ? '⊕' : '▶'))}
+              {/* Clips Track */}
+              <div style={{ display: 'flex', gap: '2px', padding: '8px 16px', minHeight: `${timelineHeight - 76}px`, alignItems: 'stretch' }}>
+                {selectedItems.map((item, idx) => {
+                  const isImg = item.media?.type === 'image';
+                  const dur = item.duration || 10;
+                  const w = Math.max(60, dur * 8 * timelineZoom);
+                  const sel = selectedElement === `media-${idx}`;
+                  return (
+                    <div key={`tl-${item.media_id}-${idx}`}
+                      draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', idx)}
+                      onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.boxShadow = 'inset 0 0 0 2px #6366f1'; }}
+                      onDragLeave={(e) => e.currentTarget.style.boxShadow = sel ? '0 0 0 2px #6366f1' : 'none'}
+                      onDrop={(e) => { e.preventDefault(); e.currentTarget.style.boxShadow = 'none'; const from = parseInt(e.dataTransfer.getData('text/plain')); if (!isNaN(from)) { const n = [...selectedItems]; const [m] = n.splice(from, 1); n.splice(idx, 0, m); setSelectedItems(n); } }}
+                      onClick={(e) => { e.stopPropagation(); setSelectedElement(`media-${idx}`); setContextMenu(null); }}
+                      onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedElement(`media-${idx}`); setContextMenu({ x: e.clientX, y: e.clientY, idx }); }}
+                      style={{
+                        width: `${w}px`, minWidth: '60px', flexShrink: 0,
+                        background: sel ? '#1e1b4b' : '#161618',
+                        borderRadius: '6px', overflow: 'visible', position: 'relative',
+                        boxShadow: sel ? '0 0 0 2px #6366f1' : 'none',
+                        cursor: resizingMedia ? 'ew-resize' : 'grab',
+                        display: 'flex', flexDirection: 'column',
+                        transition: 'box-shadow 0.1s'
+                      }}>
+                      {/* Thumbnail */}
+                      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', borderRadius: '6px 6px 0 0', minHeight: 0 }}>
+                        {isImg ? <img src={item.media?.url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
+                          : <div style={{ height: '100%', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: '1.2rem', opacity: 0.3 }}>🎬</span></div>}
+                        {/* Badge */}
+                        <div style={{ position: 'absolute', top: '3px', left: '3px', padding: '1px 5px', borderRadius: '3px', fontSize: '0.5rem', fontWeight: '800', background: isImg ? '#16a34a' : '#6366f1', color: '#fff' }}>{isImg ? 'IMG' : 'VID'}</div>
+                        {/* Duration badge */}
+                        <div
+                          onClick={(e) => { e.stopPropagation(); setTimeInput({ idx, value: dur.toString() }); }}
+                          style={{ position: 'absolute', bottom: '3px', right: '3px', padding: '1px 6px', borderRadius: '3px', fontSize: '0.58rem', fontWeight: '800', background: 'rgba(0,0,0,0.85)', color: '#818cf8', fontFamily: 'monospace', cursor: 'text', border: '1px solid transparent', transition: 'border-color 0.1s' }}
+                          onMouseEnter={e => e.currentTarget.style.borderColor = '#6366f1'}
+                          onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}
+                        >
+                          {timeInput?.idx === idx ? (
+                            <input autoFocus type="number" min="1" value={timeInput.value}
+                              onChange={e => setTimeInput({ idx, value: e.target.value })}
+                              onBlur={() => { updateDuration(idx, parseInt(timeInput.value) || 1); setTimeInput(null); }}
+                              onKeyDown={e => { if (e.key === 'Enter') { updateDuration(idx, parseInt(timeInput.value) || 1); setTimeInput(null); } }}
+                              onClick={e => e.stopPropagation()}
+                              style={{ width: '30px', background: 'transparent', border: 'none', color: '#818cf8', fontSize: '0.58rem', fontWeight: '800', textAlign: 'center', outline: 'none', fontFamily: 'monospace' }} />
+                          ) : `${dur}s`}
                         </div>
-                      )}
+                      </div>
+                      {/* Name bar */}
+                      <div style={{ padding: '3px 6px', background: '#111113', borderRadius: '0 0 6px 6px', borderTop: '1px solid #1e1e22' }}>
+                        <div style={{ fontSize: '0.58rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#a1a1aa' }}>{item.media?.name}</div>
+                      </div>
+                      {/* RIGHT resize handle */}
+                      <div onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); setResizingMedia({ idx, startX: e.clientX, startDur: dur }); }}
+                        style={{ position: 'absolute', right: '-1px', top: '8px', bottom: '8px', width: '4px', cursor: 'ew-resize', borderRadius: '2px', background: sel ? '#6366f1' : 'transparent', transition: 'background 0.1s', zIndex: 10 }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#6366f1'}
+                        onMouseLeave={e => { if (!resizingMedia) e.currentTarget.style.background = sel ? '#6366f1' : 'transparent'; }} />
+                      {/* LEFT resize handle */}
+                      <div onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); setResizingMedia({ idx, startX: e.clientX, startDur: dur, reverse: true }); }}
+                        style={{ position: 'absolute', left: '-1px', top: '8px', bottom: '8px', width: '4px', cursor: 'ew-resize', borderRadius: '2px', background: sel ? '#6366f1' : 'transparent', transition: 'background 0.1s', zIndex: 10 }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#6366f1'}
+                        onMouseLeave={e => { if (!resizingMedia) e.currentTarget.style.background = sel ? '#6366f1' : 'transparent'; }} />
                     </div>
                   );
                 })}
-                {/* Add media */}
-                <div onClick={() => setActiveTab('medias')} style={{ 
-                  width: '70px', minWidth: '70px', border: '2px dashed #27272a', borderRadius: '8px', 
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
-                  cursor: 'pointer', color: '#52525b', flexShrink: 0, gap: '4px',
-                  transition: 'border-color 0.2s, color 0.2s'
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.color = '#818cf8'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = '#27272a'; e.currentTarget.style.color = '#52525b'; }}
-                >
-                  <span style={{ fontSize: '1.2rem' }}>+</span>
-                  <span style={{ fontSize: '0.55rem', fontWeight: '700' }}>Mídia</span>
-                </div>
+                {/* Add btn */}
+                <div onClick={() => setActiveTab('medias')} style={{ width: '50px', minWidth: '50px', border: '1px dashed #27272a', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#3f3f46', flexShrink: 0, fontSize: '1.2rem', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.color = '#6366f1'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#27272a'; e.currentTarget.style.color = '#3f3f46'; }}>+</div>
+                {/* Paste at end */}
+                {clipboard && <div onClick={() => pasteMedia(selectedItems.length - 1)} style={{ width: '50px', minWidth: '50px', border: '1px dashed #22c55e33', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#22c55e55', flexShrink: 0, fontSize: '0.8rem', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#22c55e'; e.currentTarget.style.color = '#22c55e'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#22c55e33'; e.currentTarget.style.color = '#22c55e55'; }}>📋</div>}
               </div>
             </div>
+
+            {/* Context Menu */}
+            {contextMenu && (
+              <div style={{ position: 'fixed', left: contextMenu.x, top: contextMenu.y, background: '#1e1e22', border: '1px solid #3f3f46', borderRadius: '8px', padding: '4px 0', zIndex: 9999, boxShadow: '0 10px 40px rgba(0,0,0,0.6)', minWidth: '160px' }}
+                onClick={e => e.stopPropagation()}>
+                {[
+                  { label: '📋 Copiar', action: () => { copyMedia(contextMenu.idx); setContextMenu(null); } },
+                  { label: '📄 Colar depois', action: () => { pasteMedia(contextMenu.idx); setContextMenu(null); }, disabled: !clipboard },
+                  { label: '✨ Duplicar', action: () => { duplicateMedia(contextMenu.idx); setContextMenu(null); } },
+                  null,
+                  { label: '⏱ Definir tempo...', action: () => { setTimeInput({ idx: contextMenu.idx, value: (selectedItems[contextMenu.idx]?.duration || 10).toString() }); setContextMenu(null); setSelectedElement(`media-${contextMenu.idx}`); } },
+                  null,
+                  { label: '🗑️ Remover', action: () => { removeMedia(contextMenu.idx); setContextMenu(null); setSelectedElement(null); }, danger: true },
+                ].map((item, i) => item === null ? (
+                  <div key={`sep-${i}`} style={{ height: '1px', background: '#27272a', margin: '4px 8px' }} />
+                ) : (
+                  <button key={item.label} onClick={item.action} disabled={item.disabled}
+                    style={{ width: '100%', textAlign: 'left', padding: '8px 16px', background: 'transparent', border: 'none', color: item.disabled ? '#3f3f46' : item.danger ? '#ef4444' : '#e4e4e7', fontSize: '0.75rem', cursor: item.disabled ? 'default' : 'pointer', fontWeight: '600', transition: 'background 0.1s' }}
+                    onMouseEnter={e => { if (!item.disabled) e.currentTarget.style.background = '#27272a'; }}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
