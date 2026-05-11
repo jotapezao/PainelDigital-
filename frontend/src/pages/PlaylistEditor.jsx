@@ -875,28 +875,24 @@ const PlaylistEditor = () => {
     if (widgetType === 'clock') {
       setWidgetPosition(preset.position);
       setClockSize(preset.size);
-      setClockCardStyle(preset.style);
       setSelectedElement('clock');
     }
 
     if (widgetType === 'weather') {
       setWeatherPosition(preset.position);
       setWeatherSize(preset.size);
-      setWeatherCardStyle(preset.style);
       setSelectedElement('weather');
     }
 
     if (widgetType === 'social') {
       setSocialPosition(preset.position);
       setSocialSize(preset.size);
-      setSocialCardStyle(preset.style);
       setSelectedElement('social');
     }
 
     if (widgetType === 'ticker') {
       setTickerHeight(preset.height);
       setTickerSpeed(preset.speed);
-      setNewsStyle(preset.style);
       setSelectedElement('ticker');
     }
   };
@@ -1064,100 +1060,17 @@ const PlaylistEditor = () => {
                 Cada card abaixo resume o estado atual do widget e leva direto para os ajustes detalhados.
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '18px' }}>
-                {[
-                  {
-                    id: 'clock',
-                    label: 'Relogio',
-                    active: showClock,
-                    accent: clockAccentColor,
-                    icon: '⌚',
-                    meta: `${widgetPosition.replace('-', ' ')} • ${clockSize}%`,
-                    extra: clockCardStyle,
-                  },
-                  {
-                    id: 'weather',
-                    label: 'Clima',
-                    active: showWeather,
-                    accent: weatherAccentColor,
-                    icon: '⛅',
-                    meta: `${weatherPosition.replace('-', ' ')} • ${weatherSize}%`,
-                    extra: weatherCity,
-                  },
-                  {
-                    id: 'social',
-                    label: 'Social',
-                    active: showSocial,
-                    accent: socialAccentColor,
-                    icon: '📱',
-                    meta: `${socialPosition.replace('-', ' ')} • ${socialSize}%`,
-                    extra: socialPlatform,
-                  },
-                  {
-                    id: 'ticker',
-                    label: 'Ticker',
-                    active: layout !== 'fullscreen',
-                    accent: tickerAccentColor,
-                    icon: '📰',
-                    meta: `${newsStyle} • ${tickerHeight}px`,
-                    extra: footerPosition === 'top' ? 'Topo' : 'Rodape',
-                  },
-                ].map((widget) => (
-                  <button
-                    key={widget.id}
-                    onClick={() => setSelectedElement(widget.id)}
-                    style={{
-                      textAlign: 'left',
-                      padding: '12px',
-                      borderRadius: '16px',
-                      border: selectedElement === widget.id ? `1px solid ${widget.accent}` : '1px solid #27272a',
-                      background: selectedElement === widget.id ? 'rgba(99,102,241,0.12)' : '#18181b',
-                      color: '#fff',
-                      cursor: 'pointer',
-                      boxShadow: selectedElement === widget.id ? `0 0 0 1px ${widget.accent}20, 0 16px 28px rgba(0,0,0,0.28)` : 'none',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{
-                          width: '34px',
-                          height: '34px',
-                          borderRadius: '12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          background: `${widget.accent}20`,
-                          border: `1px solid ${widget.accent}33`,
-                          fontSize: '1rem'
-                        }}>
-                          {widget.icon}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '0.82rem', fontWeight: '800' }}>{widget.label}</div>
-                          <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '2px' }}>{widget.meta}</div>
-                        </div>
-                      </div>
-                      <span style={{
-                        fontSize: '0.56rem',
-                        fontWeight: '800',
-                        letterSpacing: '0.6px',
-                        textTransform: 'uppercase',
-                        color: widget.active ? widget.accent : '#52525b',
-                        background: widget.active ? `${widget.accent}14` : '#111113',
-                        border: `1px solid ${widget.active ? `${widget.accent}2a` : '#27272a'}`,
-                        borderRadius: '999px',
-                        padding: '4px 8px'
-                      }}>
-                        {widget.active ? 'Ativo' : 'Off'}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginTop: '10px' }}>
-                      <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>{widget.extra}</span>
-                      <span style={{ fontSize: '0.55rem', color: '#a1a1aa' }}>Clique para editar</span>
-                    </div>
-                  </button>
-                ))}
+              <div style={{
+                marginBottom: '18px',
+                padding: '12px 14px',
+                borderRadius: '16px',
+                background: '#18181b',
+                border: '1px solid #27272a',
+                color: '#a1a1aa',
+                fontSize: '0.68rem',
+                lineHeight: 1.5
+              }}>
+                Edite cada widget dentro do próprio card abaixo. Assim a posição, o tamanho e o estilo ficam no mesmo lugar, sem duplicar controles.
               </div>
               
               {/* Relógio */}
@@ -1871,7 +1784,8 @@ const PlaylistEditor = () => {
         <div style={{ width: '320px', background: '#18181b', borderLeft: '1px solid #27272a', display: 'flex', flexDirection: 'column', zIndex: 10, overflowY: 'auto' }}>
           <div style={{ padding: '20px 24px', borderBottom: '1px solid #27272a' }}>
             <h3 style={{ fontSize: '0.9rem', fontWeight: '800', textTransform: 'uppercase', color: '#fff' }}>
-              {selectedElement === 'clock' ? '⌚ Propriedades: Relógio' :
+              {activeTab === 'widgets' ? '🧩 Widgets' :
+               selectedElement === 'clock' ? '⌚ Propriedades: Relógio' :
                selectedElement === 'weather' ? '⛅ Propriedades: Clima' :
                selectedElement === 'social' ? '📱 Propriedades: Social' :
                selectedElement === 'ticker' ? '📰 Propriedades: Notícias' :
@@ -2025,10 +1939,10 @@ const PlaylistEditor = () => {
               </>
             )}
 
-            {selectedElement === 'clock' && (
+            {activeTab !== 'widgets' && selectedElement === 'clock' && (
               <>
                 <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Sugestões de Layout</label>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Posições Rápidas</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
                     {WIDGET_LAYOUT_PRESETS.clock.map((preset) => (
                       <button
@@ -2043,12 +1957,12 @@ const PlaylistEditor = () => {
                           border: widgetPreset === `clock-${preset.id}` ? '1px solid #6366f1' : '1px solid #27272a',
                           color: '#fff'
                         }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                           <strong style={{ fontSize: '0.76rem' }}>{preset.label}</strong>
-                          <span style={{ fontSize: '0.58rem', color: '#a1a1aa', background: '#111827', borderRadius: '999px', padding: '2px 8px' }}>{preset.size}%</span>
+                          <span style={{ fontSize: '0.58rem', color: '#a1a1aa', background: '#111827', borderRadius: '999px', padding: '2px 8px' }}>pos</span>
                         </div>
-                        <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '4px' }}>Posição {preset.position.replace('-', ' ')} • Card {preset.style}</div>
+                        <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '4px' }}>Posição {preset.position.replace('-', ' ')}</div>
                       </button>
                     ))}
                   </div>
@@ -2061,8 +1975,6 @@ const PlaylistEditor = () => {
                         key={preset.id}
                         onClick={() => {
                           setWidgetPosition(preset.position);
-                          setClockSize(preset.size);
-                          setClockCardStyle(preset.style);
                         }}
                         style={{
                           padding: '10px 12px',
@@ -2076,9 +1988,9 @@ const PlaylistEditor = () => {
                       >
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                           <strong style={{ fontSize: '0.76rem' }}>{preset.label}</strong>
-                          <span style={{ fontSize: '0.58rem', color: '#a1a1aa', background: '#111827', borderRadius: '999px', padding: '2px 8px' }}>{preset.style}</span>
+                          <span style={{ fontSize: '0.58rem', color: '#a1a1aa', background: '#111827', borderRadius: '999px', padding: '2px 8px' }}>pos</span>
                         </div>
-                        <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '4px' }}>Tamanho sugerido {preset.size}%</div>
+                        <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '4px' }}>Toque para mover sem trocar o estilo</div>
                       </button>
                     ))}
                   </div>
@@ -2153,10 +2065,10 @@ const PlaylistEditor = () => {
               </>
             )}
 
-            {selectedElement === 'weather' && (
+            {activeTab !== 'widgets' && selectedElement === 'weather' && (
               <>
                 <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Sugestões de Layout</label>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Posições Rápidas</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
                     {WIDGET_LAYOUT_PRESETS.weather.map((preset) => (
                       <button
@@ -2174,9 +2086,9 @@ const PlaylistEditor = () => {
                       >
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                           <strong style={{ fontSize: '0.76rem' }}>{preset.label}</strong>
-                          <span style={{ fontSize: '0.58rem', color: '#a1a1aa', background: '#111827', borderRadius: '999px', padding: '2px 8px' }}>{preset.size}%</span>
+                          <span style={{ fontSize: '0.58rem', color: '#a1a1aa', background: '#111827', borderRadius: '999px', padding: '2px 8px' }}>pos</span>
                         </div>
-                        <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '4px' }}>Posição {preset.position.replace('-', ' ')} • Card {preset.style}</div>
+                        <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '4px' }}>Posição {preset.position.replace('-', ' ')}</div>
                       </button>
                     ))}
                   </div>
@@ -2229,8 +2141,6 @@ const PlaylistEditor = () => {
                         key={preset.id}
                         onClick={() => {
                           setWeatherPosition(preset.position);
-                          setWeatherSize(preset.size);
-                          setWeatherCardStyle(preset.style);
                         }}
                         style={{
                           padding: '10px 12px',
@@ -2244,9 +2154,9 @@ const PlaylistEditor = () => {
                       >
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                           <strong style={{ fontSize: '0.76rem' }}>{preset.label}</strong>
-                          <span style={{ fontSize: '0.58rem', color: '#a1a1aa', background: '#111827', borderRadius: '999px', padding: '2px 8px' }}>{preset.style}</span>
+                          <span style={{ fontSize: '0.58rem', color: '#a1a1aa', background: '#111827', borderRadius: '999px', padding: '2px 8px' }}>pos</span>
                         </div>
-                        <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '4px' }}>Tamanho sugerido {preset.size}%</div>
+                        <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '4px' }}>Posição {preset.position.replace('-', ' ')}</div>
                       </button>
                     ))}
                   </div>
@@ -2290,10 +2200,10 @@ const PlaylistEditor = () => {
               </>
             )}
 
-            {selectedElement === 'social' && (
+            {activeTab !== 'widgets' && selectedElement === 'social' && (
               <>
                 <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Sugestões de Layout</label>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Posições Rápidas</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
                     {WIDGET_LAYOUT_PRESETS.social.map((preset) => (
                       <button
@@ -2357,8 +2267,6 @@ const PlaylistEditor = () => {
                         key={preset.id}
                         onClick={() => {
                           setSocialPosition(preset.position);
-                          setSocialSize(preset.size);
-                          setSocialCardStyle(preset.style);
                         }}
                         style={{
                           padding: '10px 12px',
@@ -2372,9 +2280,9 @@ const PlaylistEditor = () => {
                       >
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                           <strong style={{ fontSize: '0.76rem' }}>{preset.label}</strong>
-                          <span style={{ fontSize: '0.58rem', color: '#a1a1aa', background: '#111827', borderRadius: '999px', padding: '2px 8px' }}>{preset.style}</span>
+                          <span style={{ fontSize: '0.58rem', color: '#a1a1aa', background: '#111827', borderRadius: '999px', padding: '2px 8px' }}>pos</span>
                         </div>
-                        <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '4px' }}>Tamanho sugerido {preset.size}%</div>
+                        <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '4px' }}>Posição {preset.position.replace('-', ' ')}</div>
                       </button>
                     ))}
                   </div>
@@ -2432,10 +2340,10 @@ const PlaylistEditor = () => {
               </>
             )}
 
-            {selectedElement === 'ticker' && (
+            {activeTab !== 'widgets' && selectedElement === 'ticker' && (
               <>
                 <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Sugestões de Layout</label>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Posições Rápidas</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
                     {WIDGET_LAYOUT_PRESETS.ticker.map((preset) => (
                       <button
