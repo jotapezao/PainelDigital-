@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
@@ -302,6 +302,10 @@ const PlaylistEditor = () => {
   const [contextMenu, setContextMenu] = useState(null);
   const [timeInput, setTimeInput] = useState(null);
   const [mediaSearch, setMediaSearch] = useState('');
+  const clockWidgetRef = useRef(null);
+  const weatherWidgetRef = useRef(null);
+  const socialWidgetRef = useRef(null);
+  const tickerWidgetRef = useRef(null);
 
   const mediasFiltradas = useMemo(() => {
     if (!mediaSearch.trim()) return medias;
@@ -874,19 +878,16 @@ const PlaylistEditor = () => {
 
     if (widgetType === 'clock') {
       setWidgetPosition(preset.position);
-      setClockSize(preset.size);
       setSelectedElement('clock');
     }
 
     if (widgetType === 'weather') {
       setWeatherPosition(preset.position);
-      setWeatherSize(preset.size);
       setSelectedElement('weather');
     }
 
     if (widgetType === 'social') {
       setSocialPosition(preset.position);
-      setSocialSize(preset.size);
       setSelectedElement('social');
     }
 
@@ -897,16 +898,51 @@ const PlaylistEditor = () => {
     }
   };
 
+  const getPreviewOffset = (ref) => (
+    ref.current
+      ? { x: Math.round(ref.current.offsetLeft || 0), y: Math.round(ref.current.offsetTop || 0) }
+      : null
+  );
+
+  const syncCustomPositionsFromPreview = () => {
+    const clock = getPreviewOffset(clockWidgetRef) || { x: clockX, y: clockY };
+    const weather = getPreviewOffset(weatherWidgetRef) || { x: weatherX, y: weatherY };
+    const social = getPreviewOffset(socialWidgetRef) || { x: socialX, y: socialY };
+    const ticker = getPreviewOffset(tickerWidgetRef) || { x: tickerX, y: tickerY };
+
+    setClockX(clock.x);
+    setClockY(clock.y);
+    setWeatherX(weather.x);
+    setWeatherY(weather.y);
+    setSocialX(social.x);
+    setSocialY(social.y);
+    setTickerX(ticker.x);
+    setTickerY(ticker.y);
+
+    return { clock, weather, social, ticker };
+  };
+
   const handleMouseDown = (e, type) => {
     e.stopPropagation();
+    const currentOffset = getPreviewOffset(
+      type === 'clock' ? clockWidgetRef :
+      type === 'weather' ? weatherWidgetRef :
+      type === 'social' ? socialWidgetRef :
+      tickerWidgetRef
+    );
+
     setDragging({
       type,
       startX: e.clientX,
       startY: e.clientY,
-      initialX: type === 'clock' ? clockX : type === 'weather' ? weatherX : type === 'social' ? socialX : tickerX,
-      initialY: type === 'clock' ? clockY : type === 'weather' ? weatherY : type === 'social' ? socialY : tickerY,
+      initialX: useCustomPos
+        ? (type === 'clock' ? clockX : type === 'weather' ? weatherX : type === 'social' ? socialX : tickerX)
+        : (currentOffset?.x ?? 0),
+      initialY: useCustomPos
+        ? (type === 'clock' ? clockY : type === 'weather' ? weatherY : type === 'social' ? socialY : tickerY)
+        : (currentOffset?.y ?? 0),
+      active: false,
     });
-    setUseCustomPos(true);
     setSelectedElement(type);
   };
 
@@ -914,19 +950,31 @@ const PlaylistEditor = () => {
     if (!dragging) return;
     const dx = (e.clientX - dragging.startX) / canvasZoom;
     const dy = (e.clientY - dragging.startY) / canvasZoom;
+    const shouldStartDrag = dragging.active || Math.hypot(dx, dy) > 4;
+    if (!shouldStartDrag) return;
+
+    let initialX = dragging.initialX;
+    let initialY = dragging.initialY;
+    if (!dragging.active) {
+      const offsets = syncCustomPositionsFromPreview();
+      initialX = offsets[dragging.type]?.x ?? dragging.initialX;
+      initialY = offsets[dragging.type]?.y ?? dragging.initialY;
+      setUseCustomPos(true);
+      setDragging({ ...dragging, active: true, initialX, initialY });
+    }
 
     if (dragging.type === 'clock') {
-      setClockX(dragging.initialX + dx);
-      setClockY(dragging.initialY + dy);
+      setClockX(initialX + dx);
+      setClockY(initialY + dy);
     } else if (dragging.type === 'weather') {
-      setWeatherX(dragging.initialX + dx);
-      setWeatherY(dragging.initialY + dy);
+      setWeatherX(initialX + dx);
+      setWeatherY(initialY + dy);
     } else if (dragging.type === 'social') {
-      setSocialX(dragging.initialX + dx);
-      setSocialY(dragging.initialY + dy);
+      setSocialX(initialX + dx);
+      setSocialY(initialY + dy);
     } else if (dragging.type === 'ticker') {
-      setTickerX(dragging.initialX + dx);
-      setTickerY(dragging.initialY + dy);
+      setTickerX(initialX + dx);
+      setTickerY(initialY + dy);
     }
   };
 
@@ -1072,6 +1120,12 @@ const PlaylistEditor = () => {
               }}>
                 Edite cada widget dentro do próprio card abaixo. Assim a posição, o tamanho e o estilo ficam no mesmo lugar, sem duplicar controles.
               </div>
+              <div style={{ marginBottom: '12px', padding: '14px', background: '#18181b', borderRadius: '12px', border: '1px solid #27272a' }}>
+                <label style={{ fontSize: '0.7rem', color: '#a1a1aa', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  Transparência dos cards <span>{Math.round(cardTransparency * 100)}%</span>
+                </label>
+                <input type="range" min="0" max="1" step="0.05" value={cardTransparency} onChange={e => setCardTransparency(parseFloat(e.target.value))} style={{ width: '100%' }} />
+              </div>
               
               {/* Relógio */}
               <div style={{ marginBottom: '12px', padding: '14px', background: '#18181b', borderRadius: '12px', border: showClock ? '1px solid #6366f1' : '1px solid #27272a' }}>
@@ -1095,6 +1149,30 @@ const PlaylistEditor = () => {
                         <option value="digital_solid">Digital Sólido</option>
                         <option value="analog_modern">Analógico Minimalista</option>
                       </select>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa', display: 'block', marginBottom: '4px' }}>Posição:</label>
+                        <select value={widgetPosition} onChange={e => { setWidgetPosition(e.target.value); setUseCustomPos(false); }} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                          <option value="top-right">Topo direito</option>
+                          <option value="top-left">Topo esquerdo</option>
+                          <option value="top-center">Topo centro</option>
+                          <option value="bottom-right">Inferior direito</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa', display: 'block', marginBottom: '4px' }}>Card:</label>
+                        <select value={clockCardStyle} onChange={e => setClockCardStyle(e.target.value)} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                          {CARD_STYLE_PREVIEWS.map(style => <option key={style.value} value={style.value}>{style.label}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa', display: 'block', marginBottom: '4px' }}>Cor de destaque:</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input type="color" value={clockAccentColor} onChange={e => setClockAccentColor(e.target.value)} style={{ width: '32px', height: '30px', border: 'none', background: 'none', cursor: 'pointer' }} />
+                        <input value={clockAccentColor} onChange={e => setClockAccentColor(e.target.value)} style={{ flex: 1, padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
+                      </div>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Tamanho: {clockSize}%</label>
@@ -1136,8 +1214,8 @@ const PlaylistEditor = () => {
                       <div>
                         <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Cor do Destaque:</label>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          <input type="color" value={themeColor} onChange={e => setThemeColor(e.target.value)} style={{ width: '30px', height: '30px', border: 'none', background: 'none', cursor: 'pointer' }} />
-                          <input value={themeColor} onChange={e => setThemeColor(e.target.value)} style={{ flex: 1, padding: '4px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.7rem' }} />
+                          <input type="color" value={tickerAccentColor} onChange={e => setTickerAccentColor(e.target.value)} style={{ width: '30px', height: '30px', border: 'none', background: 'none', cursor: 'pointer' }} />
+                          <input value={tickerAccentColor} onChange={e => setTickerAccentColor(e.target.value)} style={{ flex: 1, padding: '4px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.7rem' }} />
                         </div>
                       </div>
                     </div>
@@ -1189,6 +1267,10 @@ const PlaylistEditor = () => {
                         <option value="fast">Rápido</option>
                       </select>
                     </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Altura: {tickerHeight}px</label>
+                      <input type="range" min="40" max="180" value={tickerHeight} onChange={e => setTickerHeight(parseInt(e.target.value))} style={{ width: '100px' }} />
+                    </div>
                     <div>
                       <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Cor do Texto:</label>
                       <div style={{ display: 'flex', gap: '8px' }}>
@@ -1225,6 +1307,34 @@ const PlaylistEditor = () => {
                 </div>
                 {showWeather && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid #27272a', paddingTop: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa', display: 'block', marginBottom: '4px' }}>Cidade:</label>
+                      <input value={weatherCity} onChange={e => setWeatherCity(e.target.value)} placeholder="Ex: Cuiabá - MT" style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa', display: 'block', marginBottom: '4px' }}>Posição:</label>
+                        <select value={weatherPosition} onChange={e => { setWeatherPosition(e.target.value); setUseCustomPos(false); }} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                          <option value="top-left">Topo esquerdo</option>
+                          <option value="top-right">Topo direito</option>
+                          <option value="top-center">Topo centro</option>
+                          <option value="bottom-right">Inferior direito</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa', display: 'block', marginBottom: '4px' }}>Card:</label>
+                        <select value={weatherCardStyle} onChange={e => setWeatherCardStyle(e.target.value)} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                          {CARD_STYLE_PREVIEWS.map(style => <option key={style.value} value={style.value}>{style.label}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa', display: 'block', marginBottom: '4px' }}>Cor de destaque:</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input type="color" value={weatherAccentColor} onChange={e => setWeatherAccentColor(e.target.value)} style={{ width: '32px', height: '30px', border: 'none', background: 'none', cursor: 'pointer' }} />
+                        <input value={weatherAccentColor} onChange={e => setWeatherAccentColor(e.target.value)} style={{ flex: 1, padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
+                      </div>
+                    </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Tamanho: {weatherSize}%</label>
                       <input type="range" min="10" max="200" value={weatherSize} onChange={e => setWeatherSize(parseInt(e.target.value))} style={{ width: '100px' }} />
@@ -1257,6 +1367,49 @@ const PlaylistEditor = () => {
                 </div>
                 {showSocial && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid #27272a', paddingTop: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa', display: 'block', marginBottom: '4px' }}>Plataforma:</label>
+                        <select value={socialPlatform} onChange={e => setSocialPlatform(e.target.value)} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                          <option value="instagram">Instagram</option>
+                          <option value="tiktok">TikTok</option>
+                          <option value="youtube">YouTube</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa', display: 'block', marginBottom: '4px' }}>Posição:</label>
+                        <select value={socialPosition} onChange={e => { setSocialPosition(e.target.value); setUseCustomPos(false); }} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                          <option value="bottom-right">Inferior direito</option>
+                          <option value="bottom-left">Inferior esquerdo</option>
+                          <option value="bottom-center">Inferior centro</option>
+                          <option value="top-right">Topo direito</option>
+                          <option value="top-left">Topo esquerdo</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa', display: 'block', marginBottom: '4px' }}>Perfil:</label>
+                      <input value={socialHandle} onChange={e => setSocialHandle(e.target.value)} placeholder="@seu_negocio" style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa', display: 'block', marginBottom: '4px' }}>Card:</label>
+                        <select value={socialCardStyle} onChange={e => setSocialCardStyle(e.target.value)} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
+                          {CARD_STYLE_PREVIEWS.map(style => <option key={style.value} value={style.value}>{style.label}</option>)}
+                        </select>
+                      </div>
+                      <label style={{ display: 'flex', alignItems: 'end', gap: '8px', cursor: 'pointer', fontSize: '0.72rem', color: '#a1a1aa', paddingBottom: '6px' }}>
+                        <input type="checkbox" checked={socialQrcode} onChange={e => setSocialQrcode(e.target.checked)} />
+                        QR Code
+                      </label>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: '#a1a1aa', display: 'block', marginBottom: '4px' }}>Cor de destaque:</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input type="color" value={socialAccentColor} onChange={e => setSocialAccentColor(e.target.value)} style={{ width: '32px', height: '30px', border: 'none', background: 'none', cursor: 'pointer' }} />
+                        <input value={socialAccentColor} onChange={e => setSocialAccentColor(e.target.value)} style={{ flex: 1, padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
+                      </div>
+                    </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Tamanho: {socialSize}%</label>
                       <input type="range" min="10" max="200" value={socialSize} onChange={e => setSocialSize(parseInt(e.target.value))} style={{ width: '100px' }} />
@@ -1413,6 +1566,7 @@ const PlaylistEditor = () => {
                 {/* Clock Widget */}
                 {showClock && (
                   <div 
+                    ref={clockWidgetRef}
                     onMouseDown={(e) => handleMouseDown(e, 'clock')}
                     style={{ 
                       ...getWidgetBaseStyle(clockCardStyle, cardTransparency, clockAccentColor || themeColor, 'clock'),
@@ -1434,6 +1588,7 @@ const PlaylistEditor = () => {
                 {/* Social Widget */}
                 {showSocial && (
                   <div 
+                    ref={socialWidgetRef}
                     onMouseDown={(e) => handleMouseDown(e, 'social')}
                     style={{ 
                       ...getWidgetBaseStyle(socialCardStyle, cardTransparency, socialAccentColor || themeColor, 'social'),
@@ -1459,12 +1614,13 @@ const PlaylistEditor = () => {
                 {/* Weather Widget */}
                 {showWeather && (
                     <div 
+                    ref={weatherWidgetRef}
                     onMouseDown={(e) => handleMouseDown(e, 'weather')}
                     style={{ 
                       ...getWidgetBaseStyle(weatherCardStyle, cardTransparency, weatherAccentColor || themeColor, 'weather'),
                       position: 'absolute', 
-                      left: useCustomPos ? `${weatherX}px` : '40px',
-                      top: useCustomPos ? `${weatherY}px` : '40px',
+                      left: useCustomPos ? `${weatherX}px` : (weatherPosition.split('-')[1] === 'right' ? 'auto' : weatherPosition.includes('center') ? '50%' : '40px'),
+                      top: useCustomPos ? `${weatherY}px` : (weatherPosition.split('-')[0] === 'bottom' ? 'auto' : '40px'),
                       right: !useCustomPos && weatherPosition.split('-')[1] === 'right' ? '40px' : 'auto',
                       bottom: !useCustomPos && weatherPosition.split('-')[0] === 'bottom' ? '40px' : 'auto',
                       transform: `${!useCustomPos && weatherPosition.includes('center') ? 'translateX(-50%) ' : ''}scale(${weatherSize / 100})`, 
@@ -1512,6 +1668,7 @@ const PlaylistEditor = () => {
 
                   return (
                     <div 
+                      ref={tickerWidgetRef}
                       onMouseDown={(e) => handleMouseDown(e, 'ticker')}
                       style={{ 
                         position: 'absolute', 
@@ -1781,7 +1938,7 @@ const PlaylistEditor = () => {
         </div>
 
         {/* RIGHT SIDEBAR - PROPERTIES */}
-        <div style={{ width: '320px', background: '#18181b', borderLeft: '1px solid #27272a', display: 'flex', flexDirection: 'column', zIndex: 10, overflowY: 'auto' }}>
+        <div style={{ width: activeTab === 'widgets' ? '0' : '320px', background: '#18181b', borderLeft: '1px solid #27272a', display: activeTab === 'widgets' ? 'none' : 'flex', flexDirection: 'column', zIndex: 10, overflowY: 'auto' }}>
           <div style={{ padding: '20px 24px', borderBottom: '1px solid #27272a' }}>
             <h3 style={{ fontSize: '0.9rem', fontWeight: '800', textTransform: 'uppercase', color: '#fff' }}>
               {activeTab === 'widgets' ? '🧩 Widgets' :
