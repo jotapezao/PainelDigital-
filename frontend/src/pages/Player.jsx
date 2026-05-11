@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { io } from 'socket.io-client';
+import { getTickerVisualConfig, buildTickerText, getTickerSpeedDuration } from '../utils/tickerVisual';
 
 
 const Player = () => {
@@ -392,6 +393,28 @@ const Player = () => {
   const itemMedia = currentItem.media || currentItem;
   const mediaUrl = itemMedia.url || itemMedia.filename;
   const mediaType = itemMedia.type || 'video';
+  const transitionEffect = playlist.transition_effect || 'fade';
+
+  const getMediaTransitionStyle = (effect) => {
+    const base = {
+      willChange: 'transform, opacity, filter',
+      animationDuration: playlist.transition_duration || '1s',
+      animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+    };
+
+    switch (effect) {
+      case 'slide':
+        return { ...base, animationName: 'slideIn', transformOrigin: 'center' };
+      case 'zoom':
+        return { ...base, animationName: 'zoomInMedia' };
+      case 'cinematic':
+        return { ...base, animationName: 'cinematicIn' };
+      case 'none':
+        return { ...base, animation: 'none' };
+      default:
+        return { ...base, animationName: 'fadeIn' };
+    }
+  };
 
   const getScreenRatio = () => {
     if (!playlist) return 1;
@@ -683,7 +706,7 @@ const Player = () => {
             mediaType === 'image' ? (
               <img src={mediaUrl} style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
             ) : (
-              <video src={mediaUrl} muted autoPlay loop style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
+              <video src={mediaUrl} muted autoPlay playsInline preload="auto" style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
             )
           )}
 
@@ -691,8 +714,10 @@ const Player = () => {
             <img 
               key={`${currentItem.id}-${currentIndex}-${mediaNonce}`}
               src={mediaUrl} 
-              className={`transition-${playlist.transition_effect || 'fade'}`}
-              style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'), zIndex: 1, position: 'relative', animationDuration: playlist.transition_duration || '1s' }}
+              className={`transition-${transitionEffect}`}
+              loading="eager"
+              decoding="async"
+              style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'), zIndex: 1, position: 'relative', ...getMediaTransitionStyle(transitionEffect) }}
             />
           ) : (
             <video
@@ -700,10 +725,11 @@ const Player = () => {
               ref={videoRef}
               src={mediaUrl}
               autoPlay muted 
+              playsInline
+              preload="auto"
               onEnded={handleVideoEnd}
-              loop={currentItem.duration_seconds > 0}
-              className={`transition-${playlist.transition_effect || 'fade'}`}
-              style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'), zIndex: 1, position: 'relative', animationDuration: playlist.transition_duration || '1s' }}
+              className={`transition-${transitionEffect}`}
+              style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'), zIndex: 1, position: 'relative', ...getMediaTransitionStyle(transitionEffect) }}
             />
           )}
 
@@ -719,7 +745,7 @@ const Player = () => {
                 return nextType === 'image' ? (
                   <img src={nextUrl} key={`preload-${nextIdx}`} />
                 ) : (
-                  <video src={nextUrl} preload="auto" muted key={`preload-${nextIdx}`} />
+                  <video src={nextUrl} preload="auto" muted playsInline key={`preload-${nextIdx}`} />
                 );
               })()}
             </div>
@@ -852,10 +878,9 @@ const Player = () => {
 
       {/* Faixa de Notícias / Ticker */}
       {(playlist.footer_text || playlist.rss_url || playlist.layout === 'with_footer') && playlist.layout !== 'split' && (() => {
-        const textContent = playlist.footer_text || 'Painel Digital • Inovação e Tecnologia • Siga-nos para mais novidades!';
-        const text = ` ${textContent} • ${textContent} • ${textContent} `;
+        const text = buildTickerText(playlist.footer_text);
         const label = playlist.ticker_label || '';
-        const speed = playlist.ticker_speed === 'slow' ? '48s' : playlist.ticker_speed === 'fast' ? '16s' : '28s';
+        const speed = getTickerSpeedDuration(playlist.ticker_speed);
         const direction = playlist.ticker_direction || 'rtl';
         const color = playlist.theme_color || '#818cf8';
         const fontColor = playlist.footer_font_color || '#fff';
@@ -863,91 +888,35 @@ const Player = () => {
         const isVisible = showTicker || playlist.ticker_interval === 0;
         const styleName = playlist.news_style || 'classic';
         const isTop = playlist.footer_position === 'top';
-
-        let containerStyle = {};
-        let labelStyle = {};
-
-        switch (styleName) {
-          case 'modern':
-            containerStyle = {
-              backgroundColor: `rgba(${hexToRgb(color)}, ${playlist.footer_opacity ?? 0.85})`,
-              borderRadius: '50px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-              margin: isTop ? '20px' : '0 20px 20px 20px',
-              width: 'calc(100% - 40px)'
-            };
-            labelStyle = {
-              background: 'linear-gradient(90deg, rgba(0,0,0,0.6), rgba(0,0,0,0.2))',
-              borderRadius: isTop ? '50px 0 0 50px' : '50px 0 0 50px',
-              color: '#fff'
-            };
-            break;
-          case 'minimal':
-            containerStyle = {
-              backgroundColor: `rgba(0,0,0,${playlist.footer_opacity ?? 0.4})`,
-              borderTop: isTop ? 'none' : `1px solid rgba(255,255,255,0.2)`,
-              borderBottom: isTop ? `1px solid rgba(255,255,255,0.2)` : 'none',
-              backdropFilter: 'blur(20px)'
-            };
-            labelStyle = {
-              background: 'transparent',
-              color: color,
-              borderRight: `2px solid ${color}`
-            };
-            break;
-          case 'neon':
-            containerStyle = {
-              backgroundColor: `rgba(0,0,0,${playlist.footer_opacity ?? 0.8})`,
-              boxShadow: `0 0 20px ${color}, inset 0 0 10px ${color}`,
-              borderTop: isTop ? 'none' : `2px solid ${color}`,
-              borderBottom: isTop ? `2px solid ${color}` : 'none'
-            };
-            labelStyle = {
-              background: color,
-              color: '#000',
-              textShadow: 'none',
-              boxShadow: `0 0 15px ${color}`
-            };
-            break;
-          case 'news_channel':
-            containerStyle = {
-              backgroundColor: '#fff',
-              color: '#000',
-              borderTop: isTop ? 'none' : `4px solid ${color}`,
-              borderBottom: isTop ? `4px solid ${color}` : 'none'
-            };
-            labelStyle = {
-              background: color,
-              color: '#fff',
-              clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0% 100%)',
-              paddingRight: '50px'
-            };
-            break;
-          case 'elegant':
-            containerStyle = {
-              backgroundColor: `rgba(15,15,15,${playlist.footer_opacity ?? 0.95})`,
-              borderTop: isTop ? 'none' : `1px solid ${color}`,
-              borderBottom: isTop ? `1px solid ${color}` : 'none'
-            };
-            labelStyle = {
-              background: 'transparent',
-              color: color,
-              fontFamily: 'Playfair Display, serif',
-              letterSpacing: '4px'
-            };
-            break;
-          default: // classic
-            containerStyle = {
-              backgroundColor: `rgba(${hexToRgb(color)}, ${playlist.footer_opacity ?? 0.85})`,
-              boxShadow: isTop ? '0 10px 40px rgba(0,0,0,0.5)' : '0 -10px 40px rgba(0,0,0,0.5)',
-              borderRadius: playlist.layout === 'floating' ? '20px' : '0'
-            };
-            labelStyle = {
-              background: 'rgba(0,0,0,0.25)',
-              borderRight: '2px solid rgba(255,255,255,0.1)'
-            };
-            break;
-        }
+        const tickerVisual = getTickerVisualConfig({
+          styleName,
+          themeColor: color,
+          footerOpacity: playlist.footer_opacity ?? 0.85,
+          fontColor,
+          isTop,
+          isMobile,
+          layout: playlist.layout,
+        });
+        const tickerScrollStyle = {
+          flex: '1 1 auto',
+          display: 'flex',
+          alignItems: 'center',
+          gap: isMobile ? '28px' : '44px',
+          paddingLeft: direction === 'rtl' ? '10px' : '0',
+          paddingRight: direction === 'ltr' ? '10px' : '0',
+          animation: `scrollText${direction.toUpperCase()} ${speed} linear infinite`,
+          fontSize: isMobile ? (parseFloat(playlist.footer_font_size) || 2.2) * 0.5 + 'rem' : playlist.footer_font_size || '2.2rem',
+          fontWeight: playlist.ticker_font_weight || '700',
+          zIndex: 100,
+          minWidth: 'max-content',
+          width: 'max-content',
+          willChange: 'transform',
+          textShadow: styleName === 'news_channel' ? 'none' : '0 1px 2px rgba(0,0,0,0.18)',
+        };
+        const tickerMessageStyle = {
+          ...tickerVisual.messageStyle,
+          color: styleName === 'news_channel' ? '#111827' : fontColor,
+        };
 
         return (
           <div style={{
@@ -964,56 +933,28 @@ const Player = () => {
             zIndex: 100, backdropFilter: 'blur(12px)',
             opacity: isVisible ? 1 : 0,
             transition: 'opacity 0.5s ease',
-            ...containerStyle
+            padding: '0',
+            ...tickerVisual.containerStyle
           }}>
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              pointerEvents: 'none',
-              background: `linear-gradient(90deg, rgba(0,0,0,0.22), transparent 12%, transparent 88%, rgba(0,0,0,0.18))`,
-              opacity: styleName === 'minimal' ? 0.35 : 0.75
-            }} />
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '3px',
-              background: `linear-gradient(90deg, ${color}, rgba(255,255,255,0.65), ${color})`,
-              opacity: styleName === 'minimal' ? 0.4 : 0.9
-            }} />
+            <div style={tickerVisual.accentStyle} />
+            <div style={tickerVisual.topLineStyle} />
             {label && label.trim() !== "" && (
               <div style={{
-                padding: isMobile ? '0 14px' : '0 28px', height: '100%',
-                display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '900', fontSize: isMobile ? '0.7rem' : '1rem',
-                textTransform: 'uppercase', letterSpacing: '2px', zIndex: 101, flexShrink: 0,
-                ...labelStyle
+                ...tickerVisual.labelStyle,
+                minWidth: isMobile ? '128px' : '160px',
+                boxShadow: styleName === 'news_channel' ? 'none' : 'inset 0 1px 0 rgba(255,255,255,0.18)',
               }}>
-                <span style={{ width: isMobile ? '8px' : '10px', height: isMobile ? '8px' : '10px', borderRadius: '999px', background: color, boxShadow: `0 0 12px ${color}` }} />
+                <span style={tickerVisual.labelDotStyle} />
                 {label}
               </div>
             )}
-            <div style={{
-              flex: '1 1 auto',
-              display: 'flex',
-              alignItems: 'center',
-              gap: isMobile ? '34px' : '56px',
-              paddingLeft: direction === 'rtl' ? '12px' : '0',
-              paddingRight: direction === 'ltr' ? '12px' : '0',
-              animation: `scrollText${direction.toUpperCase()} ${speed} linear infinite`,
-              fontSize: isMobile ? (parseFloat(playlist.footer_font_size) || 2.2) * 0.5 + 'rem' : playlist.footer_font_size || '2.2rem',
-              fontWeight: playlist.ticker_font_weight || '700',
-              zIndex: 100,
-              minWidth: 'max-content',
-              width: 'max-content',
-              willChange: 'transform'
-            }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: isMobile ? '18px' : '26px', paddingRight: isMobile ? '36px' : '56px' }}>
-                <span style={{ width: isMobile ? '8px' : '10px', height: isMobile ? '8px' : '10px', borderRadius: '50%', background: color, boxShadow: `0 0 16px ${color}` }} />
+            <div style={tickerScrollStyle}>
+              <span style={{ ...tickerVisual.messageStyle, color: tickerMessageStyle.color }}>
+                <span style={tickerVisual.labelDotStyle} />
                 {text}
               </span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: isMobile ? '18px' : '26px', paddingRight: isMobile ? '36px' : '56px' }}>
-                <span style={{ width: isMobile ? '8px' : '10px', height: isMobile ? '8px' : '10px', borderRadius: '50%', background: color, boxShadow: `0 0 16px ${color}` }} />
+              <span style={{ ...tickerVisual.messageStyle, color: tickerMessageStyle.color }}>
+                <span style={tickerVisual.labelDotStyle} />
                 {text}
               </span>
             </div>

@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
+import { getTickerVisualConfig, buildTickerText, getTickerSpeedDuration } from '../utils/tickerVisual';
 
 const THEME_MODELOS = [
   {
@@ -246,6 +247,21 @@ const PlaylistEditor = () => {
         .some((valor) => valor.toLowerCase().includes(termo))
     );
   }, [medias, mediaSearch]);
+
+  const timelineDensity = useMemo(() => Math.max(0.8, Math.min(1.45, timelineHeight / 240)), [timelineHeight]);
+  const timelineTrackHeight = useMemo(() => Math.max(70, Math.round(76 * timelineDensity)), [timelineDensity]);
+  const timelineThumbHeight = useMemo(() => Math.max(32, Math.round(38 * timelineDensity)), [timelineDensity]);
+  const tickerPreviewVisual = useMemo(() => getTickerVisualConfig({
+    styleName: newsStyle,
+    themeColor,
+    footerOpacity: footerOpacity ?? 0.85,
+    fontColor: footerFontColor,
+    isTop: footerPosition === 'top',
+    isMobile: false,
+    layout,
+  }), [newsStyle, themeColor, footerOpacity, footerFontColor, footerPosition, layout]);
+  const tickerPreviewText = useMemo(() => buildTickerText(footerText), [footerText]);
+  const tickerPreviewSpeed = useMemo(() => getTickerSpeedDuration(tickerSpeed), [tickerSpeed]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -1251,123 +1267,65 @@ const PlaylistEditor = () => {
                   const styleName = newsStyle || 'classic';
                   const isTop = footerPosition === 'top';
                   const color = themeColor || '#818cf8';
-                  
-                  let containerStyle = {};
-                  let labelStyle = {};
-
-                  switch (styleName) {
-                    case 'modern':
-                      containerStyle = {
-                        backgroundColor: `rgba(${parseInt(color.slice(1,3),16)},${parseInt(color.slice(3,5),16)},${parseInt(color.slice(5,7),16)}, ${footerOpacity})`,
-                        borderRadius: '50px',
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-                        width: 'calc(100% - 40px)',
-                        left: useCustomPos ? `${tickerX}px` : '20px',
-                        top: useCustomPos ? `${tickerY}px` : (isTop ? '20px' : 'auto'),
-                        bottom: !useCustomPos && !isTop ? '20px' : 'auto'
-                      };
-                      labelStyle = {
-                        background: 'linear-gradient(90deg, rgba(0,0,0,0.6), rgba(0,0,0,0.2))',
-                        borderRadius: '50px 0 0 50px',
-                        color: '#fff'
-                      };
-                      break;
-                    case 'minimal':
-                      containerStyle = {
-                        backgroundColor: `rgba(0,0,0,${footerOpacity})`,
-                        borderTop: isTop ? 'none' : `1px solid rgba(255,255,255,0.2)`,
-                        borderBottom: isTop ? `1px solid rgba(255,255,255,0.2)` : 'none',
-                        backdropFilter: 'blur(20px)'
-                      };
-                      labelStyle = {
-                        background: 'transparent',
-                        color: color,
-                        borderRight: `2px solid ${color}`
-                      };
-                      break;
-                    case 'neon':
-                      containerStyle = {
-                        backgroundColor: `rgba(0,0,0,${footerOpacity})`,
-                        boxShadow: `0 0 20px ${color}, inset 0 0 10px ${color}`,
-                        borderTop: isTop ? 'none' : `2px solid ${color}`,
-                        borderBottom: isTop ? `2px solid ${color}` : 'none'
-                      };
-                      labelStyle = {
-                        background: color,
-                        color: '#000',
-                        boxShadow: `0 0 15px ${color}`
-                      };
-                      break;
-                    case 'news_channel':
-                      containerStyle = {
-                        backgroundColor: '#fff',
-                        borderTop: isTop ? 'none' : `4px solid ${color}`,
-                        borderBottom: isTop ? `4px solid ${color}` : 'none'
-                      };
-                      labelStyle = {
-                        background: color,
-                        color: '#fff',
-                        clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0% 100%)',
-                        paddingRight: '40px'
-                      };
-                      break;
-                    case 'elegant':
-                      containerStyle = {
-                        backgroundColor: `rgba(15,15,15,${footerOpacity})`,
-                        borderTop: isTop ? 'none' : `1px solid ${color}`,
-                        borderBottom: isTop ? `1px solid ${color}` : 'none'
-                      };
-                      labelStyle = {
-                        background: 'transparent',
-                        color: color,
-                        fontFamily: 'Playfair Display, serif',
-                        letterSpacing: '4px'
-                      };
-                      break;
-                    default: // classic
-                      containerStyle = {
-                        backgroundColor: `rgba(${parseInt(color.slice(1,3),16)},${parseInt(color.slice(3,5),16)},${parseInt(color.slice(5,7),16)}, ${footerOpacity})`,
-                        boxShadow: isTop ? '0 10px 40px rgba(0,0,0,0.5)' : '0 -10px 40px rgba(0,0,0,0.5)',
-                        borderRadius: layout === 'floating' ? '20px' : '0'
-                      };
-                      labelStyle = {
-                        background: 'rgba(0,0,0,0.25)',
-                        borderRight: '2px solid rgba(255,255,255,0.1)'
-                      };
-                      break;
-                  }
+                  const tickerVisual = getTickerVisualConfig({
+                    styleName,
+                    themeColor: color,
+                    footerOpacity,
+                    fontColor: footerFontColor,
+                    isTop,
+                    isMobile: false,
+                    layout,
+                  });
+                  const tickerScrollStyle = {
+                    ...tickerVisual.contentStyle,
+                    animation: `scrollText${tickerDirection.toUpperCase()} ${tickerPreviewSpeed} linear infinite`,
+                    fontSize: footerFontSize,
+                    fontWeight: tickerFontWeight,
+                    paddingLeft: tickerDirection === 'rtl' ? '16px' : tickerVisual.contentStyle.paddingLeft,
+                    paddingRight: tickerDirection === 'ltr' ? '16px' : tickerVisual.contentStyle.paddingRight,
+                    textShadow: styleName === 'news_channel' ? 'none' : '0 1px 2px rgba(0,0,0,0.16)',
+                  };
+                  const tickerText = buildTickerText(footerText);
+                  const tickerWidth = layout === 'floating' ? '90%' : '100%';
 
                   return (
                     <div 
                       onMouseDown={(e) => handleMouseDown(e, 'ticker')}
                       style={{ 
                         position: 'absolute', 
-                        left: containerStyle.left || (useCustomPos ? `${tickerX}px` : (layout === 'floating' ? '5%' : '0')),
-                        top: containerStyle.top || (useCustomPos ? `${tickerY}px` : (isTop ? (layout === 'floating' ? '40px' : 0) : 'auto')),
-                        bottom: containerStyle.bottom || (!useCustomPos && !isTop ? (layout === 'floating' ? '40px' : 0) : 'auto'), 
-                        width: containerStyle.width || (layout === 'floating' ? '90%' : '100%'), 
+                        left: useCustomPos ? `${tickerX}px` : (layout === 'floating' ? '5%' : '0'),
+                        top: useCustomPos ? `${tickerY}px` : (isTop ? (layout === 'floating' ? '40px' : 0) : 'auto'),
+                        bottom: !useCustomPos && !isTop ? (layout === 'floating' ? '40px' : 0) : 'auto', 
+                        width: tickerWidth, 
                         height: `${tickerHeight}px`,
                         overflow: 'hidden',
-                        color: styleName === 'news_channel' ? '#000' : footerFontColor,
-                        display: 'flex', alignItems: 'center', zIndex: 20, 
+                        color: styleName === 'news_channel' ? '#111827' : footerFontColor,
+                        display: 'flex', alignItems: 'stretch', zIndex: 20, 
                         cursor: 'move',
                         outline: selectedElement === 'ticker' ? '2px solid #6366f1' : 'none',
-                        ...containerStyle
+                        borderRadius: layout === 'floating' ? '24px' : 0,
+                        ...tickerVisual.containerStyle
                       }}
                     >
+                      <div style={tickerVisual.accentStyle} />
+                      <div style={tickerVisual.topLineStyle} />
                       {tickerLabel && tickerLabel.trim() !== "" && (
                         <div style={{ 
-                          padding: '0 30px', height: '100%', 
-                          display: 'flex', alignItems: 'center', fontWeight: '900', fontSize: '1.2rem', 
-                          textTransform: 'uppercase', letterSpacing: '2px',
-                          ...labelStyle 
+                          ...tickerVisual.labelStyle,
+                          minWidth: '140px'
                         }}>
+                          <span style={tickerVisual.labelDotStyle} />
                           {tickerLabel}
                         </div>
                       )}
-                      <div style={{ flex: 1, padding: '0 30px', fontSize: footerFontSize, fontWeight: tickerFontWeight, whiteSpace: 'nowrap', overflow: 'hidden' }}>
-                        <div style={{ display: 'inline-block', animation: `marquee ${tickerSpeed === 'fast' ? '10s' : tickerSpeed === 'slow' ? '30s' : '20s'} linear infinite` }}>
-                          {footerText || 'Aviso importante! Digite seu texto nas propriedades e ele irá rolar aqui...'}
+                      <div style={{ ...tickerScrollStyle, minHeight: '100%' }}>
+                        <div style={tickerVisual.messageStyle}>
+                          <span style={tickerVisual.labelDotStyle} />
+                          {tickerText}
+                        </div>
+                        <div style={tickerVisual.messageStyle}>
+                          <span style={tickerVisual.labelDotStyle} />
+                          {tickerText}
                         </div>
                       </div>
                     </div>
@@ -1381,9 +1339,43 @@ const PlaylistEditor = () => {
             onClick={() => setContextMenu(null)}
           >
             {/* Resize handle */}
-            <div onMouseDown={(e) => { e.preventDefault(); const sY = e.clientY, sH = timelineHeight; const mv = (ev) => setTimelineHeight(Math.max(140, Math.min(500, sH - (ev.clientY - sY)))); const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); }; document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up); }}
-              style={{ height: '5px', cursor: 'ns-resize', position: 'absolute', top: '-2px', left: 0, right: 0, zIndex: 20, background: 'transparent' }}
-              onMouseEnter={e => e.currentTarget.style.background = '#6366f1'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'} />
+            <div
+              onMouseDown={(e) => {
+                e.preventDefault();
+                const sY = e.clientY;
+                const sH = timelineHeight;
+                const mv = (ev) => setTimelineHeight(Math.max(150, Math.min(560, sH - (ev.clientY - sY))));
+                const up = () => {
+                  document.removeEventListener('mousemove', mv);
+                  document.removeEventListener('mouseup', up);
+                };
+                document.addEventListener('mousemove', mv);
+                document.addEventListener('mouseup', up);
+              }}
+              title="Arraste para redimensionar a Timeline"
+              style={{
+                position: 'absolute',
+                top: '-12px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '180px',
+                height: '18px',
+                borderRadius: '999px',
+                border: '1px solid #27272a',
+                background: 'linear-gradient(180deg, rgba(39,39,42,0.92), rgba(17,17,19,0.96))',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.34)',
+                cursor: 'ns-resize',
+                zIndex: 20,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px'
+              }}
+            >
+              <span style={{ width: '22px', height: '2px', borderRadius: '999px', background: '#52525b' }} />
+              <span style={{ width: '10px', height: '2px', borderRadius: '999px', background: '#6366f1' }} />
+              <span style={{ width: '22px', height: '2px', borderRadius: '999px', background: '#52525b' }} />
+            </div>
 
             {/* Header */}
             <div style={{ padding: '8px 16px', background: '#18181b', borderBottom: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, minHeight: '54px', gap: '12px', flexWrap: 'wrap' }}>
@@ -1392,6 +1384,7 @@ const PlaylistEditor = () => {
                 <span style={{ fontSize: '0.6rem', color: '#3f3f46', background: '#1a1a1f', padding: '2px 8px', borderRadius: '8px' }}>{selectedItems.length} clips</span>
                 <span style={{ fontSize: '0.6rem', color: '#a1a1aa', background: '#111827', padding: '2px 8px', borderRadius: '8px' }}>{totalImagens} imagens</span>
                 <span style={{ fontSize: '0.6rem', color: '#a1a1aa', background: '#1e1b4b', padding: '2px 8px', borderRadius: '8px' }}>{totalVideos} vídeos</span>
+                <span style={{ fontSize: '0.6rem', color: '#c4b5fd', background: 'rgba(99,102,241,0.12)', padding: '2px 8px', borderRadius: '8px' }}>altura {Math.round(timelineDensity * 100)}%</span>
                 {clipboard && <span style={{ fontSize: '0.55rem', color: '#22c55e', background: 'rgba(34,197,94,0.1)', padding: '2px 8px', borderRadius: '8px' }}>📋 Copiado</span>}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
@@ -1452,9 +1445,9 @@ const PlaylistEditor = () => {
               })()}
 
               {/* Clips Track */}
-              <div style={{ display: 'flex', gap: '2px', padding: '8px 16px', minHeight: `${timelineHeight - 76}px`, alignItems: 'stretch' }}>
+              <div style={{ display: 'flex', gap: '6px', padding: '10px 16px 12px', minHeight: `${timelineTrackHeight + 28}px`, alignItems: 'center' }}>
                 {selectedItems.length === 0 && (
-                  <div style={{ minWidth: '100%', minHeight: `${timelineHeight - 96}px`, border: '1px dashed #27272a', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '10px', color: '#52525b', background: 'linear-gradient(180deg, rgba(24,24,27,0.5), rgba(9,9,11,0.9))' }}>
+                  <div style={{ minWidth: '100%', minHeight: `${timelineTrackHeight + 8}px`, border: '1px dashed #27272a', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '10px', color: '#52525b', background: 'linear-gradient(180deg, rgba(24,24,27,0.5), rgba(9,9,11,0.9))' }}>
                     <span style={{ fontSize: '1.6rem' }}>🎞️</span>
                     <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#a1a1aa' }}>Adicione mídias para montar a sequência</div>
                     <div style={{ fontSize: '0.72rem', maxWidth: '320px', textAlign: 'center', lineHeight: 1.5 }}>
@@ -1479,29 +1472,28 @@ const PlaylistEditor = () => {
                       style={{
                         width: `${w}px`, minWidth: '60px', flexShrink: 0,
                         background: sel ? '#1e1b4b' : '#161618',
-                        borderRadius: '10px', overflow: 'hidden', position: 'relative',
+                        borderRadius: '12px', overflow: 'hidden', position: 'relative',
                         boxShadow: sel ? '0 0 0 2px #6366f1' : 'none',
                         cursor: resizingMedia ? 'ew-resize' : 'grab',
                         display: 'flex', flexDirection: 'column',
                         transition: 'box-shadow 0.1s, transform 0.15s ease',
-                        alignSelf: 'stretch',
-                        height: '100%',
-                        minHeight: 0,
+                        alignSelf: 'center',
+                        height: `${timelineTrackHeight}px`,
                         boxSizing: 'border-box'
                       }}>
                       {/* Thumbnail */}
-                      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', borderRadius: '10px 10px 0 0', minHeight: 0 }}>
+                      <div style={{ flex: `0 0 ${timelineThumbHeight}px`, position: 'relative', overflow: 'hidden', borderRadius: '12px 12px 0 0' }}>
                         {isImg ? (
                           <img src={item.media?.url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
                         ) : (
                           <video src={item.media?.url + "#t=0.1"} preload="metadata" muted style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
                         )}
                         {/* Badge */}
-                        <div style={{ position: 'absolute', top: '3px', left: '3px', padding: '1px 5px', borderRadius: '3px', fontSize: '0.5rem', fontWeight: '800', background: isImg ? '#16a34a' : '#6366f1', color: '#fff' }}>{isImg ? 'IMG' : 'VID'}</div>
+                        <div style={{ position: 'absolute', top: '4px', left: '4px', padding: '2px 6px', borderRadius: '999px', fontSize: '0.48rem', fontWeight: '800', background: isImg ? '#16a34a' : '#6366f1', color: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>{isImg ? 'IMG' : 'VID'}</div>
                         {/* Duration badge */}
                         <div
                           onClick={(e) => { e.stopPropagation(); setTimeInput({ idx, value: dur.toString() }); }}
-                          style={{ position: 'absolute', bottom: '3px', right: '3px', padding: '1px 6px', borderRadius: '3px', fontSize: '0.58rem', fontWeight: '800', background: 'rgba(0,0,0,0.85)', color: '#818cf8', fontFamily: 'monospace', cursor: 'text', border: '1px solid transparent', transition: 'border-color 0.1s' }}
+                          style={{ position: 'absolute', bottom: '4px', right: '4px', padding: '2px 7px', borderRadius: '999px', fontSize: '0.55rem', fontWeight: '800', background: 'rgba(0,0,0,0.82)', color: '#c4b5fd', fontFamily: 'monospace', cursor: 'text', border: '1px solid transparent', transition: 'border-color 0.1s', backdropFilter: 'blur(8px)' }}
                           onMouseEnter={e => e.currentTarget.style.borderColor = '#6366f1'}
                           onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}
                         >
@@ -1516,9 +1508,9 @@ const PlaylistEditor = () => {
                         </div>
                       </div>
                       {/* Name bar */}
-                      <div style={{ padding: '5px 8px', background: '#111113', borderRadius: '0 0 10px 10px', borderTop: '1px solid #1e1e22', flexShrink: 0 }}>
-                        <div style={{ fontSize: '0.58rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#a1a1aa' }}>{item.media?.name}</div>
-                        <div style={{ fontSize: '0.52rem', color: '#52525b', marginTop: '2px', fontFamily: 'monospace' }}>{formatarTempo(inicio)} - {formatarTempo(inicio + dur)}</div>
+                      <div style={{ padding: '6px 9px', background: '#111113', borderRadius: '0 0 12px 12px', borderTop: '1px solid #1e1e22', flex: '1 1 auto', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2px' }}>
+                        <div style={{ fontSize: `${Math.max(0.55, 0.58 * timelineDensity)}rem`, fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#d4d4d8' }}>{item.media?.name}</div>
+                        <div style={{ fontSize: `${Math.max(0.48, 0.52 * timelineDensity)}rem`, color: '#71717a', fontFamily: 'monospace' }}>{formatarTempo(inicio)} - {formatarTempo(inicio + dur)}</div>
                       </div>
                       {/* RIGHT resize handle */}
                       <div onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); setResizingMedia({ idx, startX: e.clientX, startDur: dur }); }}
@@ -1845,6 +1837,84 @@ const PlaylistEditor = () => {
 
             {selectedElement === 'ticker' && (
               <>
+                <div style={{
+                  border: '1px solid #27272a',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  background: '#0f1115',
+                  boxShadow: '0 14px 36px rgba(0,0,0,0.28)'
+                }}>
+                  <div style={{
+                    padding: '12px 14px',
+                    borderBottom: '1px solid rgba(255,255,255,0.06)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '10px'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '0.72rem', fontWeight: '800', color: '#e4e4e7', textTransform: 'uppercase', letterSpacing: '1px' }}>Prévia ao vivo</div>
+                      <div style={{ fontSize: '0.62rem', color: '#71717a', marginTop: '2px' }}>A personalização abaixo reflete o resultado final imediatamente.</div>
+                    </div>
+                    <span style={{
+                      fontSize: '0.62rem',
+                      color: '#a1a1aa',
+                      background: '#18181b',
+                      border: '1px solid #27272a',
+                      padding: '4px 8px',
+                      borderRadius: '999px'
+                    }}>
+                      {newsStyle === 'news_channel' ? 'Jornal' : newsStyle === 'elegant' ? 'Elegante' : newsStyle === 'neon' ? 'Neon' : newsStyle === 'minimal' ? 'Minimal' : 'Clássico'}
+                    </span>
+                  </div>
+                  <div style={{
+                    position: 'relative',
+                    minHeight: '94px',
+                    display: 'flex',
+                    alignItems: 'stretch',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      ...tickerPreviewVisual.containerStyle,
+                      position: 'relative',
+                      inset: 'auto',
+                      left: 'auto',
+                      width: '100%',
+                      minHeight: '94px',
+                      height: '100%',
+                      boxShadow: 'none',
+                      borderRadius: 0
+                    }}>
+                      <div style={tickerPreviewVisual.accentStyle} />
+                      <div style={tickerPreviewVisual.topLineStyle} />
+                      {tickerLabel && tickerLabel.trim() !== '' && (
+                        <div style={{
+                          ...tickerPreviewVisual.labelStyle,
+                          minWidth: '142px',
+                          boxShadow: 'none'
+                        }}>
+                          <span style={tickerPreviewVisual.labelDotStyle} />
+                          {tickerLabel}
+                        </div>
+                      )}
+                      <div style={{
+                        ...tickerPreviewVisual.contentStyle,
+                        animation: `scrollText${tickerDirection.toUpperCase()} ${tickerPreviewSpeed} linear infinite`,
+                        minHeight: '94px'
+                      }}>
+                        <span style={tickerPreviewVisual.messageStyle}>
+                          <span style={tickerPreviewVisual.labelDotStyle} />
+                          {tickerPreviewText}
+                        </span>
+                        <span style={tickerPreviewVisual.messageStyle}>
+                          <span style={tickerPreviewVisual.labelDotStyle} />
+                          {tickerPreviewText}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Título da Barra</label>
                   <input value={tickerLabel} onChange={e => setTickerLabel(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }} />
