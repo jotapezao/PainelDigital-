@@ -1,4 +1,12 @@
 const { pool } = require('../database/db');
+const {
+  verificarAgendamentoAtivo,
+  resolverAgendamentoVigente,
+  normalizarPrioridade,
+  pesoPrioridade,
+} = require('../services/agendamentoService');
+
+const estadoExecucaoAgendamentos = new Map();
 
 // GET /api/playlists
 async function list(req, res) {
@@ -175,6 +183,29 @@ async function notifyDevices(req, playlistId) {
   }
 }
 
+async function registrarHistoricoAgendamento(saldo) {
+  const {
+    scheduleId,
+    deviceId = null,
+    groupId = null,
+    playlistId = null,
+    priority = 'normal',
+    status = 'ativo',
+    event = 'started',
+    message = null,
+    endedAt = null,
+  } = saldo || {};
+
+  if (!scheduleId) return;
+
+  await pool.query(
+    `INSERT INTO schedule_execution_logs (
+      schedule_id, device_id, group_id, playlist_id, priority, status, event, message, ended_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [scheduleId, deviceId, groupId, playlistId, normalizarPrioridade(priority), status, event, message, endedAt]
+  );
+}
+
 // PUT /api/playlists/:id
 async function update(req, res) {
   const { 
@@ -326,28 +357,103 @@ async function getActive(req, res) {
     }
 
     const now = new Date();
-    const currentTime = now.toTimeString().split(' ')[0];
-    const currentDay = now.getDay();
-
-    const { rows: scheduled } = await pool.query(
-      `SELECT p.* 
+    const { rows: schedules } = await pool.query(
+      `SELECT s.*, d.name AS device_name, g.name AS group_name, p.name AS playlist_name, p.client_id
        FROM schedules s
+       LEFT JOIN devices d ON s.device_id = d.id
+       LEFT JOIN device_groups g ON s.group_id = g.id
        JOIN playlists p ON s.playlist_id = p.id
-       WHERE p.client_id = $1 
-         AND p.active = true 
-         AND s.active = true
-         AND $2 = ANY(s.days_of_week)
-         AND s.start_time <= $3
-         AND s.end_time >= $3
-       LIMIT 1`,
-      [clientId, currentDay, currentTime]
+       WHERE p.client_id = $1
+         AND p.active = true`,
+      [clientId]
     );
 
     let playlist;
+    let agendamentoAtivo = null;
 
-    if (scheduled.length > 0) {
-      playlist = scheduled[0];
-    } else {
+    const agendamentosAtivos = schedules.filter((agendamento) => verificarAgendamentoAtivo(agendamento, now).ativo);
+    let agendamentoVigente = resolverAgendamentoVigente(agendamentosAtivos, now);
+
+    if (agendamentoVigente) {
+      const { rows: playlistsAgendadas } = await pool.query(
+        `SELECT * FROM playlists WHERE id = $1 AND active = true LIMIT 1`,
+        [agendamentoVigente.playlist_id]
+      );
+
+      if (playlistsAgendadas.length === 0) {
+        agendamentoVigente = null;
+      } else {
+        agendamentoAtivo = agendamentoVigente;
+        playlist = playlistsAgendadas[0];
+      }
+    }
+
+    if (agendamentoVigente) {
+      const estadoAnterior = estadoExecucaoAgendamentos.get(clientId);
+      const chaveAtual = agendamentoVigente.id;
+
+      if (estadoAnterior?.scheduleId !== chaveAtual) {
+        if (estadoAnterior?.scheduleId) {
+          const prioridadeAtual = pesoPrioridade(agendamentoVigente.priority);
+          const prioridadeAnterior = pesoPrioridade(estadoAnterior.priority);
+          const eventoAnterior = prioridadeAtual > prioridadeAnterior ? 'paused' : 'finished';
+          const statusAnterior = prioridadeAtual > prioridadeAnterior ? 'pausado' : 'finalizado';
+
+          registrarHistoricoAgendamento({
+            scheduleId: estadoAnterior.scheduleId,
+            deviceId: estadoAnterior.deviceId,
+            groupId: estadoAnterior.groupId,
+            playlistId: estadoAnterior.playlistId,
+            priority: estadoAnterior.priority,
+            status: statusAnterior,
+            event: eventoAnterior,
+            message: prioridadeAtual > prioridadeAnterior
+              ? 'Agendamento pausado por prioridade superior'
+              : 'Agendamento encerrado automaticamente',
+            endedAt: now,
+          }).catch((err) => console.error('[Schedule history]', err.message));
+        }
+
+        registrarHistoricoAgendamento({
+          scheduleId: agendamentoVigente.id,
+          deviceId: agendamentoVigente.device_id,
+          groupId: agendamentoVigente.group_id,
+          playlistId: agendamentoVigente.playlist_id,
+          priority: agendamentoVigente.priority,
+          status: 'ativo',
+          event: 'started',
+          message: 'Agendamento assumiu a reprodução',
+        }).catch((err) => console.error('[Schedule history]', err.message));
+
+        estadoExecucaoAgendamentos.set(clientId, {
+          scheduleId: agendamentoVigente.id,
+          deviceId: agendamentoVigente.device_id,
+          groupId: agendamentoVigente.group_id,
+          playlistId: agendamentoVigente.playlist_id,
+          priority: agendamentoVigente.priority,
+          updatedAt: now.toISOString(),
+        });
+      }
+
+    }
+
+    if (!playlist) {
+      const estadoAnterior = estadoExecucaoAgendamentos.get(clientId);
+      if (estadoAnterior?.scheduleId) {
+        registrarHistoricoAgendamento({
+          scheduleId: estadoAnterior.scheduleId,
+          deviceId: estadoAnterior.deviceId,
+          groupId: estadoAnterior.groupId,
+          playlistId: estadoAnterior.playlistId,
+          priority: estadoAnterior.priority,
+          status: 'finalizado',
+          event: 'finished',
+          message: 'Agendamento finalizado e retornando à programação base',
+          endedAt: now,
+        }).catch((err) => console.error('[Schedule history]', err.message));
+        estadoExecucaoAgendamentos.delete(clientId);
+      }
+
       const { rows: fallbacks } = await pool.query(
         `SELECT p.* 
          FROM playlists p 
@@ -383,7 +489,23 @@ async function getActive(req, res) {
       ...item,
       url: item.type === 'widget' ? item.filename : `${publicUrl}${item.filename}`,
     }));
-    
+
+    if (agendamentoAtivo) {
+      playlist.schedule = {
+        id: agendamentoAtivo.id,
+        name: agendamentoAtivo.name,
+        priority: normalizarPrioridade(agendamentoAtivo.priority),
+        status: 'ativo',
+        status_reason: 'Agendamento em execução',
+        scope: {
+          device_id: agendamentoAtivo.device_id,
+          group_id: agendamentoAtivo.group_id,
+          type: agendamentoAtivo.device_id ? 'device' : (agendamentoAtivo.group_id ? 'group' : 'global'),
+          label: agendamentoAtivo.device_name || agendamentoAtivo.group_name || 'Global',
+        },
+      };
+    }
+
     res.json(playlist);
   } catch (err) {
     console.error('[getActive]', err.message);

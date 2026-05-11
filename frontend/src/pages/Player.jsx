@@ -33,6 +33,7 @@ const Player = () => {
   const [showWeatherWidget, setShowWeatherWidget] = useState(true);
   const [showSocialWidget, setShowSocialWidget] = useState(true);
   const [weatherData, setWeatherData] = useState({ temp: '--', icon: '⛅', city: '' });
+  const [mediaLoadError, setMediaLoadError] = useState(null);
 
   const clockTimerRef = useRef(null);
   const weatherTimerRef = useRef(null);
@@ -101,7 +102,7 @@ const Player = () => {
 
     const currentItem = playlist.items[currentIndex];
     const itemMedia = currentItem.media || currentItem;
-    const type = itemMedia.type || 'video';
+    const type = normalizeMediaType(itemMedia);
     
     currentMediaRef.current = itemMedia.name || currentItem.name || 'Mídia Desconhecida';
     
@@ -117,17 +118,21 @@ const Player = () => {
   }, [currentIndex, mediaNonce, playlist]);
 
   useEffect(() => {
+    setMediaLoadError(null);
+  }, [currentIndex, mediaNonce, playlist?.id]);
+
+  useEffect(() => {
     if (!playlist || !playlist.items?.length) return;
 
     let cancelled = false;
 
     const getMediaKey = (media) => media?.id || media?.filename || media?.url || media?.name || '';
-    const getOriginalUrl = (media) => media?.url || media?.filename || '';
+    const getOriginalUrl = (media) => resolveMediaSource(media);
     const getCacheEntry = (media) => mediaCacheRef.current.get(getMediaKey(media));
 
     const ensureVideoCached = async (media, readyForPlayback = true) => {
       if (!media) return null;
-      const type = media.type || 'video';
+      const type = normalizeMediaType(media);
       const originalUrl = getOriginalUrl(media);
       const cacheKey = getMediaKey(media);
       if (!cacheKey || !originalUrl || type !== 'video') return originalUrl;
@@ -432,6 +437,30 @@ const Player = () => {
     nextMedia();
   };
 
+  const normalizeMediaType = (media) => {
+    const typeRaw = `${media?.type || media?.media_type || media?.mime_type || ''}`.toLowerCase();
+    const source = `${media?.url || media?.filename || ''}`.toLowerCase();
+
+    if (typeRaw === 'widget') return 'widget';
+    if (typeRaw.startsWith('image/') || ['image', 'photo', 'imagem'].includes(typeRaw)) return 'image';
+    if (typeRaw.startsWith('video/') || typeRaw === 'video') return 'video';
+
+    if (/\.(jpe?g|png|gif|webp|bmp|avif)(\?|#|$)/.test(source)) return 'image';
+    if (/\.(mp4|webm|ogg|mov|m4v|avi)(\?|#|$)/.test(source)) return 'video';
+
+    return 'video';
+  };
+
+  const resolveMediaSource = (media) => {
+    if (!media) return '';
+    const raw = media.url || media.filename || '';
+    if (!raw) return '';
+    if (/^https?:\/\//i.test(raw) || raw.startsWith('/')) return raw;
+    return `/uploads/${raw.replace(/^\/+/, '')}`;
+  };
+
+  const isImageMedia = (media) => normalizeMediaType(media) === 'image';
+
   if (loading) {
     return (
       <div style={{ background: '#000', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
@@ -502,16 +531,16 @@ const Player = () => {
 
   const currentItem = playlist.items[currentIndex];
   const itemMedia = currentItem.media || currentItem;
-  const mediaUrl = itemMedia.url || itemMedia.filename;
-  const mediaType = itemMedia.type || 'video';
+  const mediaUrl = resolveMediaSource(itemMedia);
+  const mediaType = normalizeMediaType(itemMedia);
   const transitionEffect = playlist.transition_effect || 'fade';
   const getMediaCacheKey = (media) => media?.id || media?.filename || media?.url || media?.name || '';
   const getPlayableMediaSource = (media) => {
     if (!media) return '';
     const key = getMediaCacheKey(media);
     const entry = mediaCacheRef.current.get(key);
-    if (media.type === 'video' && entry?.objectUrl) return entry.objectUrl;
-    return media.url || media.filename || '';
+    if (normalizeMediaType(media) === 'video' && entry?.objectUrl) return entry.objectUrl;
+    return resolveMediaSource(media);
   };
   const currentMediaSource = getPlayableMediaSource(itemMedia) || mediaUrl;
 
@@ -831,25 +860,57 @@ const Player = () => {
           )}
 
           {mediaType === 'image' ? (
-            <img 
-              key={`${currentItem.id}-${currentIndex}-${mediaNonce}`}
-              src={currentMediaSource} 
-              className={`transition-${transitionEffect}`}
-              loading="eager"
-              decoding="async"
-              style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'), zIndex: 1, position: 'relative', ...getMediaTransitionStyle(transitionEffect) }}
-            />
+            mediaLoadError ? (
+              <div style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column',
+                gap: '10px',
+                color: '#fff',
+                background: 'linear-gradient(135deg, #0f172a, #111827)'
+              }}>
+                <div style={{ fontSize: '2.2rem' }}>🖼️</div>
+                <div style={{ fontSize: '1rem', fontWeight: '700' }}>Imagem indisponível</div>
+                <div style={{ fontSize: '0.85rem', opacity: 0.7, textAlign: 'center', maxWidth: '80%' }}>
+                  {itemMedia.name || currentItem.name || 'Mídia sem nome'}
+                </div>
+              </div>
+            ) : (
+              <img 
+                key={`${currentItem.id || currentIndex}-${mediaNonce}`}
+                src={currentMediaSource}
+                alt={itemMedia.name || 'Imagem da playlist'}
+                className={`transition-${transitionEffect}`}
+                loading="eager"
+                decoding="async"
+                onLoad={() => setMediaLoadError(null)}
+                onError={() => setMediaLoadError(currentItem.id || currentIndex)}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'),
+                  zIndex: 1,
+                  position: 'relative',
+                  backgroundColor: '#000',
+                  ...getMediaTransitionStyle(transitionEffect)
+                }}
+              />
+            )
           ) : (
             <video
-              key={`${currentItem.id}-${currentIndex}-${mediaNonce}`}
+              key={`${currentItem.id || currentIndex}-${mediaNonce}`}
               ref={videoRef}
               src={currentMediaSource}
               autoPlay muted 
               playsInline
               preload="auto"
               onEnded={handleVideoEnd}
+              onError={() => setMediaLoadError(currentItem.id || currentIndex)}
               className={`transition-${transitionEffect}`}
-              style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'), zIndex: 1, position: 'relative', ...getMediaTransitionStyle(transitionEffect) }}
+              style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'), zIndex: 1, position: 'relative', backgroundColor: '#000', ...getMediaTransitionStyle(transitionEffect) }}
             />
           )}
 
@@ -861,9 +922,9 @@ const Player = () => {
                 const nextItem = playlist.items[nextIdx];
                 const nextItemMedia = nextItem.media || nextItem;
                 const nextUrl = getPlayableMediaSource(nextItemMedia) || nextItemMedia.url || nextItemMedia.filename;
-                const nextType = nextItemMedia.type || 'video';
+                const nextType = normalizeMediaType(nextItemMedia);
                 return nextType === 'image' ? (
-                  <img src={nextUrl} key={`preload-${nextIdx}`} />
+                  <img src={nextUrl} key={`preload-${nextIdx}`} alt="" />
                 ) : (
                   <video src={nextUrl} preload="auto" muted playsInline key={`preload-${nextIdx}`} />
                 );

@@ -4,6 +4,7 @@ const { authMiddleware } = require('../middleware/auth');
 
 router.use(authMiddleware);
 router.get('/', ctrl.list);
+router.get('/history', ctrl.history);
 router.get('/:id', ctrl.getById);
 router.post('/', ctrl.create);
 router.put('/:id', ctrl.update);

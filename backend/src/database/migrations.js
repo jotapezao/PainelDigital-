@@ -149,7 +149,15 @@ async function runMigrations() {
         days_of_week INTEGER[] DEFAULT '{0,1,2,3,4,5,6}',
         start_time TIME,
         end_time TIME,
+        priority VARCHAR(20) DEFAULT 'normal',
+        repeat_type VARCHAR(30) DEFAULT 'none',
+        repeat_value INTEGER,
+        repeat_days INTEGER[],
+        repeat_until TIMESTAMPTZ,
+        repeat_config JSONB DEFAULT '{}'::jsonb,
         active BOOLEAN DEFAULT true,
+        last_executed_at TIMESTAMPTZ,
+        last_status VARCHAR(30),
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
@@ -163,6 +171,23 @@ async function runMigrations() {
         playlist_id UUID REFERENCES playlists(id) ON DELETE SET NULL,
         event VARCHAR(50) NOT NULL,
         message TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS schedule_execution_logs (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        schedule_id UUID REFERENCES schedules(id) ON DELETE CASCADE,
+        device_id UUID REFERENCES devices(id) ON DELETE CASCADE,
+        group_id UUID REFERENCES device_groups(id) ON DELETE CASCADE,
+        playlist_id UUID REFERENCES playlists(id) ON DELETE CASCADE,
+        priority VARCHAR(20) DEFAULT 'normal',
+        status VARCHAR(30) NOT NULL,
+        event VARCHAR(50) NOT NULL,
+        message TEXT,
+        started_at TIMESTAMPTZ DEFAULT NOW(),
+        ended_at TIMESTAMPTZ,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
     `);
@@ -337,6 +362,30 @@ async function runMigrations() {
         -- Add group_id to schedules
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schedules' AND column_name='group_id') THEN 
           ALTER TABLE schedules ADD COLUMN group_id UUID REFERENCES device_groups(id) ON DELETE CASCADE; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schedules' AND column_name='priority') THEN 
+          ALTER TABLE schedules ADD COLUMN priority VARCHAR(20) DEFAULT 'normal'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schedules' AND column_name='repeat_type') THEN 
+          ALTER TABLE schedules ADD COLUMN repeat_type VARCHAR(30) DEFAULT 'none'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schedules' AND column_name='repeat_value') THEN 
+          ALTER TABLE schedules ADD COLUMN repeat_value INTEGER; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schedules' AND column_name='repeat_days') THEN 
+          ALTER TABLE schedules ADD COLUMN repeat_days INTEGER[]; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schedules' AND column_name='repeat_until') THEN 
+          ALTER TABLE schedules ADD COLUMN repeat_until TIMESTAMPTZ; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schedules' AND column_name='repeat_config') THEN 
+          ALTER TABLE schedules ADD COLUMN repeat_config JSONB DEFAULT '{}'::jsonb; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schedules' AND column_name='last_executed_at') THEN 
+          ALTER TABLE schedules ADD COLUMN last_executed_at TIMESTAMPTZ; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schedules' AND column_name='last_status') THEN 
+          ALTER TABLE schedules ADD COLUMN last_status VARCHAR(30); 
         END IF;
 
         -- NEW V3 COLUMNS
