@@ -39,6 +39,8 @@ const Player = () => {
   const socialTimerRef = useRef(null);
   const weatherCacheRef = useRef(new Map());
   const deviceLocationRef = useRef(null);
+  const mediaCacheRef = useRef(new Map());
+  const MAX_CACHED_VIDEO_BYTES = 45 * 1024 * 1024;
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -113,6 +115,115 @@ const Player = () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [currentIndex, mediaNonce, playlist]);
+
+  useEffect(() => {
+    if (!playlist || !playlist.items?.length) return;
+
+    let cancelled = false;
+
+    const getMediaKey = (media) => media?.id || media?.filename || media?.url || media?.name || '';
+    const getOriginalUrl = (media) => media?.url || media?.filename || '';
+    const getCacheEntry = (media) => mediaCacheRef.current.get(getMediaKey(media));
+
+    const ensureVideoCached = async (media, readyForPlayback = true) => {
+      if (!media) return null;
+      const type = media.type || 'video';
+      const originalUrl = getOriginalUrl(media);
+      const cacheKey = getMediaKey(media);
+      if (!cacheKey || !originalUrl || type !== 'video') return originalUrl;
+
+      const existing = getCacheEntry(media);
+      if (existing?.objectUrl) return existing.objectUrl;
+      if (existing?.promise) return existing.promise;
+
+      const task = (async () => {
+        try {
+          const response = await fetch(originalUrl, { cache: 'force-cache' });
+          if (!response.ok) throw new Error(`http_${response.status}`);
+
+          const lengthHeader = response.headers.get('content-length');
+          const totalBytes = lengthHeader ? parseInt(lengthHeader, 10) : 0;
+          if (totalBytes && totalBytes > MAX_CACHED_VIDEO_BYTES) {
+            return originalUrl;
+          }
+
+          const blob = await response.blob();
+          if (blob.size > MAX_CACHED_VIDEO_BYTES) {
+            return originalUrl;
+          }
+
+          const objectUrl = URL.createObjectURL(blob);
+          if (cancelled) {
+            URL.revokeObjectURL(objectUrl);
+            return originalUrl;
+          }
+
+          mediaCacheRef.current.set(cacheKey, {
+            objectUrl,
+            originalUrl,
+            readyForPlayback,
+          });
+          return objectUrl;
+        } catch {
+          return originalUrl;
+        }
+      })();
+
+      mediaCacheRef.current.set(cacheKey, {
+        promise: task,
+        originalUrl,
+        readyForPlayback,
+      });
+
+      const resolved = await task;
+      const entry = mediaCacheRef.current.get(cacheKey);
+      if (entry?.promise) {
+        delete entry.promise;
+        mediaCacheRef.current.set(cacheKey, {
+          ...entry,
+          objectUrl: resolved,
+          readyForPlayback,
+        });
+      }
+      return resolved;
+    };
+
+    const pruneCache = (keepKeys) => {
+      for (const [key, entry] of mediaCacheRef.current.entries()) {
+        if (!keepKeys.has(key) && entry?.objectUrl) {
+          URL.revokeObjectURL(entry.objectUrl);
+        }
+        if (!keepKeys.has(key)) {
+          mediaCacheRef.current.delete(key);
+        }
+      }
+    };
+
+    const warmup = async () => {
+      const total = playlist.items.length;
+      const nextIndexes = [currentIndex, currentIndex + 1, currentIndex + 2].map((idx) => idx % total);
+      const keepKeys = new Set();
+
+      for (let i = 0; i < nextIndexes.length; i++) {
+        const idx = nextIndexes[i];
+        const nextItem = playlist.items[idx];
+        const nextMedia = nextItem?.media || nextItem;
+        const key = getMediaKey(nextMedia);
+        if (!key) continue;
+        keepKeys.add(key);
+        if (i === 0) continue;
+        await ensureVideoCached(nextMedia, true);
+      }
+
+      pruneCache(keepKeys);
+    };
+
+    warmup();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [playlist, currentIndex]);
 
   useEffect(() => {
     if (!playlist || (playlist.ticker_interval === 0 && playlist.ticker_duration === 0)) {
@@ -394,6 +505,15 @@ const Player = () => {
   const mediaUrl = itemMedia.url || itemMedia.filename;
   const mediaType = itemMedia.type || 'video';
   const transitionEffect = playlist.transition_effect || 'fade';
+  const getMediaCacheKey = (media) => media?.id || media?.filename || media?.url || media?.name || '';
+  const getPlayableMediaSource = (media) => {
+    if (!media) return '';
+    const key = getMediaCacheKey(media);
+    const entry = mediaCacheRef.current.get(key);
+    if (media.type === 'video' && entry?.objectUrl) return entry.objectUrl;
+    return media.url || media.filename || '';
+  };
+  const currentMediaSource = getPlayableMediaSource(itemMedia) || mediaUrl;
 
   const getMediaTransitionStyle = (effect) => {
     const base = {
@@ -704,16 +824,16 @@ const Player = () => {
         }}>
           {playlist.scale_mode === 'blur-fill' && (
             mediaType === 'image' ? (
-              <img src={mediaUrl} style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
+              <img src={currentMediaSource} style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
             ) : (
-              <video src={mediaUrl} muted autoPlay playsInline preload="auto" style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
+              <video src={currentMediaSource} muted autoPlay playsInline preload="auto" style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
             )
           )}
 
           {mediaType === 'image' ? (
             <img 
               key={`${currentItem.id}-${currentIndex}-${mediaNonce}`}
-              src={mediaUrl} 
+              src={currentMediaSource} 
               className={`transition-${transitionEffect}`}
               loading="eager"
               decoding="async"
@@ -723,7 +843,7 @@ const Player = () => {
             <video
               key={`${currentItem.id}-${currentIndex}-${mediaNonce}`}
               ref={videoRef}
-              src={mediaUrl}
+              src={currentMediaSource}
               autoPlay muted 
               playsInline
               preload="auto"
@@ -740,7 +860,7 @@ const Player = () => {
                 const nextIdx = (currentIndex + 1) % playlist.items.length;
                 const nextItem = playlist.items[nextIdx];
                 const nextItemMedia = nextItem.media || nextItem;
-                const nextUrl = nextItemMedia.url || nextItemMedia.filename;
+                const nextUrl = getPlayableMediaSource(nextItemMedia) || nextItemMedia.url || nextItemMedia.filename;
                 const nextType = nextItemMedia.type || 'video';
                 return nextType === 'image' ? (
                   <img src={nextUrl} key={`preload-${nextIdx}`} />
