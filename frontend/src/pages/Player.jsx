@@ -767,7 +767,7 @@ const Player = () => {
           {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_weather && showWeatherWidget && (
             <div className="player-widget-weather" style={{
               ...getWidgetBaseStyle(playlist.weather_card_style || 'dark', playlist.card_transparency, 'weather'),
-              ...(playlist.use_custom_pos ? { position: 'absolute', left: `${getScaledPos(playlist.weather_x || 0, playlist.weather_y || 0).x}px`, top: `${getScaledPos(playlist.weather_x || 0, playlist.weather_y || 0).y}px` } : getPositionStyles('top-left', isMobile ? '20px' : '40px')),
+              ...(playlist.use_custom_pos ? { position: 'absolute', left: `${getScaledPos(playlist.weather_x || 0, playlist.weather_y || 0).x}px`, top: `${getScaledPos(playlist.weather_x || 0, playlist.weather_y || 0).y}px` } : getPositionStyles(playlist.weather_position || 'top-left', isMobile ? '20px' : '40px')),
               transform: `scale(${responsiveScale(playlist.weather_size)})`,
               transformOrigin: 'top left',
               display: 'flex',

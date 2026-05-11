@@ -12,6 +12,8 @@ const THEME_MODELOS = [
     descricao: 'Visual limpo para recepcoes, escritórios e ambientes institucionais.',
     gradiente: 'linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%)',
     chip: '#60a5fa',
+    widgets: 'Relógio topo direito, clima topo esquerdo, ticker superior',
+    cor: '#2563eb',
   },
   {
     id: 'Cyberpunk',
@@ -19,6 +21,8 @@ const THEME_MODELOS = [
     descricao: 'Cores vivas, contraste alto e widgets com personalidade tech.',
     gradiente: 'linear-gradient(135deg, #09090b 0%, #6d28d9 50%, #06b6d4 100%)',
     chip: '#22d3ee',
+    widgets: 'Relógio central, clima canto direito, social inferior',
+    cor: '#22d3ee',
   },
   {
     id: 'Luxury Gold',
@@ -26,6 +30,8 @@ const THEME_MODELOS = [
     descricao: 'Apresentacao premium com contraste escuro e detalhes dourados.',
     gradiente: 'linear-gradient(135deg, #111111 0%, #3f2a0f 100%)',
     chip: '#fbbf24',
+    widgets: 'Relógio destaque, clima sutil, social discreto',
+    cor: '#d4a017',
   },
   {
     id: 'Minimalist',
@@ -33,6 +39,8 @@ const THEME_MODELOS = [
     descricao: 'Tela leve, foco em leitura e poucos elementos visuais.',
     gradiente: 'linear-gradient(135deg, #f8fafc 0%, #cbd5e1 100%)',
     chip: '#0f172a',
+    widgets: 'Relógio limpo, clima compacto, sem social',
+    cor: '#0f172a',
   },
   {
     id: 'Neon Vibrant',
@@ -40,6 +48,8 @@ const THEME_MODELOS = [
     descricao: 'Ideal para varejo, promoções e ambientes com alto impacto visual.',
     gradiente: 'linear-gradient(135deg, #04111d 0%, #0f766e 45%, #f43f5e 100%)',
     chip: '#f43f5e',
+    widgets: 'Relógio topo central, clima topo esquerdo, social em destaque',
+    cor: '#f43f5e',
   },
   {
     id: 'Fast Food',
@@ -47,6 +57,8 @@ const THEME_MODELOS = [
     descricao: 'Pensado para cardápios e campanhas com leitura rápida.',
     gradiente: 'linear-gradient(135deg, #7c2d12 0%, #ef4444 100%)',
     chip: '#fde047',
+    widgets: 'Ticker forte, social à direita, relógio desligado',
+    cor: '#ef4444',
   },
   {
     id: 'Supermercado',
@@ -54,6 +66,8 @@ const THEME_MODELOS = [
     descricao: 'Bom para ofertas, mensagens rotativas e conteúdo de alto volume.',
     gradiente: 'linear-gradient(135deg, #14532d 0%, #16a34a 100%)',
     chip: '#bbf7d0',
+    widgets: 'Relógio topo direito, ofertas no rodapé, clima oculto',
+    cor: '#16a34a',
   },
 ];
 
@@ -97,13 +111,45 @@ const getWidgetBaseStyle = (style, transparency, themeColor = '#818cf8', widgetT
 
 // Preview visual para os estilos de card no editor
 const CARD_STYLE_PREVIEWS = [
-  { value: 'dark', label: 'Escuro', desc: 'Fundo escuro com blur', color: '#18181b', border: '1px solid #3f3f46', textColor: '#fff' },
-  { value: 'light', label: 'Claro', desc: 'Fundo branco translúcido', color: '#f4f4f5', border: '1px solid #e4e4e7', textColor: '#18181b' },
-  { value: 'minimalist', label: 'Sem fundo', desc: 'Texto direto na mídia', color: 'transparent', border: '2px dashed #52525b', textColor: '#a1a1aa' },
-  { value: 'glass_pro', label: 'Glass Pro', desc: 'Vidro premium com blur', color: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(168,85,247,0.15))', border: '1px solid rgba(99,102,241,0.3)', textColor: '#c4b5fd' },
-  { value: 'neon', label: 'Neon Glow', desc: 'Brilho neon ciano', color: '#0a0a0a', border: '2px solid #22d3ee', textColor: '#22d3ee' },
-  { value: 'border_classic', label: 'Moldura', desc: 'Borda sólida clássica', color: '#0a0a0a', border: '3px solid #fff', textColor: '#fff' },
+  { value: 'dark', label: 'Escuro', desc: 'Fundo escuro com blur', color: '#18181b', border: '1px solid #3f3f46', textColor: '#fff', accent: '#6366f1' },
+  { value: 'light', label: 'Claro', desc: 'Fundo branco translúcido', color: '#f4f4f5', border: '1px solid #e4e4e7', textColor: '#18181b', accent: '#0f172a' },
+  { value: 'minimalist', label: 'Sem fundo', desc: 'Texto direto na mídia', color: 'transparent', border: '2px dashed #52525b', textColor: '#a1a1aa', accent: '#6366f1' },
+  { value: 'glass_pro', label: 'Glass Pro', desc: 'Vidro premium com blur', color: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(168,85,247,0.15))', border: '1px solid rgba(99,102,241,0.3)', textColor: '#e9d5ff', accent: '#a855f7' },
+  { value: 'neon', label: 'Neon Glow', desc: 'Brilho neon ciano', color: '#0a0a0a', border: '2px solid #22d3ee', textColor: '#22d3ee', accent: '#22d3ee' },
+  { value: 'border_classic', label: 'Moldura', desc: 'Borda sólida clássica', color: '#0a0a0a', border: '3px solid #fff', textColor: '#fff', accent: '#ffffff' },
 ];
+
+const COLOR_PRESETS = [
+  { id: 'royal', nome: 'Royal Ink', cor: '#4f46e5', fundo: '#0f172a', texto: '#e2e8f0', overlay: 'gradient', transparencia: 0.38, estilo: 'modern', cardStyle: 'glass_pro', clockPos: 'top-right', weatherPos: 'top-left', socialPos: 'bottom-right' },
+  { id: 'aurora', nome: 'Aurora', cor: '#06b6d4', fundo: '#082f49', texto: '#ecfeff', overlay: 'vignette', transparencia: 0.36, estilo: 'glass_pro', cardStyle: 'glass_pro', clockPos: 'top-center', weatherPos: 'top-left', socialPos: 'bottom-center' },
+  { id: 'sunset', nome: 'Sunset', cor: '#f97316', fundo: '#2b1100', texto: '#ffedd5', overlay: 'gradient', transparencia: 0.42, estilo: 'elegant', cardStyle: 'border_classic', clockPos: 'top-right', weatherPos: 'top-right', socialPos: 'bottom-left' },
+  { id: 'emerald', nome: 'Emerald', cor: '#10b981', fundo: '#052e16', texto: '#d1fae5', overlay: 'gradient', transparencia: 0.34, estilo: 'minimal', cardStyle: 'minimalist', clockPos: 'top-left', weatherPos: 'top-right', socialPos: 'bottom-right' },
+  { id: 'onyx', nome: 'Onyx', cor: '#111827', fundo: '#09090b', texto: '#f8fafc', overlay: 'none', transparencia: 0.48, estilo: 'dark', cardStyle: 'dark', clockPos: 'top-right', weatherPos: 'top-left', socialPos: 'bottom-right' },
+  { id: 'gold', nome: 'Gold Stage', cor: '#d4a017', fundo: '#111111', texto: '#fef3c7', overlay: 'vignette', transparencia: 0.34, estilo: 'border_classic', cardStyle: 'border_classic', clockPos: 'top-right', weatherPos: 'top-left', socialPos: 'bottom-center' },
+];
+
+const WIDGET_LAYOUT_PRESETS = {
+  clock: [
+    { id: 'top-right', label: 'Topo direito', position: 'top-right', size: 96, style: 'glass_pro' },
+    { id: 'top-center', label: 'Topo central', position: 'top-center', size: 108, style: 'light' },
+    { id: 'bottom-right', label: 'Inferior direito', position: 'bottom-right', size: 90, style: 'dark' },
+  ],
+  weather: [
+    { id: 'top-left', label: 'Topo esquerdo', position: 'top-left', size: 92, style: 'glass_pro' },
+    { id: 'top-right', label: 'Topo direito', position: 'top-right', size: 88, style: 'light' },
+    { id: 'bottom-right', label: 'Inferior direito', position: 'bottom-right', size: 84, style: 'dark' },
+  ],
+  social: [
+    { id: 'bottom-right', label: 'Inferior direito', position: 'bottom-right', size: 92, style: 'neon' },
+    { id: 'bottom-left', label: 'Inferior esquerdo', position: 'bottom-left', size: 86, style: 'glass_pro' },
+    { id: 'bottom-center', label: 'Centro inferior', position: 'bottom-center', size: 100, style: 'light' },
+  ],
+  ticker: [
+    { id: 'bar-wide', label: 'Barra ampla', height: 92, speed: 'medium', style: 'modern' },
+    { id: 'bar-breaking', label: 'Breaking', height: 108, speed: 'fast', style: 'news_channel' },
+    { id: 'bar-elegant', label: 'Elegante', height: 84, speed: 'slow', style: 'elegant' },
+  ],
+};
 
 const PlaylistEditor = () => {
   const renderClockPreview = () => {
@@ -174,6 +220,7 @@ const PlaylistEditor = () => {
   // Novidades Extras
   const [socialQrcode, setSocialQrcode] = useState(false);
   const [widgetPosition, setWidgetPosition] = useState('top-right');
+  const [weatherPosition, setWeatherPosition] = useState('top-left');
   const [socialPosition, setSocialPosition] = useState('bottom-right');
   const [clockCardStyle, setClockCardStyle] = useState('dark');
   const [weatherCardStyle, setWeatherCardStyle] = useState('dark');
@@ -190,6 +237,8 @@ const PlaylistEditor = () => {
   
   // V3 - Visual Editor States
   const [themePremium, setThemePremium] = useState('minimalist');
+  const [colorPreset, setColorPreset] = useState('royal');
+  const [widgetPreset, setWidgetPreset] = useState('clock-top-right');
   const [overlayStyle, setOverlayStyle] = useState('none');
   const [animationStyle, setAnimationStyle] = useState('fade');
   const [canvasZoom, setCanvasZoom] = useState(1);
@@ -324,6 +373,7 @@ const PlaylistEditor = () => {
           setTickerLabel(p.ticker_label || '');
           setSocialQrcode(p.social_qrcode || false);
           setWidgetPosition(p.widget_position || 'top-right');
+          setWeatherPosition(p.weather_position || 'top-left');
           setSocialPosition(p.social_position || 'bottom-right');
           setSocialCardStyle(p.social_card_style || 'dark');
           setClockCardStyle(p.clock_card_style || 'dark');
@@ -500,6 +550,7 @@ const PlaylistEditor = () => {
         ticker_label: tickerLabel,
         social_qrcode: socialQrcode,
         widget_position: widgetPosition,
+        weather_position: weatherPosition,
         social_position: socialPosition,
         social_card_style: socialCardStyle,
         clock_card_style: clockCardStyle,
@@ -574,6 +625,7 @@ const PlaylistEditor = () => {
 
   const applyThemeModel = (preset) => {
     setThemePremium(preset);
+    setUseCustomPos(false);
 
     switch (preset) {
       case 'Corporate':
@@ -592,10 +644,14 @@ const PlaylistEditor = () => {
         setClockStyle('digital_solid');
         setClockCardStyle('glass_pro');
         setWidgetPosition('top-right');
+        setClockSize(94);
         setShowWeather(true);
         setWeatherCardStyle('light');
-        setWeatherCity((valor) => valor || 'Cuiabá - MT');
+        setWeatherPosition('top-left');
+        setWeatherSize(88);
+        setWeatherCity('Cuiabá - MT');
         setShowSocial(false);
+        setSocialPosition('bottom-right');
         setLogoPosition('top-right');
         break;
       case 'Cyberpunk':
@@ -613,11 +669,16 @@ const PlaylistEditor = () => {
         setShowClock(true);
         setClockStyle('big_bold');
         setClockCardStyle('neon');
+        setWidgetPosition('top-center');
+        setClockSize(110);
         setShowWeather(true);
         setWeatherCardStyle('dark');
+        setWeatherPosition('top-right');
+        setWeatherSize(92);
         setShowSocial(true);
         setSocialCardStyle('neon');
         setSocialPosition('bottom-right');
+        setSocialSize(96);
         setShowProgressBar(true);
         break;
       case 'Luxury Gold':
@@ -635,11 +696,16 @@ const PlaylistEditor = () => {
         setShowClock(true);
         setClockStyle('analog_modern');
         setClockCardStyle('border_classic');
+        setWidgetPosition('top-right');
+        setClockSize(98);
         setShowWeather(true);
         setWeatherCardStyle('border_classic');
+        setWeatherPosition('top-left');
+        setWeatherSize(90);
         setShowSocial(true);
         setSocialCardStyle('border_classic');
         setSocialPosition('bottom-left');
+        setSocialSize(88);
         break;
       case 'Minimalist':
         setThemeColor('#0f172a');
@@ -656,8 +722,12 @@ const PlaylistEditor = () => {
         setShowClock(true);
         setClockStyle('digital_solid');
         setClockCardStyle('minimalist');
+        setWidgetPosition('top-right');
+        setClockSize(88);
         setShowWeather(true);
         setWeatherCardStyle('light');
+        setWeatherPosition('top-left');
+        setWeatherSize(84);
         setShowSocial(false);
         setShowProgressBar(false);
         break;
@@ -675,11 +745,16 @@ const PlaylistEditor = () => {
         setOverlayStyle('gradient');
         setShowClock(true);
         setClockCardStyle('glass_pro');
+        setWidgetPosition('top-center');
+        setClockSize(104);
         setShowWeather(true);
         setWeatherCardStyle('glass_pro');
+        setWeatherPosition('top-left');
+        setWeatherSize(92);
         setShowSocial(true);
         setSocialCardStyle('light');
         setSocialPosition('bottom-center');
+        setSocialSize(94);
         break;
       case 'Fast Food':
         setThemeColor('#ef4444');
@@ -698,6 +773,7 @@ const PlaylistEditor = () => {
         setShowSocial(true);
         setSocialCardStyle('light');
         setSocialPosition('bottom-right');
+        setSocialSize(90);
         setShowProgressBar(true);
         break;
       case 'Supermercado':
@@ -714,6 +790,8 @@ const PlaylistEditor = () => {
         setOverlayStyle('gradient');
         setShowClock(true);
         setClockCardStyle('dark');
+        setWidgetPosition('top-right');
+        setClockSize(92);
         setShowWeather(false);
         setShowSocial(false);
         setShowProgressBar(true);
@@ -723,6 +801,59 @@ const PlaylistEditor = () => {
     }
 
     addToast('info', 'Tema aplicado', `Layout e identidade visual de ${preset} aplicados automaticamente.`);
+  };
+
+  const applyColorPreset = (presetId) => {
+    const preset = COLOR_PRESETS.find((item) => item.id === presetId);
+    if (!preset) return;
+    setColorPreset(preset.id);
+    setThemeColor(preset.cor);
+    setFooterFontColor(preset.texto);
+    setFooterOpacity(preset.transparencia);
+    setOverlayStyle(preset.overlay);
+    setNewsStyle(preset.estilo);
+    setClockCardStyle(preset.cardStyle);
+    setWeatherCardStyle(preset.cardStyle);
+    setSocialCardStyle(preset.cardStyle);
+    setWidgetPosition(preset.clockPos);
+    setWeatherPosition(preset.weatherPos);
+    setSocialPosition(preset.socialPos);
+    addToast('info', 'Paleta aplicada', `A paleta ${preset.nome} foi aplicada ao plano.`);
+  };
+
+  const applyWidgetPreset = (widgetType, presetId) => {
+    const preset = WIDGET_LAYOUT_PRESETS[widgetType]?.find((item) => item.id === presetId);
+    if (!preset) return;
+    setWidgetPreset(`${widgetType}-${preset.id}`);
+    setUseCustomPos(false);
+
+    if (widgetType === 'clock') {
+      setWidgetPosition(preset.position);
+      setClockSize(preset.size);
+      setClockCardStyle(preset.style);
+      setSelectedElement('clock');
+    }
+
+    if (widgetType === 'weather') {
+      setWeatherPosition(preset.position);
+      setWeatherSize(preset.size);
+      setWeatherCardStyle(preset.style);
+      setSelectedElement('weather');
+    }
+
+    if (widgetType === 'social') {
+      setSocialPosition(preset.position);
+      setSocialSize(preset.size);
+      setSocialCardStyle(preset.style);
+      setSelectedElement('social');
+    }
+
+    if (widgetType === 'ticker') {
+      setTickerHeight(preset.height);
+      setTickerSpeed(preset.speed);
+      setNewsStyle(preset.style);
+      setSelectedElement('ticker');
+    }
   };
 
   const handleMouseDown = (e, type) => {
@@ -820,18 +951,30 @@ const PlaylistEditor = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
                 {THEME_MODELOS.map((tema) => (
                   <div key={tema.id} onClick={() => applyThemeModel(tema.id)} style={{ 
-                    padding: '16px', borderRadius: '14px', background: themePremium === tema.id ? 'rgba(99,102,241,0.12)' : '#18181b', 
+                    padding: '14px', borderRadius: '16px', background: themePremium === tema.id ? 'rgba(99,102,241,0.12)' : '#18181b', 
                     border: themePremium === tema.id ? '1px solid #6366f1' : '1px solid #27272a', cursor: 'pointer',
-                    boxShadow: themePremium === tema.id ? '0 0 20px rgba(99,102,241,0.22)' : 'none', transition: 'all 0.2s'
+                    boxShadow: themePremium === tema.id ? '0 0 20px rgba(99,102,241,0.22)' : 'none', transition: 'all 0.2s',
+                    overflow: 'hidden'
                   }}>
-                    <div style={{ height: '68px', borderRadius: '12px', background: tema.gradiente, marginBottom: '12px', position: 'relative', overflow: 'hidden' }}>
-                      <div style={{ position: 'absolute', inset: 'auto 12px 10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.7rem', fontWeight: '800', color: tema.chip }}>{tema.titulo}</span>
-                        <span style={{ fontSize: '0.62rem', fontWeight: '700', color: '#fff', background: 'rgba(15,23,42,0.4)', padding: '4px 8px', borderRadius: '999px' }}>Auto</span>
+                    <div style={{ height: '84px', borderRadius: '14px', background: tema.gradiente, marginBottom: '12px', position: 'relative', overflow: 'hidden', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)' }}>
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.12))' }} />
+                      <div style={{ position: 'absolute', left: '12px', right: '12px', top: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: '900', color: '#fff', letterSpacing: '0.4px' }}>{tema.titulo}</span>
+                        <span style={{ fontSize: '0.58rem', fontWeight: '800', color: tema.chip, background: 'rgba(255,255,255,0.14)', padding: '4px 8px', borderRadius: '999px' }}>Preset</span>
+                      </div>
+                      <div style={{ position: 'absolute', left: '12px', right: '12px', bottom: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.55rem', color: '#fff', background: 'rgba(15,23,42,0.38)', padding: '3px 8px', borderRadius: '999px' }}>Cor {tema.cor}</span>
+                        <span style={{ fontSize: '0.55rem', color: '#fff', background: 'rgba(15,23,42,0.38)', padding: '3px 8px', borderRadius: '999px' }}>Widgets guiados</span>
                       </div>
                     </div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '4px' }}>{tema.id}</div>
-                    <div style={{ fontSize: '0.7rem', color: '#71717a', lineHeight: 1.5 }}>{tema.descricao}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                      <div style={{ fontSize: '0.9rem', fontWeight: '800' }}>{tema.id}</div>
+                      <div style={{ width: '34px', height: '34px', borderRadius: '999px', background: tema.cor, boxShadow: `0 0 0 4px ${tema.chip}22` }} />
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: '#b4b4bb', lineHeight: 1.5, marginBottom: '10px' }}>{tema.descricao}</div>
+                    <div style={{ fontSize: '0.63rem', color: '#71717a', background: '#111113', border: '1px solid #27272a', borderRadius: '10px', padding: '8px 10px', lineHeight: 1.45 }}>
+                      <strong style={{ color: '#d4d4d8' }}>Widgets sugeridos:</strong> {tema.widgets}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1245,8 +1388,10 @@ const PlaylistEditor = () => {
                       position: 'absolute', 
                       left: useCustomPos ? `${weatherX}px` : '40px',
                       top: useCustomPos ? `${weatherY}px` : '40px',
-                      transform: `scale(${weatherSize / 100})`, 
-                      transformOrigin: 'top left',
+                      right: !useCustomPos && weatherPosition.split('-')[1] === 'right' ? '40px' : 'auto',
+                      bottom: !useCustomPos && weatherPosition.split('-')[0] === 'bottom' ? '40px' : 'auto',
+                      transform: `${!useCustomPos && weatherPosition.includes('center') ? 'translateX(-50%) ' : ''}scale(${weatherSize / 100})`, 
+                      transformOrigin: useCustomPos ? 'top left' : `${weatherPosition.split('-')[0]} ${weatherPosition.split('-')[1]}`,
                       border: selectedElement === 'weather' ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.1)', 
                       cursor: 'move',
                       userSelect: 'none',
@@ -1645,6 +1790,42 @@ const PlaylistEditor = () => {
             {!selectedElement && (
               <>
                 <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Paletas de Cor</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    {COLOR_PRESETS.map((preset) => (
+                      <button
+                        key={preset.id}
+                        onClick={() => applyColorPreset(preset.id)}
+                        style={{
+                          border: colorPreset === preset.id ? '1px solid #6366f1' : '1px solid #27272a',
+                          borderRadius: '14px',
+                          overflow: 'hidden',
+                          background: '#18181b',
+                          color: '#fff',
+                          cursor: 'pointer',
+                          padding: 0,
+                          boxShadow: colorPreset === preset.id ? '0 0 18px rgba(99,102,241,0.18)' : 'none',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <div style={{
+                          height: '58px',
+                          background: `linear-gradient(135deg, ${preset.cor}, ${preset.fundo})`,
+                          position: 'relative'
+                        }}>
+                          <div style={{ position: 'absolute', inset: 0, background: preset.overlay === 'none' ? 'transparent' : 'linear-gradient(180deg, rgba(255,255,255,0.08), transparent)' }} />
+                          <div style={{ position: 'absolute', left: '10px', bottom: '8px', width: '26px', height: '26px', borderRadius: '999px', background: preset.texto, boxShadow: `0 0 0 4px rgba(0,0,0,0.18)` }} />
+                        </div>
+                        <div style={{ padding: '10px 12px 12px' }}>
+                          <div style={{ fontSize: '0.76rem', fontWeight: '800', color: '#fff' }}>{preset.nome}</div>
+                          <div style={{ fontSize: '0.58rem', color: '#a1a1aa', marginTop: '3px' }}>{preset.estilo} • overlay {preset.overlay}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Empresa / Cliente</label>
                   <select value={clientId} onChange={e => { setClientId(e.target.value); setGroupId(''); }} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
                     <option value="">— Selecionar Empresa —</option>
@@ -1682,6 +1863,32 @@ const PlaylistEditor = () => {
 
             {selectedElement === 'clock' && (
               <>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Sugestões de Layout</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+                    {WIDGET_LAYOUT_PRESETS.clock.map((preset) => (
+                      <button
+                        key={preset.id}
+                        onClick={() => applyWidgetPreset('clock', preset.id)}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '12px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          background: widgetPreset === `clock-${preset.id}` ? 'rgba(99,102,241,0.14)' : '#1a1a1f',
+                          border: widgetPreset === `clock-${preset.id}` ? '1px solid #6366f1' : '1px solid #27272a',
+                          color: '#fff'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                          <strong style={{ fontSize: '0.76rem' }}>{preset.label}</strong>
+                          <span style={{ fontSize: '0.58rem', color: '#a1a1aa', background: '#111827', borderRadius: '999px', padding: '2px 8px' }}>{preset.size}%</span>
+                        </div>
+                        <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '4px' }}>Posição {preset.position.replace('-', ' ')} • Card {preset.style}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div>
                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Posição na Tela</label>
                   <select value={widgetPosition} onChange={e => setWidgetPosition(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
@@ -1734,8 +1941,43 @@ const PlaylistEditor = () => {
             {selectedElement === 'weather' && (
               <>
                 <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Sugestões de Layout</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+                    {WIDGET_LAYOUT_PRESETS.weather.map((preset) => (
+                      <button
+                        key={preset.id}
+                        onClick={() => applyWidgetPreset('weather', preset.id)}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '12px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          background: widgetPreset === `weather-${preset.id}` ? 'rgba(99,102,241,0.14)' : '#1a1a1f',
+                          border: widgetPreset === `weather-${preset.id}` ? '1px solid #6366f1' : '1px solid #27272a',
+                          color: '#fff'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                          <strong style={{ fontSize: '0.76rem' }}>{preset.label}</strong>
+                          <span style={{ fontSize: '0.58rem', color: '#a1a1aa', background: '#111827', borderRadius: '999px', padding: '2px 8px' }}>{preset.size}%</span>
+                        </div>
+                        <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '4px' }}>Posição {preset.position.replace('-', ' ')} • Card {preset.style}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Transparência do Card</label>
                   <input type="range" min="0" max="1" step="0.1" value={cardTransparency} onChange={e => setCardTransparency(e.target.value)} style={{ width: '100%' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Posição Sugerida</label>
+                  <select value={weatherPosition} onChange={e => setWeatherPosition(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
+                    <option value="top-left">Superior Esquerdo</option>
+                    <option value="top-right">Superior Direito</option>
+                    <option value="bottom-right">Inferior Direito</option>
+                    <option value="top-center">Centro Topo</option>
+                  </select>
                 </div>
                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa' }}>Tamanho: {weatherSize}%</label>
@@ -1771,6 +2013,32 @@ const PlaylistEditor = () => {
 
             {selectedElement === 'social' && (
               <>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Sugestões de Layout</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+                    {WIDGET_LAYOUT_PRESETS.social.map((preset) => (
+                      <button
+                        key={preset.id}
+                        onClick={() => applyWidgetPreset('social', preset.id)}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '12px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          background: widgetPreset === `social-${preset.id}` ? 'rgba(99,102,241,0.14)' : '#1a1a1f',
+                          border: widgetPreset === `social-${preset.id}` ? '1px solid #6366f1' : '1px solid #27272a',
+                          color: '#fff'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                          <strong style={{ fontSize: '0.76rem' }}>{preset.label}</strong>
+                          <span style={{ fontSize: '0.58rem', color: '#a1a1aa', background: '#111827', borderRadius: '999px', padding: '2px 8px' }}>{preset.size}%</span>
+                        </div>
+                        <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '4px' }}>Posição {preset.position.replace('-', ' ')} • Card {preset.style}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div>
                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Plataforma</label>
                   <select value={socialPlatform} onChange={e => setSocialPlatform(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
@@ -1837,6 +2105,32 @@ const PlaylistEditor = () => {
 
             {selectedElement === 'ticker' && (
               <>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Sugestões de Layout</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+                    {WIDGET_LAYOUT_PRESETS.ticker.map((preset) => (
+                      <button
+                        key={preset.id}
+                        onClick={() => applyWidgetPreset('ticker', preset.id)}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '12px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          background: widgetPreset === `ticker-${preset.id}` ? 'rgba(99,102,241,0.14)' : '#1a1a1f',
+                          border: widgetPreset === `ticker-${preset.id}` ? '1px solid #6366f1' : '1px solid #27272a',
+                          color: '#fff'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                          <strong style={{ fontSize: '0.76rem' }}>{preset.label}</strong>
+                          <span style={{ fontSize: '0.58rem', color: '#a1a1aa', background: '#111827', borderRadius: '999px', padding: '2px 8px' }}>{preset.height}px</span>
+                        </div>
+                        <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '4px' }}>Velocidade {preset.speed} • Visual {preset.style}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div style={{
                   border: '1px solid #27272a',
                   borderRadius: '16px',

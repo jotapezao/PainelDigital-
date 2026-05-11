@@ -309,6 +309,9 @@ async function runMigrations() {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='widget_position') THEN 
           ALTER TABLE playlists ADD COLUMN widget_position VARCHAR(20) DEFAULT 'top-right'; 
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='weather_position') THEN 
+          ALTER TABLE playlists ADD COLUMN weather_position VARCHAR(20) DEFAULT 'top-left'; 
+        END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='social_position') THEN 
           ALTER TABLE playlists ADD COLUMN social_position VARCHAR(20) DEFAULT 'bottom-right'; 
         END IF;
