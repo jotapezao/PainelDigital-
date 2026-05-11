@@ -37,6 +37,7 @@ const Player = () => {
   const weatherTimerRef = useRef(null);
   const socialTimerRef = useRef(null);
   const weatherCacheRef = useRef(new Map());
+  const deviceLocationRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -173,9 +174,23 @@ const Player = () => {
 
   useEffect(() => {
     const fetchWeather = async () => {
-      if (!playlist || !playlist.show_weather || !playlist.weather_city) return;
+      if (!playlist || !playlist.show_weather) return;
       try {
-        const cacheKey = playlist.weather_city.trim().toLowerCase();
+        const getDevicePosition = () => new Promise((resolve, reject) => {
+          if (!navigator.geolocation) return reject(new Error('geolocation_unavailable'));
+          navigator.geolocation.getCurrentPosition(
+            (position) => resolve(position),
+            (error) => reject(error),
+            {
+              enableHighAccuracy: true,
+              timeout: 3500,
+              maximumAge: 5 * 60 * 1000,
+            }
+          );
+        });
+
+        const fallbackCity = (playlist.weather_city || 'Cuiabá - MT').trim();
+        let cacheKey = `city:${fallbackCity.toLowerCase()}`;
         const agora = Date.now();
         const cache = weatherCacheRef.current.get(cacheKey);
         if (cache && agora - cache.timestamp < 5 * 60 * 1000) {
@@ -183,31 +198,62 @@ const Player = () => {
           return;
         }
 
-        const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(playlist.weather_city)}&count=1&language=pt&format=json`);
-        const geoData = await geoRes.json();
-        if (geoData.results && geoData.results.length > 0) {
-          const { latitude, longitude, name, admin1, country } = geoData.results[0];
-          const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&timezone=auto`);
-          const weatherJson = await weatherRes.json();
-          if (weatherJson.current_weather) {
-            const code = weatherJson.current_weather.weathercode;
-            let icon = '⛅';
-            if (code <= 1) icon = '☀️';
-            else if (code <= 3) icon = '⛅';
-            else if (code <= 49) icon = '☁️';
-            else if (code <= 69) icon = '🌧️';
-            else if (code <= 79) icon = '❄️';
-            else if (code <= 99) icon = '⛈️';
+        let latitude;
+        let longitude;
+        let cityLabel = fallbackCity;
 
-            const dadosClima = {
-              temp: Math.round(weatherJson.current_weather.temperature),
-              icon,
-              city: [name, admin1 || country].filter(Boolean).join(' - ')
+        if (!deviceLocationRef.current) {
+          try {
+            const position = await getDevicePosition();
+            deviceLocationRef.current = {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
             };
-
-            weatherCacheRef.current.set(cacheKey, { timestamp: agora, data: dadosClima });
-            setWeatherData(dadosClima);
+          } catch {
+            deviceLocationRef.current = null;
           }
+        }
+
+        if (deviceLocationRef.current) {
+          latitude = deviceLocationRef.current.latitude;
+          longitude = deviceLocationRef.current.longitude;
+          cacheKey = `geo:${latitude.toFixed(2)},${longitude.toFixed(2)}`;
+          cityLabel = 'Sua localização';
+          const cachedGeo = weatherCacheRef.current.get(cacheKey);
+          if (cachedGeo && agora - cachedGeo.timestamp < 5 * 60 * 1000) {
+            setWeatherData(cachedGeo.data);
+            return;
+          }
+        } else {
+          const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(fallbackCity)}&count=5&language=pt&format=json`);
+          const geoData = await geoRes.json();
+          const bestMatch = geoData.results?.[0];
+          if (!bestMatch) return;
+          latitude = bestMatch.latitude;
+          longitude = bestMatch.longitude;
+          cityLabel = [bestMatch.name, bestMatch.admin1 || bestMatch.country].filter(Boolean).join(' - ');
+        }
+
+        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&timezone=auto`);
+        const weatherJson = await weatherRes.json();
+        if (weatherJson.current_weather) {
+          const code = weatherJson.current_weather.weathercode;
+          let icon = '⛅';
+          if (code <= 1) icon = '☀️';
+          else if (code <= 3) icon = '⛅';
+          else if (code <= 45) icon = '☁️';
+          else if (code <= 67) icon = '🌧️';
+          else if (code <= 77) icon = '❄️';
+          else if (code <= 99) icon = '⛈️';
+
+          const dadosClima = {
+            temp: Math.round(weatherJson.current_weather.temperature),
+            icon,
+            city: cityLabel
+          };
+
+          weatherCacheRef.current.set(cacheKey, { timestamp: agora, data: dadosClima });
+          setWeatherData(dadosClima);
         }
       } catch (e) {
         console.error('Weather fetch error:', e);
@@ -938,32 +984,35 @@ const Player = () => {
             }} />
             {label && label.trim() !== "" && (
               <div style={{
-                padding: isMobile ? '0 15px' : '0 35px', height: '100%',
-                display: 'flex', alignItems: 'center', fontWeight: '900', fontSize: isMobile ? '0.7rem' : '1.2rem',
+                padding: isMobile ? '0 14px' : '0 28px', height: '100%',
+                display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '900', fontSize: isMobile ? '0.7rem' : '1rem',
                 textTransform: 'uppercase', letterSpacing: '2px', zIndex: 101, flexShrink: 0,
                 ...labelStyle
               }}>
+                <span style={{ width: isMobile ? '8px' : '10px', height: isMobile ? '8px' : '10px', borderRadius: '999px', background: color, boxShadow: `0 0 12px ${color}` }} />
                 {label}
               </div>
             )}
             <div style={{
-              flex: 1,
+              flex: '1 1 auto',
               display: 'flex',
               alignItems: 'center',
-              gap: isMobile ? '36px' : '56px',
-              paddingLeft: direction === 'rtl' ? '100%' : '0',
-              paddingRight: direction === 'ltr' ? '100%' : '0',
+              gap: isMobile ? '34px' : '56px',
+              paddingLeft: direction === 'rtl' ? '12px' : '0',
+              paddingRight: direction === 'ltr' ? '12px' : '0',
               animation: `scrollText${direction.toUpperCase()} ${speed} linear infinite`,
               fontSize: isMobile ? (parseFloat(playlist.footer_font_size) || 2.2) * 0.5 + 'rem' : playlist.footer_font_size || '2.2rem',
               fontWeight: playlist.ticker_font_weight || '700',
               zIndex: 100,
-              minWidth: 'max-content'
+              minWidth: 'max-content',
+              width: 'max-content',
+              willChange: 'transform'
             }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: isMobile ? '18px' : '26px', paddingRight: isMobile ? '36px' : '56px' }}>
                 <span style={{ width: isMobile ? '8px' : '10px', height: isMobile ? '8px' : '10px', borderRadius: '50%', background: color, boxShadow: `0 0 16px ${color}` }} />
                 {text}
               </span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: isMobile ? '18px' : '26px' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: isMobile ? '18px' : '26px', paddingRight: isMobile ? '36px' : '56px' }}>
                 <span style={{ width: isMobile ? '8px' : '10px', height: isMobile ? '8px' : '10px', borderRadius: '50%', background: color, boxShadow: `0 0 16px ${color}` }} />
                 {text}
               </span>
@@ -972,10 +1021,6 @@ const Player = () => {
         );
       })()}
       
-      <div style={{ position: 'absolute', top: playlist.layout === 'with_header' ? (isMobile ? '90px' : '140px') : (isMobile ? '20px' : '40px'), left: isMobile ? '20px' : '50px', zIndex: 5 }}>
-        <h2 style={{ color: '#fff', opacity: 0.6, fontSize: isMobile ? '1.2rem' : '2rem', margin: 0, fontWeight: '900', fontFamily: 'Outfit', textShadow: '0 4px 20px rgba(0,0,0,0.6)' }}>{playlist.client_name}</h2>
-      </div>
-
       {/* Versão para controle de Build */}
       <div style={{ position: 'absolute', bottom: '10px', left: '10px', fontSize: '10px', color: 'rgba(255,255,255,0.2)', zIndex: 9999 }}>
         BUILD v3.0.7

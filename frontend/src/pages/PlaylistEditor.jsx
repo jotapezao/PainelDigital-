@@ -1462,7 +1462,7 @@ const PlaylistEditor = () => {
                     </div>
                   </div>
                 )}
-                {selectedItems.map((item, idx) => {
+              {selectedItems.map((item, idx) => {
                   const isImg = item.media?.type === 'image';
                   const dur = item.duration || 10;
                   const w = Math.max(60, dur * 8 * timelineZoom);
@@ -1479,14 +1479,18 @@ const PlaylistEditor = () => {
                       style={{
                         width: `${w}px`, minWidth: '60px', flexShrink: 0,
                         background: sel ? '#1e1b4b' : '#161618',
-                        borderRadius: '6px', overflow: 'visible', position: 'relative',
+                        borderRadius: '10px', overflow: 'hidden', position: 'relative',
                         boxShadow: sel ? '0 0 0 2px #6366f1' : 'none',
                         cursor: resizingMedia ? 'ew-resize' : 'grab',
                         display: 'flex', flexDirection: 'column',
-                        transition: 'box-shadow 0.1s'
+                        transition: 'box-shadow 0.1s, transform 0.15s ease',
+                        alignSelf: 'stretch',
+                        height: '100%',
+                        minHeight: 0,
+                        boxSizing: 'border-box'
                       }}>
                       {/* Thumbnail */}
-                      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', borderRadius: '6px 6px 0 0', minHeight: 0 }}>
+                      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', borderRadius: '10px 10px 0 0', minHeight: 0 }}>
                         {isImg ? (
                           <img src={item.media?.url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
                         ) : (
@@ -1512,18 +1516,13 @@ const PlaylistEditor = () => {
                         </div>
                       </div>
                       {/* Name bar */}
-                      <div style={{ padding: '3px 6px', background: '#111113', borderRadius: '0 0 6px 6px', borderTop: '1px solid #1e1e22' }}>
+                      <div style={{ padding: '5px 8px', background: '#111113', borderRadius: '0 0 10px 10px', borderTop: '1px solid #1e1e22', flexShrink: 0 }}>
                         <div style={{ fontSize: '0.58rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#a1a1aa' }}>{item.media?.name}</div>
                         <div style={{ fontSize: '0.52rem', color: '#52525b', marginTop: '2px', fontFamily: 'monospace' }}>{formatarTempo(inicio)} - {formatarTempo(inicio + dur)}</div>
                       </div>
                       {/* RIGHT resize handle */}
                       <div onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); setResizingMedia({ idx, startX: e.clientX, startDur: dur }); }}
-                        style={{ position: 'absolute', right: '-1px', top: '8px', bottom: '8px', width: '4px', cursor: 'ew-resize', borderRadius: '2px', background: sel ? '#6366f1' : 'transparent', transition: 'background 0.1s', zIndex: 10 }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#6366f1'}
-                        onMouseLeave={e => { if (!resizingMedia) e.currentTarget.style.background = sel ? '#6366f1' : 'transparent'; }} />
-                      {/* LEFT resize handle */}
-                      <div onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); setResizingMedia({ idx, startX: e.clientX, startDur: dur, reverse: true }); }}
-                        style={{ position: 'absolute', left: '-1px', top: '8px', bottom: '8px', width: '4px', cursor: 'ew-resize', borderRadius: '2px', background: sel ? '#6366f1' : 'transparent', transition: 'background 0.1s', zIndex: 10 }}
+                        style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '8px', cursor: 'ew-resize', borderRadius: '0', background: sel ? 'linear-gradient(180deg, rgba(99,102,241,0.75), rgba(99,102,241,0.25))' : 'transparent', transition: 'background 0.1s', zIndex: 10 }}
                         onMouseEnter={e => e.currentTarget.style.background = '#6366f1'}
                         onMouseLeave={e => { if (!resizingMedia) e.currentTarget.style.background = sel ? '#6366f1' : 'transparent'; }} />
                     </div>
