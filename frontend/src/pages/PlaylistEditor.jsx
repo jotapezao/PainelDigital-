@@ -151,6 +151,18 @@ const WIDGET_LAYOUT_PRESETS = {
   ],
 };
 
+const WIDGET_SIZE_PRESETS = [
+  { id: 'compacto', label: 'Compacto', value: 84 },
+  { id: 'equilibrado', label: 'Equilibrado', value: 100 },
+  { id: 'impacto', label: 'Impacto', value: 118 },
+];
+
+const TICKER_HEIGHT_PRESETS = [
+  { id: 'baixo', label: 'Baixa', value: 72 },
+  { id: 'padrao', label: 'Padrão', value: 94 },
+  { id: 'alta', label: 'Alta', value: 118 },
+];
+
 const PlaylistEditor = () => {
   const renderClockPreview = () => {
     switch (clockStyle) {
@@ -222,6 +234,10 @@ const PlaylistEditor = () => {
   const [widgetPosition, setWidgetPosition] = useState('top-right');
   const [weatherPosition, setWeatherPosition] = useState('top-left');
   const [socialPosition, setSocialPosition] = useState('bottom-right');
+  const [clockAccentColor, setClockAccentColor] = useState('#818cf8');
+  const [weatherAccentColor, setWeatherAccentColor] = useState('#38bdf8');
+  const [socialAccentColor, setSocialAccentColor] = useState('#a855f7');
+  const [tickerAccentColor, setTickerAccentColor] = useState('#6366f1');
   const [clockCardStyle, setClockCardStyle] = useState('dark');
   const [weatherCardStyle, setWeatherCardStyle] = useState('dark');
   const [socialCardStyle, setSocialCardStyle] = useState('dark');
@@ -302,13 +318,13 @@ const PlaylistEditor = () => {
   const timelineThumbHeight = useMemo(() => Math.max(32, Math.round(38 * timelineDensity)), [timelineDensity]);
   const tickerPreviewVisual = useMemo(() => getTickerVisualConfig({
     styleName: newsStyle,
-    themeColor,
+    themeColor: tickerAccentColor || themeColor,
     footerOpacity: footerOpacity ?? 0.85,
     fontColor: footerFontColor,
     isTop: footerPosition === 'top',
     isMobile: false,
     layout,
-  }), [newsStyle, themeColor, footerOpacity, footerFontColor, footerPosition, layout]);
+  }), [newsStyle, tickerAccentColor, themeColor, footerOpacity, footerFontColor, footerPosition, layout]);
   const tickerPreviewText = useMemo(() => buildTickerText(footerText), [footerText]);
   const tickerPreviewSpeed = useMemo(() => getTickerSpeedDuration(tickerSpeed), [tickerSpeed]);
 
@@ -375,6 +391,10 @@ const PlaylistEditor = () => {
           setWidgetPosition(p.widget_position || 'top-right');
           setWeatherPosition(p.weather_position || 'top-left');
           setSocialPosition(p.social_position || 'bottom-right');
+          setClockAccentColor(p.clock_accent_color || '#818cf8');
+          setWeatherAccentColor(p.weather_accent_color || '#38bdf8');
+          setSocialAccentColor(p.social_accent_color || '#a855f7');
+          setTickerAccentColor(p.ticker_accent_color || '#6366f1');
           setSocialCardStyle(p.social_card_style || 'dark');
           setClockCardStyle(p.clock_card_style || 'dark');
           setWeatherCardStyle(p.weather_card_style || 'dark');
@@ -552,6 +572,10 @@ const PlaylistEditor = () => {
         widget_position: widgetPosition,
         weather_position: weatherPosition,
         social_position: socialPosition,
+        clock_accent_color: clockAccentColor,
+        weather_accent_color: weatherAccentColor,
+        social_accent_color: socialAccentColor,
+        ticker_accent_color: tickerAccentColor,
         social_card_style: socialCardStyle,
         clock_card_style: clockCardStyle,
         weather_card_style: weatherCardStyle,
@@ -645,13 +669,16 @@ const PlaylistEditor = () => {
         setClockCardStyle('glass_pro');
         setWidgetPosition('top-right');
         setClockSize(94);
+        setClockAccentColor('#60a5fa');
         setShowWeather(true);
         setWeatherCardStyle('light');
         setWeatherPosition('top-left');
         setWeatherSize(88);
+        setWeatherAccentColor('#38bdf8');
         setWeatherCity('Cuiabá - MT');
         setShowSocial(false);
         setSocialPosition('bottom-right');
+        setTickerAccentColor('#2563eb');
         setLogoPosition('top-right');
         break;
       case 'Cyberpunk':
@@ -671,14 +698,18 @@ const PlaylistEditor = () => {
         setClockCardStyle('neon');
         setWidgetPosition('top-center');
         setClockSize(110);
+        setClockAccentColor('#22d3ee');
         setShowWeather(true);
         setWeatherCardStyle('dark');
         setWeatherPosition('top-right');
         setWeatherSize(92);
+        setWeatherAccentColor('#06b6d4');
         setShowSocial(true);
         setSocialCardStyle('neon');
         setSocialPosition('bottom-right');
         setSocialSize(96);
+        setSocialAccentColor('#f43f5e');
+        setTickerAccentColor('#22d3ee');
         setShowProgressBar(true);
         break;
       case 'Luxury Gold':
@@ -698,14 +729,17 @@ const PlaylistEditor = () => {
         setClockCardStyle('border_classic');
         setWidgetPosition('top-right');
         setClockSize(98);
+        setClockAccentColor('#d4a017');
         setShowWeather(true);
         setWeatherCardStyle('border_classic');
         setWeatherPosition('top-left');
         setWeatherSize(90);
+        setWeatherAccentColor('#fbbf24');
         setShowSocial(true);
         setSocialCardStyle('border_classic');
         setSocialPosition('bottom-left');
         setSocialSize(88);
+        setSocialAccentColor('#d4a017');
         break;
       case 'Minimalist':
         setThemeColor('#0f172a');
@@ -724,10 +758,12 @@ const PlaylistEditor = () => {
         setClockCardStyle('minimalist');
         setWidgetPosition('top-right');
         setClockSize(88);
+        setClockAccentColor('#0f172a');
         setShowWeather(true);
         setWeatherCardStyle('light');
         setWeatherPosition('top-left');
         setWeatherSize(84);
+        setWeatherAccentColor('#64748b');
         setShowSocial(false);
         setShowProgressBar(false);
         break;
@@ -747,14 +783,17 @@ const PlaylistEditor = () => {
         setClockCardStyle('glass_pro');
         setWidgetPosition('top-center');
         setClockSize(104);
+        setClockAccentColor('#22d3ee');
         setShowWeather(true);
         setWeatherCardStyle('glass_pro');
         setWeatherPosition('top-left');
         setWeatherSize(92);
+        setWeatherAccentColor('#f43f5e');
         setShowSocial(true);
         setSocialCardStyle('light');
         setSocialPosition('bottom-center');
         setSocialSize(94);
+        setSocialAccentColor('#f43f5e');
         break;
       case 'Fast Food':
         setThemeColor('#ef4444');
@@ -774,6 +813,7 @@ const PlaylistEditor = () => {
         setSocialCardStyle('light');
         setSocialPosition('bottom-right');
         setSocialSize(90);
+        setSocialAccentColor('#ef4444');
         setShowProgressBar(true);
         break;
       case 'Supermercado':
@@ -792,6 +832,7 @@ const PlaylistEditor = () => {
         setClockCardStyle('dark');
         setWidgetPosition('top-right');
         setClockSize(92);
+        setClockAccentColor('#16a34a');
         setShowWeather(false);
         setShowSocial(false);
         setShowProgressBar(true);
@@ -818,6 +859,10 @@ const PlaylistEditor = () => {
     setWidgetPosition(preset.clockPos);
     setWeatherPosition(preset.weatherPos);
     setSocialPosition(preset.socialPos);
+    setClockAccentColor(preset.cor);
+    setWeatherAccentColor(preset.cor);
+    setSocialAccentColor(preset.cor);
+    setTickerAccentColor(preset.cor);
     addToast('info', 'Paleta aplicada', `A paleta ${preset.nome} foi aplicada ao plano.`);
   };
 
@@ -1014,7 +1059,106 @@ const PlaylistEditor = () => {
 
           {activeTab === 'widgets' && (
             <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
-              <h3 style={{ fontSize: '0.85rem', fontWeight: '800', textTransform: 'uppercase', color: '#a1a1aa', letterSpacing: '1px', marginBottom: '16px' }}>Widgets Dinâmicos</h3>
+              <h3 style={{ fontSize: '0.85rem', fontWeight: '800', textTransform: 'uppercase', color: '#a1a1aa', letterSpacing: '1px', marginBottom: '10px' }}>Estudio de Widgets</h3>
+              <div style={{ fontSize: '0.68rem', color: '#71717a', marginBottom: '16px', lineHeight: 1.5 }}>
+                Cada card abaixo resume o estado atual do widget e leva direto para os ajustes detalhados.
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '18px' }}>
+                {[
+                  {
+                    id: 'clock',
+                    label: 'Relogio',
+                    active: showClock,
+                    accent: clockAccentColor,
+                    icon: '⌚',
+                    meta: `${widgetPosition.replace('-', ' ')} • ${clockSize}%`,
+                    extra: clockCardStyle,
+                  },
+                  {
+                    id: 'weather',
+                    label: 'Clima',
+                    active: showWeather,
+                    accent: weatherAccentColor,
+                    icon: '⛅',
+                    meta: `${weatherPosition.replace('-', ' ')} • ${weatherSize}%`,
+                    extra: weatherCity,
+                  },
+                  {
+                    id: 'social',
+                    label: 'Social',
+                    active: showSocial,
+                    accent: socialAccentColor,
+                    icon: '📱',
+                    meta: `${socialPosition.replace('-', ' ')} • ${socialSize}%`,
+                    extra: socialPlatform,
+                  },
+                  {
+                    id: 'ticker',
+                    label: 'Ticker',
+                    active: layout !== 'fullscreen',
+                    accent: tickerAccentColor,
+                    icon: '📰',
+                    meta: `${newsStyle} • ${tickerHeight}px`,
+                    extra: footerPosition === 'top' ? 'Topo' : 'Rodape',
+                  },
+                ].map((widget) => (
+                  <button
+                    key={widget.id}
+                    onClick={() => setSelectedElement(widget.id)}
+                    style={{
+                      textAlign: 'left',
+                      padding: '12px',
+                      borderRadius: '16px',
+                      border: selectedElement === widget.id ? `1px solid ${widget.accent}` : '1px solid #27272a',
+                      background: selectedElement === widget.id ? 'rgba(99,102,241,0.12)' : '#18181b',
+                      color: '#fff',
+                      cursor: 'pointer',
+                      boxShadow: selectedElement === widget.id ? `0 0 0 1px ${widget.accent}20, 0 16px 28px rgba(0,0,0,0.28)` : 'none',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                          width: '34px',
+                          height: '34px',
+                          borderRadius: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: `${widget.accent}20`,
+                          border: `1px solid ${widget.accent}33`,
+                          fontSize: '1rem'
+                        }}>
+                          {widget.icon}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.82rem', fontWeight: '800' }}>{widget.label}</div>
+                          <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '2px' }}>{widget.meta}</div>
+                        </div>
+                      </div>
+                      <span style={{
+                        fontSize: '0.56rem',
+                        fontWeight: '800',
+                        letterSpacing: '0.6px',
+                        textTransform: 'uppercase',
+                        color: widget.active ? widget.accent : '#52525b',
+                        background: widget.active ? `${widget.accent}14` : '#111113',
+                        border: `1px solid ${widget.active ? `${widget.accent}2a` : '#27272a'}`,
+                        borderRadius: '999px',
+                        padding: '4px 8px'
+                      }}>
+                        {widget.active ? 'Ativo' : 'Off'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginTop: '10px' }}>
+                      <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>{widget.extra}</span>
+                      <span style={{ fontSize: '0.55rem', color: '#a1a1aa' }}>Clique para editar</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
               
               {/* Relógio */}
               <div style={{ marginBottom: '12px', padding: '14px', background: '#18181b', borderRadius: '12px', border: showClock ? '1px solid #6366f1' : '1px solid #27272a' }}>
@@ -1097,11 +1241,31 @@ const PlaylistEditor = () => {
                         </select>
                       </div>
                       <div>
-                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Posição:</label>
-                        <select value={footerPosition} onChange={e => setFooterPosition(e.target.value)} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}>
-                          <option value="bottom">Rodapé (Embaixo)</option>
-                          <option value="top">Cabeçalho (Em cima)</option>
-                        </select>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa', display: 'block', marginBottom: '8px' }}>Posição:</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                          {[
+                            { value: 'bottom', label: 'Rodape' },
+                            { value: 'top', label: 'Topo' },
+                          ].map((option) => (
+                            <button
+                              key={option.value}
+                              onClick={() => setFooterPosition(option.value)}
+                              style={{
+                                width: '100%',
+                                padding: '8px 10px',
+                                background: footerPosition === option.value ? 'rgba(99,102,241,0.14)' : '#1a1a1f',
+                                border: footerPosition === option.value ? '1px solid #6366f1' : '1px solid #27272a',
+                                borderRadius: '8px',
+                                color: '#fff',
+                                fontSize: '0.72rem',
+                                fontWeight: '700',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                     <div>
@@ -1338,7 +1502,7 @@ const PlaylistEditor = () => {
                   <div 
                     onMouseDown={(e) => handleMouseDown(e, 'clock')}
                     style={{ 
-                      ...getWidgetBaseStyle(clockCardStyle, cardTransparency, themeColor, 'clock'),
+                      ...getWidgetBaseStyle(clockCardStyle, cardTransparency, clockAccentColor || themeColor, 'clock'),
                       position: 'absolute', 
                       left: useCustomPos ? `${clockX}px` : (widgetPosition.split('-')[1] === 'right' ? 'auto' : widgetPosition.includes('center') ? '50%' : '40px'),
                       top: useCustomPos ? `${clockY}px` : (widgetPosition.split('-')[0] === 'bottom' ? 'auto' : '40px'),
@@ -1359,7 +1523,7 @@ const PlaylistEditor = () => {
                   <div 
                     onMouseDown={(e) => handleMouseDown(e, 'social')}
                     style={{ 
-                      ...getWidgetBaseStyle(socialCardStyle, cardTransparency, themeColor, 'social'),
+                      ...getWidgetBaseStyle(socialCardStyle, cardTransparency, socialAccentColor || themeColor, 'social'),
                       position: 'absolute', 
                       left: useCustomPos ? `${socialX}px` : (socialPosition.split('-')[1] === 'right' ? 'auto' : socialPosition.includes('center') ? '50%' : '40px'),
                       top: useCustomPos ? `${socialY}px` : (socialPosition.split('-')[0] === 'bottom' ? 'auto' : '40px'),
@@ -1384,7 +1548,7 @@ const PlaylistEditor = () => {
                     <div 
                     onMouseDown={(e) => handleMouseDown(e, 'weather')}
                     style={{ 
-                      ...getWidgetBaseStyle(weatherCardStyle, cardTransparency, themeColor, 'weather'),
+                      ...getWidgetBaseStyle(weatherCardStyle, cardTransparency, weatherAccentColor || themeColor, 'weather'),
                       position: 'absolute', 
                       left: useCustomPos ? `${weatherX}px` : '40px',
                       top: useCustomPos ? `${weatherY}px` : '40px',
@@ -1411,7 +1575,7 @@ const PlaylistEditor = () => {
                 {(layout === 'with_footer' || layout === 'floating') && (() => {
                   const styleName = newsStyle || 'classic';
                   const isTop = footerPosition === 'top';
-                  const color = themeColor || '#818cf8';
+                  const color = tickerAccentColor || themeColor || '#818cf8';
                   const tickerVisual = getTickerVisualConfig({
                     styleName,
                     themeColor: color,
@@ -1890,21 +2054,72 @@ const PlaylistEditor = () => {
                   </div>
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Posição na Tela</label>
-                  <select value={widgetPosition} onChange={e => setWidgetPosition(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
-                    <option value="top-right">Superior Direito</option>
-                    <option value="top-left">Superior Esquerdo</option>
-                    <option value="bottom-right">Inferior Direito</option>
-                    <option value="top-center">Centro Topo</option>
-                  </select>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Posição na Tela</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    {WIDGET_LAYOUT_PRESETS.clock.map((preset) => (
+                      <button
+                        key={preset.id}
+                        onClick={() => {
+                          setWidgetPosition(preset.position);
+                          setClockSize(preset.size);
+                          setClockCardStyle(preset.style);
+                        }}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '12px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          background: widgetPosition === preset.position ? 'rgba(99,102,241,0.14)' : '#1a1a1f',
+                          border: widgetPosition === preset.position ? '1px solid #6366f1' : '1px solid #27272a',
+                          color: '#fff'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                          <strong style={{ fontSize: '0.76rem' }}>{preset.label}</strong>
+                          <span style={{ fontSize: '0.58rem', color: '#a1a1aa', background: '#111827', borderRadius: '999px', padding: '2px 8px' }}>{preset.style}</span>
+                        </div>
+                        <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '4px' }}>Tamanho sugerido {preset.size}%</div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Efeito Glassmorphism (Blur)</label>
                   <input type="range" min="0" max="1" step="0.1" value={cardTransparency} onChange={e => setCardTransparency(e.target.value)} style={{ width: '100%' }} />
                 </div>
-                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa' }}>Tamanho: {clockSize}%</label>
-                   <input type="range" min="10" max="200" value={clockSize} onChange={e => setClockSize(parseInt(e.target.value))} style={{ width: '100px' }} />
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Cor de Destaque</label>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <input type="color" value={clockAccentColor} onChange={e => setClockAccentColor(e.target.value)} style={{ width: '40px', height: '40px', padding: '0', border: 'none', borderRadius: '8px', cursor: 'pointer', background: 'none' }} />
+                    <input value={clockAccentColor} onChange={e => setClockAccentColor(e.target.value)} style={{ flex: 1, padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }} />
+                  </div>
+                </div>
+                 <div>
+                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Tamanho Rápido</label>
+                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '10px' }}>
+                     {WIDGET_SIZE_PRESETS.map((preset) => (
+                       <button
+                         key={preset.id}
+                         onClick={() => setClockSize(preset.value)}
+                         style={{
+                           padding: '8px 10px',
+                           borderRadius: '10px',
+                           cursor: 'pointer',
+                           background: clockSize === preset.value ? 'rgba(99,102,241,0.14)' : '#1a1a1f',
+                           border: clockSize === preset.value ? '1px solid #6366f1' : '1px solid #27272a',
+                           color: '#fff',
+                           fontSize: '0.7rem',
+                           fontWeight: '700'
+                         }}
+                       >
+                         {preset.label}
+                       </button>
+                     ))}
+                   </div>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                     <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa' }}>Tamanho: {clockSize}%</label>
+                     <input type="range" min="10" max="200" value={clockSize} onChange={e => setClockSize(parseInt(e.target.value))} style={{ width: '100px' }} />
+                   </div>
                  </div>
                  <div>
                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Modelo do Relógio</label>
@@ -1971,6 +2186,13 @@ const PlaylistEditor = () => {
                   <input type="range" min="0" max="1" step="0.1" value={cardTransparency} onChange={e => setCardTransparency(e.target.value)} style={{ width: '100%' }} />
                 </div>
                 <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Cor de Destaque</label>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <input type="color" value={weatherAccentColor} onChange={e => setWeatherAccentColor(e.target.value)} style={{ width: '40px', height: '40px', padding: '0', border: 'none', borderRadius: '8px', cursor: 'pointer', background: 'none' }} />
+                    <input value={weatherAccentColor} onChange={e => setWeatherAccentColor(e.target.value)} style={{ flex: 1, padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }} />
+                  </div>
+                </div>
+                <div>
                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Posição Sugerida</label>
                   <select value={weatherPosition} onChange={e => setWeatherPosition(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
                     <option value="top-left">Superior Esquerdo</option>
@@ -1983,10 +2205,10 @@ const PlaylistEditor = () => {
                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa' }}>Tamanho: {weatherSize}%</label>
                    <input type="range" min="10" max="200" value={weatherSize} onChange={e => setWeatherSize(parseInt(e.target.value))} style={{ width: '100px' }} />
                  </div>
-                 <div>
-                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Estilo do Card</label>
-                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                     {CARD_STYLE_PREVIEWS.map(s => (
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Estilo do Card</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    {CARD_STYLE_PREVIEWS.map(s => (
                        <div key={s.value} onClick={() => setWeatherCardStyle(s.value)} style={{
                          padding: '10px', borderRadius: '10px', cursor: 'pointer',
                          background: s.color, border: weatherCardStyle === s.value ? '2px solid #6366f1' : s.border,
@@ -1999,10 +2221,67 @@ const PlaylistEditor = () => {
                      ))}
                    </div>
                  </div>
-                 <div>
-                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Localização (Cidade/Estado)</label>
-                   <input value={weatherCity} onChange={e => setWeatherCity(e.target.value)} placeholder="Ex: Cuiabá - MT" style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }} />
-                 </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Posição na Tela</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    {WIDGET_LAYOUT_PRESETS.weather.map((preset) => (
+                      <button
+                        key={preset.id}
+                        onClick={() => {
+                          setWeatherPosition(preset.position);
+                          setWeatherSize(preset.size);
+                          setWeatherCardStyle(preset.style);
+                        }}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '12px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          background: weatherPosition === preset.position ? 'rgba(99,102,241,0.14)' : '#1a1a1f',
+                          border: weatherPosition === preset.position ? '1px solid #6366f1' : '1px solid #27272a',
+                          color: '#fff'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                          <strong style={{ fontSize: '0.76rem' }}>{preset.label}</strong>
+                          <span style={{ fontSize: '0.58rem', color: '#a1a1aa', background: '#111827', borderRadius: '999px', padding: '2px 8px' }}>{preset.style}</span>
+                        </div>
+                        <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '4px' }}>Tamanho sugerido {preset.size}%</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Localização (Cidade/Estado)</label>
+                  <input value={weatherCity} onChange={e => setWeatherCity(e.target.value)} placeholder="Ex: Cuiabá - MT" style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Tamanho Rápido</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '10px' }}>
+                    {WIDGET_SIZE_PRESETS.map((preset) => (
+                      <button
+                        key={preset.id}
+                        onClick={() => setWeatherSize(preset.value)}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: '10px',
+                          cursor: 'pointer',
+                          background: weatherSize === preset.value ? 'rgba(99,102,241,0.14)' : '#1a1a1f',
+                          border: weatherSize === preset.value ? '1px solid #6366f1' : '1px solid #27272a',
+                          color: '#fff',
+                          fontSize: '0.7rem',
+                          fontWeight: '700'
+                        }}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa' }}>Tamanho: {weatherSize}%</label>
+                    <input type="range" min="10" max="200" value={weatherSize} onChange={e => setWeatherSize(parseInt(e.target.value))} style={{ width: '100px' }} />
+                  </div>
+                </div>
                 {useCustomPos && (
                   <button onClick={() => setUseCustomPos(false)} style={{ padding: '8px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem', cursor: 'pointer' }}>
                     🔄 Resetar para Posição Automática
@@ -2060,18 +2339,45 @@ const PlaylistEditor = () => {
                          <div style={{ fontSize: '0.72rem', fontWeight: '800', color: s.textColor }}>{s.label}</div>
                          <div style={{ fontSize: '0.58rem', color: s.textColor, opacity: 0.6, marginTop: '2px' }}>{s.desc}</div>
                        </div>
-                     ))}
-                   </div>
-                 </div>
+                    ))}
+                  </div>
+                </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Posição na Tela</label>
-                  <select value={socialPosition} onChange={e => setSocialPosition(e.target.value)} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }}>
-                    <option value="bottom-right">Inferior Direito</option>
-                    <option value="bottom-left">Inferior Esquerdo</option>
-                    <option value="top-right">Superior Direito</option>
-                    <option value="top-left">Superior Esquerdo</option>
-                    <option value="bottom-center">Inferior Centro</option>
-                  </select>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Cor de Destaque</label>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <input type="color" value={socialAccentColor} onChange={e => setSocialAccentColor(e.target.value)} style={{ width: '40px', height: '40px', padding: '0', border: 'none', borderRadius: '8px', cursor: 'pointer', background: 'none' }} />
+                    <input value={socialAccentColor} onChange={e => setSocialAccentColor(e.target.value)} style={{ flex: 1, padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }} />
+                  </div>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '10px', display: 'block' }}>Posição na Tela</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    {WIDGET_LAYOUT_PRESETS.social.map((preset) => (
+                      <button
+                        key={preset.id}
+                        onClick={() => {
+                          setSocialPosition(preset.position);
+                          setSocialSize(preset.size);
+                          setSocialCardStyle(preset.style);
+                        }}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '12px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          background: socialPosition === preset.position ? 'rgba(99,102,241,0.14)' : '#1a1a1f',
+                          border: socialPosition === preset.position ? '1px solid #6366f1' : '1px solid #27272a',
+                          color: '#fff'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                          <strong style={{ fontSize: '0.76rem' }}>{preset.label}</strong>
+                          <span style={{ fontSize: '0.58rem', color: '#a1a1aa', background: '#111827', borderRadius: '999px', padding: '2px 8px' }}>{preset.style}</span>
+                        </div>
+                        <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '4px' }}>Tamanho sugerido {preset.size}%</div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>@ Usuário</label>
@@ -2081,9 +2387,32 @@ const PlaylistEditor = () => {
                   <input type="checkbox" checked={socialQrcode} onChange={e => setSocialQrcode(e.target.checked)} style={{ width: '16px', height: '16px' }} />
                   Gerar QR Code Automático
                 </label>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa' }}>Tamanho: {socialSize}%</label>
-                  <input type="range" min="10" max="200" value={socialSize} onChange={e => setSocialSize(parseInt(e.target.value))} style={{ width: '100px' }} />
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Tamanho Rápido</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '10px' }}>
+                    {WIDGET_SIZE_PRESETS.map((preset) => (
+                      <button
+                        key={preset.id}
+                        onClick={() => setSocialSize(preset.value)}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: '10px',
+                          cursor: 'pointer',
+                          background: socialSize === preset.value ? 'rgba(99,102,241,0.14)' : '#1a1a1f',
+                          border: socialSize === preset.value ? '1px solid #6366f1' : '1px solid #27272a',
+                          color: '#fff',
+                          fontSize: '0.7rem',
+                          fontWeight: '700'
+                        }}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa' }}>Tamanho: {socialSize}%</label>
+                    <input type="range" min="10" max="200" value={socialSize} onChange={e => setSocialSize(parseInt(e.target.value))} style={{ width: '100px' }} />
+                  </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <div>
@@ -2129,6 +2458,13 @@ const PlaylistEditor = () => {
                         <div style={{ fontSize: '0.58rem', color: '#71717a', marginTop: '4px' }}>Velocidade {preset.speed} • Visual {preset.style}</div>
                       </button>
                     ))}
+                  </div>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>Cor de Destaque</label>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <input type="color" value={tickerAccentColor} onChange={e => setTickerAccentColor(e.target.value)} style={{ width: '40px', height: '40px', padding: '0', border: 'none', borderRadius: '8px', cursor: 'pointer', background: 'none' }} />
+                    <input value={tickerAccentColor} onChange={e => setTickerAccentColor(e.target.value)} style={{ flex: 1, padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }} />
                   </div>
                 </div>
                 <div style={{
@@ -2229,6 +2565,26 @@ const PlaylistEditor = () => {
                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a1a1aa', display: 'flex', justifyContent: 'space-between' }}>
                     Altura da Barra: <span>{tickerHeight}px</span>
                   </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', margin: '8px 0 10px' }}>
+                    {TICKER_HEIGHT_PRESETS.map((preset) => (
+                      <button
+                        key={preset.id}
+                        onClick={() => setTickerHeight(preset.value)}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          background: tickerHeight === preset.value ? 'rgba(99,102,241,0.14)' : '#1a1a1f',
+                          border: tickerHeight === preset.value ? '1px solid #6366f1' : '1px solid #27272a',
+                          color: '#fff',
+                          fontSize: '0.7rem',
+                          fontWeight: '700'
+                        }}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
                   <input type="range" min="40" max="250" value={tickerHeight} onChange={e => setTickerHeight(parseInt(e.target.value))} style={{ width: '100%', marginTop: '8px' }} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '12px' }}>

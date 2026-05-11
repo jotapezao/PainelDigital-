@@ -874,7 +874,7 @@ const Player = () => {
           {/* Relógio Widget */}
           {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_clock && showClockWidget && (
             <div className={`player-widget-clock ${playlist.clock_style || 'digital_transparent'}`} style={{
-              ...getWidgetBaseStyle(playlist.clock_card_style || 'dark', playlist.card_transparency, 'clock'),
+              ...getWidgetBaseStyle(playlist.clock_card_style || 'dark', playlist.card_transparency, playlist.clock_accent_color || playlist.theme_color, 'clock'),
               ...(playlist.use_custom_pos ? { position: 'absolute', left: `${getScaledPos(playlist.clock_x || 0, playlist.clock_y || 0).x}px`, top: `${getScaledPos(playlist.clock_x || 0, playlist.clock_y || 0).y}px` } : getPositionStyles(playlist.widget_position || 'top-right', isMobile ? '20px' : '40px')),
               transform: `${!playlist.use_custom_pos && (playlist.widget_position || 'top-right').includes('center') ? 'translateX(-50%) ' : ''}scale(${responsiveScale(playlist.clock_size)})`,
               transformOrigin: playlist.use_custom_pos ? 'top left' : `${(playlist.widget_position || 'top-right').split('-')[0]} ${(playlist.widget_position || 'top-right').split('-')[1]}`,
@@ -886,7 +886,7 @@ const Player = () => {
           {/* Clima Widget */}
           {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_weather && showWeatherWidget && (
             <div className="player-widget-weather" style={{
-              ...getWidgetBaseStyle(playlist.weather_card_style || 'dark', playlist.card_transparency, 'weather'),
+              ...getWidgetBaseStyle(playlist.weather_card_style || 'dark', playlist.card_transparency, playlist.weather_accent_color || playlist.theme_color, 'weather'),
               ...(playlist.use_custom_pos ? { position: 'absolute', left: `${getScaledPos(playlist.weather_x || 0, playlist.weather_y || 0).x}px`, top: `${getScaledPos(playlist.weather_x || 0, playlist.weather_y || 0).y}px` } : getPositionStyles(playlist.weather_position || 'top-left', isMobile ? '20px' : '40px')),
               transform: `scale(${responsiveScale(playlist.weather_size)})`,
               transformOrigin: 'top left',
@@ -905,7 +905,7 @@ const Player = () => {
           {/* Card de Redes Sociais */}
           {playlist.layout !== 'split' && playlist.show_social && showSocialWidget && (
             <div className="player-social-widget" style={{
-              ...getWidgetBaseStyle(playlist.social_card_style || 'dark', playlist.card_transparency, 'social'),
+              ...getWidgetBaseStyle(playlist.social_card_style || 'dark', playlist.card_transparency, playlist.social_accent_color || playlist.theme_color, 'social'),
               ...(playlist.use_custom_pos ? { position: 'absolute', left: `${getScaledPos(playlist.social_x || 0, playlist.social_y || 0).x}px`, top: `${getScaledPos(playlist.social_x || 0, playlist.social_y || 0).y}px` } : getPositionStyles(playlist.social_position || 'bottom-right', isMobile ? '20px' : '40px')),
               transform: `${!playlist.use_custom_pos && (playlist.social_position || 'bottom-right').includes('center') ? 'translateX(-50%) ' : ''}scale(${responsiveScale(playlist.social_size)})`,
               transformOrigin: playlist.use_custom_pos ? 'top left' : `${(playlist.social_position || 'bottom-right').split('-')[0]} ${(playlist.social_position || 'bottom-right').split('-')[1]}`,
@@ -1010,7 +1010,7 @@ const Player = () => {
         const isTop = playlist.footer_position === 'top';
         const tickerVisual = getTickerVisualConfig({
           styleName,
-          themeColor: color,
+          themeColor: playlist.ticker_accent_color || color,
           footerOpacity: playlist.footer_opacity ?? 0.85,
           fontColor,
           isTop,

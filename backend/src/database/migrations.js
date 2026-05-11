@@ -315,6 +315,18 @@ async function runMigrations() {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='social_position') THEN 
           ALTER TABLE playlists ADD COLUMN social_position VARCHAR(20) DEFAULT 'bottom-right'; 
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='clock_accent_color') THEN 
+          ALTER TABLE playlists ADD COLUMN clock_accent_color VARCHAR(20) DEFAULT '#818cf8'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='weather_accent_color') THEN 
+          ALTER TABLE playlists ADD COLUMN weather_accent_color VARCHAR(20) DEFAULT '#38bdf8'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='social_accent_color') THEN 
+          ALTER TABLE playlists ADD COLUMN social_accent_color VARCHAR(20) DEFAULT '#a855f7'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='ticker_accent_color') THEN 
+          ALTER TABLE playlists ADD COLUMN ticker_accent_color VARCHAR(20) DEFAULT '#6366f1'; 
+        END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='show_progress_bar') THEN 
           ALTER TABLE playlists ADD COLUMN show_progress_bar BOOLEAN DEFAULT true; 
         END IF;

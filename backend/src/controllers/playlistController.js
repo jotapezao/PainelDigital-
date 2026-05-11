@@ -77,7 +77,7 @@ async function create(req, res) {
     footer_font_color, footer_position, footer_font_family, rss_url, transition_effect,
     ticker_speed, ticker_direction, ticker_height, ticker_blur, ticker_font_weight,
     show_social, social_handle, social_platform, card_transparency, ticker_label,
-    social_qrcode, widget_position, weather_position, social_position, show_progress_bar, social_card_style,
+    social_qrcode, widget_position, weather_position, social_position, clock_accent_color, weather_accent_color, social_accent_color, ticker_accent_color, show_progress_bar, social_card_style,
     clock_card_style, weather_card_style, weather_city, transition_duration,
     logo_url, logo_position, logo_size_px, logo_opacity, news_style, rotation,
     clock_size, weather_size, social_size, clock_interval, weather_interval, social_interval,
@@ -98,7 +98,7 @@ async function create(req, res) {
         footer_font_color, footer_position, footer_font_family, rss_url, transition_effect,
         ticker_speed, ticker_direction, ticker_height, ticker_blur, ticker_font_weight,
         show_social, social_handle, social_platform, card_transparency, ticker_label,
-        social_qrcode, widget_position, weather_position, social_position, show_progress_bar, social_card_style,
+        social_qrcode, widget_position, weather_position, social_position, clock_accent_color, weather_accent_color, social_accent_color, ticker_accent_color, show_progress_bar, social_card_style,
         clock_card_style, weather_card_style, weather_city, transition_duration,
         logo_url, logo_position, logo_size_px, logo_opacity, news_style, rotation,
         clock_size, weather_size, social_size, clock_interval, weather_interval, social_interval,
@@ -120,8 +120,9 @@ async function create(req, res) {
         show_social || false, social_handle || null, social_platform || 'instagram',
         card_transparency ?? 0.4, ticker_label || 'NOTÍCIAS',
         social_qrcode || false, widget_position || 'top-right',
-        weather_position || 'top-left', social_position || 'bottom-right', show_progress_bar !== false,
-        social_card_style || 'style1',
+        weather_position || 'top-left', social_position || 'bottom-right',
+        clock_accent_color || '#818cf8', weather_accent_color || '#38bdf8', social_accent_color || '#a855f7', ticker_accent_color || '#6366f1',
+        show_progress_bar !== false, social_card_style || 'style1',
         clock_card_style || 'dark', weather_card_style || 'dark',
         weather_city || 'Cuiabá - MT', transition_duration || '1s',
         logo_url || null, logo_position || 'bottom-right',
@@ -182,7 +183,7 @@ async function update(req, res) {
     footer_font_color, footer_position, footer_font_family, rss_url, transition_effect,
     ticker_speed, ticker_direction, ticker_height, ticker_blur, ticker_font_weight,
     show_social, social_handle, social_platform, card_transparency, ticker_label,
-    social_qrcode, widget_position, weather_position, social_position, show_progress_bar, social_card_style,
+    social_qrcode, widget_position, weather_position, social_position, clock_accent_color, weather_accent_color, social_accent_color, ticker_accent_color, show_progress_bar, social_card_style,
     clock_card_style, weather_card_style, weather_city, transition_duration,
     logo_url, logo_position, logo_size_px, logo_opacity, news_style, rotation,
     clock_size, weather_size, social_size, clock_interval, weather_interval, social_interval,
@@ -203,13 +204,13 @@ async function update(req, res) {
       ticker_height=$21, ticker_blur=$22, ticker_font_weight=$23,
       show_social=$24, social_handle=$25, social_platform=$26,
       card_transparency=$27, ticker_label=$28, social_qrcode=$29,
-      widget_position=$30, weather_position=$31, social_position=$32, show_progress_bar=$33,
-      social_card_style=$34, clock_card_style=$35, weather_card_style=$36, weather_city=$37, transition_duration=$38,
-      logo_url=$39, logo_position=$40, logo_size_px=$41, logo_opacity=$42, news_style=$43, rotation=$44,
-      clock_size=$45, weather_size=$46, social_size=$47, clock_interval=$48, weather_interval=$49, social_interval=$50,
-      clock_duration=$51, weather_duration=$52, social_duration=$53, ticker_interval=$54, ticker_duration=$55,
-      clock_effect=$56, weather_effect=$57, social_effect=$58, clock_style=$59, 
-      clock_x=$60, clock_y=$61, weather_x=$62, weather_y=$63, social_x=$64, social_y=$65, ticker_x=$66, ticker_y=$67, use_custom_pos=$68,
+      widget_position=$30, weather_position=$31, social_position=$32, clock_accent_color=$33, weather_accent_color=$34, social_accent_color=$35, ticker_accent_color=$36, show_progress_bar=$37,
+      social_card_style=$38, clock_card_style=$39, weather_card_style=$40, weather_city=$41, transition_duration=$42,
+      logo_url=$43, logo_position=$44, logo_size_px=$45, logo_opacity=$46, news_style=$47, rotation=$48,
+      clock_size=$49, weather_size=$50, social_size=$51, clock_interval=$52, weather_interval=$53, social_interval=$54,
+      clock_duration=$55, weather_duration=$56, social_duration=$57, ticker_interval=$58, ticker_duration=$59,
+      clock_effect=$60, weather_effect=$61, social_effect=$62, clock_style=$63, 
+      clock_x=$64, clock_y=$65, weather_x=$66, weather_y=$67, social_x=$68, social_y=$69, ticker_x=$70, ticker_y=$71, use_custom_pos=$72,
       updated_at=NOW()`;
 
     let params = [
@@ -225,7 +226,9 @@ async function update(req, res) {
       show_social || false, social_handle || null, social_platform || 'instagram',
       card_transparency ?? 0.4, ticker_label || 'NOTÍCIAS',
       social_qrcode || false, widget_position || 'top-right',
-      weather_position || 'top-left', social_position || 'bottom-right', show_progress_bar !== false,
+      weather_position || 'top-left', social_position || 'bottom-right',
+      clock_accent_color || '#818cf8', weather_accent_color || '#38bdf8', social_accent_color || '#a855f7', ticker_accent_color || '#6366f1',
+      show_progress_bar !== false,
       social_card_style || 'style1', clock_card_style || 'dark', weather_card_style || 'dark',
       weather_city || 'Cuiabá - MT', transition_duration || '1s',
       logo_url || null, logo_position || 'bottom-right',
@@ -240,7 +243,7 @@ async function update(req, res) {
       ticker_x || 0, ticker_y || 640, use_custom_pos || false
     ];
 
-    let idx = 68;
+    let idx = 73;
 
     if (effectiveClientId) {
       query += `, client_id=$${idx++}`;
