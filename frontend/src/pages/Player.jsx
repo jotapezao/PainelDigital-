@@ -31,11 +31,12 @@ const Player = () => {
   const [showClockWidget, setShowClockWidget] = useState(true);
   const [showWeatherWidget, setShowWeatherWidget] = useState(true);
   const [showSocialWidget, setShowSocialWidget] = useState(true);
-  const [weatherData, setWeatherData] = useState({ temp: '--', icon: '⛅' });
+  const [weatherData, setWeatherData] = useState({ temp: '--', icon: '⛅', city: '' });
 
   const clockTimerRef = useRef(null);
   const weatherTimerRef = useRef(null);
   const socialTimerRef = useRef(null);
+  const weatherCacheRef = useRef(new Map());
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -174,11 +175,19 @@ const Player = () => {
     const fetchWeather = async () => {
       if (!playlist || !playlist.show_weather || !playlist.weather_city) return;
       try {
+        const cacheKey = playlist.weather_city.trim().toLowerCase();
+        const agora = Date.now();
+        const cache = weatherCacheRef.current.get(cacheKey);
+        if (cache && agora - cache.timestamp < 5 * 60 * 1000) {
+          setWeatherData(cache.data);
+          return;
+        }
+
         const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(playlist.weather_city)}&count=1&language=pt&format=json`);
         const geoData = await geoRes.json();
         if (geoData.results && geoData.results.length > 0) {
-          const { latitude, longitude } = geoData.results[0];
-          const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`);
+          const { latitude, longitude, name, admin1, country } = geoData.results[0];
+          const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&timezone=auto`);
           const weatherJson = await weatherRes.json();
           if (weatherJson.current_weather) {
             const code = weatherJson.current_weather.weathercode;
@@ -189,11 +198,15 @@ const Player = () => {
             else if (code <= 69) icon = '🌧️';
             else if (code <= 79) icon = '❄️';
             else if (code <= 99) icon = '⛈️';
-            
-            setWeatherData({
+
+            const dadosClima = {
               temp: Math.round(weatherJson.current_weather.temperature),
-              icon
-            });
+              icon,
+              city: [name, admin1 || country].filter(Boolean).join(' - ')
+            };
+
+            weatherCacheRef.current.set(cacheKey, { timestamp: agora, data: dadosClima });
+            setWeatherData(dadosClima);
           }
         }
       } catch (e) {
@@ -202,7 +215,7 @@ const Player = () => {
     };
 
     fetchWeather();
-    const interval = setInterval(fetchWeather, 30 * 60 * 1000); // Update every 30 mins
+    const interval = setInterval(fetchWeather, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [playlist?.weather_city, playlist?.show_weather]);
 
@@ -386,34 +399,43 @@ const Player = () => {
   };
 
   // Helper para estilos de Cards padronizados (6 ESTILOS PREMIUM)
-  const getWidgetBaseStyle = (styleType, transparency = 0.5) => {
+  const getWidgetBaseStyle = (styleType, transparency = 0.5, widgetType = 'default') => {
+    const themeColor = playlist?.theme_color || '#6366f1';
+    const alpha = 0.34 + transparency * 0.4;
     const base = {
-      padding: isMobile ? '12px 18px' : '24px 36px',
-      borderRadius: '28px',
+      padding: isMobile ? '14px 18px' : '22px 28px',
+      borderRadius: '26px',
       transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
       display: 'flex',
       alignItems: 'center',
-      gap: '20px',
+      gap: isMobile ? '12px' : '18px',
       zIndex: 25,
-      color: '#fff'
+      color: '#fff',
+      position: 'relative',
+      overflow: 'hidden'
+    };
+    const tonalidade = {
+      clock: `linear-gradient(135deg, rgba(255,255,255,0.12), ${themeColor}22)`,
+      weather: `linear-gradient(135deg, ${themeColor}26, rgba(56,189,248,0.18))`,
+      social: `linear-gradient(135deg, rgba(255,255,255,0.1), ${themeColor}20)`,
+      default: `linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04))`
     };
 
     switch (styleType) {
       case 'minimalist':
         return { ...base, background: 'none', border: 'none', boxShadow: 'none', backdropFilter: 'none', textShadow: '0 2px 12px rgba(0,0,0,0.8)' };
       case 'light':
-        return { ...base, background: `rgba(255,255,255,${0.85 + transparency * 0.15})`, color: '#18181b', border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 8px 32px rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.1)', backdropFilter: 'blur(20px)' };
+        return { ...base, background: `linear-gradient(135deg, rgba(255,255,255,${0.96 - transparency * 0.1}), rgba(255,255,255,${0.84 - transparency * 0.08}))`, color: '#18181b', border: '1px solid rgba(255,255,255,0.72)', boxShadow: '0 18px 42px rgba(15,23,42,0.18)', backdropFilter: 'blur(20px)' };
       case 'dark':
-        return { ...base, background: `rgba(0,0,0,${0.5 + transparency * 0.4})`, color: '#fff', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 50px rgba(0,0,0,0.4)' };
+        return { ...base, background: `linear-gradient(135deg, rgba(2,6,23,${alpha + 0.18}), rgba(15,23,42,${alpha}))`, color: '#fff', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 50px rgba(0,0,0,0.4)' };
       case 'glass_pro':
-        return { ...base, background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%)', color: '#fff', backdropFilter: 'blur(40px) saturate(180%)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2)' };
+        return { ...base, background: tonalidade[widgetType] || tonalidade.default, color: '#fff', backdropFilter: 'blur(32px) saturate(180%)', border: '1px solid rgba(255,255,255,0.24)', boxShadow: `0 10px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2), 0 0 0 1px ${themeColor}18` };
       case 'neon':
-        const themeColor = playlist?.theme_color || '#22d3ee';
-        return { ...base, background: 'rgba(0,0,0,0.75)', color: '#fff', border: `2px solid #22d3ee`, boxShadow: `0 0 15px rgba(34,211,238,0.5), 0 0 45px rgba(34,211,238,0.2), inset 0 0 20px rgba(34,211,238,0.1)`, backdropFilter: 'blur(8px)', borderRadius: '16px' };
+        return { ...base, background: 'linear-gradient(135deg, rgba(2,6,23,0.82), rgba(15,23,42,0.76))', color: '#fff', border: `1px solid ${themeColor}`, boxShadow: `0 0 15px ${themeColor}66, 0 0 45px ${themeColor}22, inset 0 0 20px ${themeColor}10`, backdropFilter: 'blur(8px)', borderRadius: '16px' };
       case 'border_classic':
-        return { ...base, background: `rgba(0,0,0,${0.7 + transparency * 0.3})`, color: '#fff', border: `3px solid rgba(255,255,255,0.9)`, borderRadius: '6px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' };
+        return { ...base, background: `linear-gradient(135deg, rgba(0,0,0,${0.72 + transparency * 0.2}), rgba(30,41,59,${0.64 + transparency * 0.14}))`, color: '#fff', border: '2px solid rgba(255,255,255,0.88)', borderRadius: '8px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' };
       default:
-        return { ...base, background: `rgba(0,0,0,${0.5 + transparency * 0.4})`, backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 50px rgba(0,0,0,0.4)' };
+        return { ...base, background: `linear-gradient(135deg, rgba(0,0,0,${0.5 + transparency * 0.4}), rgba(15,23,42,${0.42 + transparency * 0.28}))`, backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 50px rgba(0,0,0,0.4)' };
     }
   };
 
@@ -639,10 +661,28 @@ const Player = () => {
             />
           )}
 
+          {/* Preloader da Próxima Mídia (Cache Inteligente) */}
+          {playlist.items.length > 1 && (
+            <div style={{ display: 'none', visibility: 'hidden', width: 0, height: 0, overflow: 'hidden' }}>
+              {(() => {
+                const nextIdx = (currentIndex + 1) % playlist.items.length;
+                const nextItem = playlist.items[nextIdx];
+                const nextItemMedia = nextItem.media || nextItem;
+                const nextUrl = nextItemMedia.url || nextItemMedia.filename;
+                const nextType = nextItemMedia.type || 'video';
+                return nextType === 'image' ? (
+                  <img src={nextUrl} key={`preload-${nextIdx}`} />
+                ) : (
+                  <video src={nextUrl} preload="auto" muted key={`preload-${nextIdx}`} />
+                );
+              })()}
+            </div>
+          )}
+
           {/* Relógio Widget */}
           {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_clock && showClockWidget && (
             <div className={`player-widget-clock ${playlist.clock_style || 'digital_transparent'}`} style={{
-              ...getWidgetBaseStyle(playlist.clock_card_style || 'dark', playlist.card_transparency),
+              ...getWidgetBaseStyle(playlist.clock_card_style || 'dark', playlist.card_transparency, 'clock'),
               ...(playlist.use_custom_pos ? { position: 'absolute', left: `${getScaledPos(playlist.clock_x || 0, playlist.clock_y || 0).x}px`, top: `${getScaledPos(playlist.clock_x || 0, playlist.clock_y || 0).y}px` } : getPositionStyles(playlist.widget_position || 'top-right', isMobile ? '20px' : '40px')),
               transform: `${!playlist.use_custom_pos && (playlist.widget_position || 'top-right').includes('center') ? 'translateX(-50%) ' : ''}scale(${responsiveScale(playlist.clock_size)})`,
               transformOrigin: playlist.use_custom_pos ? 'top left' : `${(playlist.widget_position || 'top-right').split('-')[0]} ${(playlist.widget_position || 'top-right').split('-')[1]}`,
@@ -654,7 +694,7 @@ const Player = () => {
           {/* Clima Widget */}
           {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_weather && showWeatherWidget && (
             <div className="player-widget-weather" style={{
-              ...getWidgetBaseStyle(playlist.weather_card_style || 'dark', playlist.card_transparency),
+              ...getWidgetBaseStyle(playlist.weather_card_style || 'dark', playlist.card_transparency, 'weather'),
               ...(playlist.use_custom_pos ? { position: 'absolute', left: `${getScaledPos(playlist.weather_x || 0, playlist.weather_y || 0).x}px`, top: `${getScaledPos(playlist.weather_x || 0, playlist.weather_y || 0).y}px` } : getPositionStyles('top-left', isMobile ? '20px' : '40px')),
               transform: `scale(${responsiveScale(playlist.weather_size)})`,
               transformOrigin: 'top left',
@@ -665,7 +705,7 @@ const Player = () => {
               <span style={{ fontSize: '2.8rem' }}>{weatherData.icon}</span>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '2.8rem', fontWeight: '800', fontFamily: 'Outfit', lineHeight: 1 }}>{weatherData.temp}°C</span>
-                <span style={{ fontSize: '1rem', opacity: 0.8, fontWeight: '600' }}>{playlist.weather_city || 'Cuiabá - MT'}</span>
+                <span style={{ fontSize: '1rem', opacity: 0.8, fontWeight: '600' }}>{weatherData.city || playlist.weather_city || 'Cuiabá - MT'}</span>
               </div>
             </div>
           )}
@@ -673,7 +713,7 @@ const Player = () => {
           {/* Card de Redes Sociais */}
           {playlist.layout !== 'split' && playlist.show_social && showSocialWidget && (
             <div className="player-social-widget" style={{
-              ...getWidgetBaseStyle(playlist.social_card_style || 'dark', playlist.card_transparency),
+              ...getWidgetBaseStyle(playlist.social_card_style || 'dark', playlist.card_transparency, 'social'),
               ...(playlist.use_custom_pos ? { position: 'absolute', left: `${getScaledPos(playlist.social_x || 0, playlist.social_y || 0).x}px`, top: `${getScaledPos(playlist.social_x || 0, playlist.social_y || 0).y}px` } : getPositionStyles(playlist.social_position || 'bottom-right', isMobile ? '20px' : '40px')),
               transform: `${!playlist.use_custom_pos && (playlist.social_position || 'bottom-right').includes('center') ? 'translateX(-50%) ' : ''}scale(${responsiveScale(playlist.social_size)})`,
               transformOrigin: playlist.use_custom_pos ? 'top left' : `${(playlist.social_position || 'bottom-right').split('-')[0]} ${(playlist.social_position || 'bottom-right').split('-')[1]}`,
@@ -769,7 +809,7 @@ const Player = () => {
         const textContent = playlist.footer_text || 'Painel Digital • Inovação e Tecnologia • Siga-nos para mais novidades!';
         const text = ` ${textContent} • ${textContent} • ${textContent} `;
         const label = playlist.ticker_label || '';
-        const speed = playlist.ticker_speed === 'slow' ? '45s' : playlist.ticker_speed === 'fast' ? '15s' : '30s';
+        const speed = playlist.ticker_speed === 'slow' ? '48s' : playlist.ticker_speed === 'fast' ? '16s' : '28s';
         const direction = playlist.ticker_direction || 'rtl';
         const color = playlist.theme_color || '#818cf8';
         const fontColor = playlist.footer_font_color || '#fff';
@@ -880,24 +920,53 @@ const Player = () => {
             transition: 'opacity 0.5s ease',
             ...containerStyle
           }}>
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              pointerEvents: 'none',
+              background: `linear-gradient(90deg, rgba(0,0,0,0.22), transparent 12%, transparent 88%, rgba(0,0,0,0.18))`,
+              opacity: styleName === 'minimal' ? 0.35 : 0.75
+            }} />
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '3px',
+              background: `linear-gradient(90deg, ${color}, rgba(255,255,255,0.65), ${color})`,
+              opacity: styleName === 'minimal' ? 0.4 : 0.9
+            }} />
             {label && label.trim() !== "" && (
               <div style={{
                 padding: isMobile ? '0 15px' : '0 35px', height: '100%',
                 display: 'flex', alignItems: 'center', fontWeight: '900', fontSize: isMobile ? '0.7rem' : '1.2rem',
-                textTransform: 'uppercase', letterSpacing: '2px', zIndex: 101,
+                textTransform: 'uppercase', letterSpacing: '2px', zIndex: 101, flexShrink: 0,
                 ...labelStyle
               }}>
                 {label}
               </div>
             )}
             <div style={{
-              display: 'inline-block', paddingLeft: direction === 'rtl' ? '100%' : '0',
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: isMobile ? '36px' : '56px',
+              paddingLeft: direction === 'rtl' ? '100%' : '0',
               paddingRight: direction === 'ltr' ? '100%' : '0',
               animation: `scrollText${direction.toUpperCase()} ${speed} linear infinite`,
-              fontSize: isMobile ? (parseFloat(playlist.footer_font_size) || 2.2) * 0.5 + 'rem' : playlist.footer_font_size || '2.2rem', fontWeight: playlist.ticker_font_weight || '700',
-              zIndex: 100
+              fontSize: isMobile ? (parseFloat(playlist.footer_font_size) || 2.2) * 0.5 + 'rem' : playlist.footer_font_size || '2.2rem',
+              fontWeight: playlist.ticker_font_weight || '700',
+              zIndex: 100,
+              minWidth: 'max-content'
             }}>
-              {text}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: isMobile ? '18px' : '26px', paddingRight: isMobile ? '36px' : '56px' }}>
+                <span style={{ width: isMobile ? '8px' : '10px', height: isMobile ? '8px' : '10px', borderRadius: '50%', background: color, boxShadow: `0 0 16px ${color}` }} />
+                {text}
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: isMobile ? '18px' : '26px' }}>
+                <span style={{ width: isMobile ? '8px' : '10px', height: isMobile ? '8px' : '10px', borderRadius: '50%', background: color, boxShadow: `0 0 16px ${color}` }} />
+                {text}
+              </span>
             </div>
           </div>
         );

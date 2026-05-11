@@ -372,6 +372,18 @@ async function runMigrations() {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='clock_style') THEN 
           ALTER TABLE playlists ADD COLUMN clock_style VARCHAR(50) DEFAULT 'digital_transparent'; 
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='clock_card_style') THEN 
+          ALTER TABLE playlists ADD COLUMN clock_card_style VARCHAR(30) DEFAULT 'dark'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='weather_card_style') THEN 
+          ALTER TABLE playlists ADD COLUMN weather_card_style VARCHAR(30) DEFAULT 'dark'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='weather_city') THEN 
+          ALTER TABLE playlists ADD COLUMN weather_city VARCHAR(255) DEFAULT 'Cuiabá - MT'; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='transition_duration') THEN 
+          ALTER TABLE playlists ADD COLUMN transition_duration VARCHAR(20) DEFAULT '1s'; 
+        END IF;
 
         -- POSIÇÕES CUSTOMIZADAS (DRAG AND DROP)
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='clock_x') THEN 
@@ -391,6 +403,12 @@ async function runMigrations() {
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='social_y') THEN 
           ALTER TABLE playlists ADD COLUMN social_y INTEGER DEFAULT 0; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='ticker_x') THEN 
+          ALTER TABLE playlists ADD COLUMN ticker_x INTEGER DEFAULT 0; 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='ticker_y') THEN 
+          ALTER TABLE playlists ADD COLUMN ticker_y INTEGER DEFAULT 640; 
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='use_custom_pos') THEN 
           ALTER TABLE playlists ADD COLUMN use_custom_pos BOOLEAN DEFAULT false; 

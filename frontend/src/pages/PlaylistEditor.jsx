@@ -1,34 +1,96 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 
-const getWidgetBaseStyle = (style, transparency) => {
+const THEME_MODELOS = [
+  {
+    id: 'Corporate',
+    titulo: 'Corporate Flow',
+    descricao: 'Visual limpo para recepcoes, escritórios e ambientes institucionais.',
+    gradiente: 'linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%)',
+    chip: '#60a5fa',
+  },
+  {
+    id: 'Cyberpunk',
+    titulo: 'Cyber Pulse',
+    descricao: 'Cores vivas, contraste alto e widgets com personalidade tech.',
+    gradiente: 'linear-gradient(135deg, #09090b 0%, #6d28d9 50%, #06b6d4 100%)',
+    chip: '#22d3ee',
+  },
+  {
+    id: 'Luxury Gold',
+    titulo: 'Luxury Gold',
+    descricao: 'Apresentacao premium com contraste escuro e detalhes dourados.',
+    gradiente: 'linear-gradient(135deg, #111111 0%, #3f2a0f 100%)',
+    chip: '#fbbf24',
+  },
+  {
+    id: 'Minimalist',
+    titulo: 'Minimal Frame',
+    descricao: 'Tela leve, foco em leitura e poucos elementos visuais.',
+    gradiente: 'linear-gradient(135deg, #f8fafc 0%, #cbd5e1 100%)',
+    chip: '#0f172a',
+  },
+  {
+    id: 'Neon Vibrant',
+    titulo: 'Neon Vibrant',
+    descricao: 'Ideal para varejo, promoções e ambientes com alto impacto visual.',
+    gradiente: 'linear-gradient(135deg, #04111d 0%, #0f766e 45%, #f43f5e 100%)',
+    chip: '#f43f5e',
+  },
+  {
+    id: 'Fast Food',
+    titulo: 'Fast Menu',
+    descricao: 'Pensado para cardápios e campanhas com leitura rápida.',
+    gradiente: 'linear-gradient(135deg, #7c2d12 0%, #ef4444 100%)',
+    chip: '#fde047',
+  },
+  {
+    id: 'Supermercado',
+    titulo: 'Market Spotlight',
+    descricao: 'Bom para ofertas, mensagens rotativas e conteúdo de alto volume.',
+    gradiente: 'linear-gradient(135deg, #14532d 0%, #16a34a 100%)',
+    chip: '#bbf7d0',
+  },
+];
+
+const getWidgetBaseStyle = (style, transparency, themeColor = '#818cf8', widgetType = 'default') => {
+  const alpha = 0.35 + (transparency || 0) * 0.45;
+  const themeShadow = `${themeColor}40`;
   const base = {
-    padding: '24px 32px',
-    borderRadius: '28px',
+    padding: '20px 24px',
+    borderRadius: '26px',
     color: '#fff',
     display: 'flex',
     alignItems: 'center',
-    gap: '20px',
+    gap: '18px',
     zIndex: 25,
     transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+    position: 'relative',
+    overflow: 'hidden',
+  };
+  const accentByType = {
+    clock: 'linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04))',
+    weather: `linear-gradient(135deg, ${themeColor}33, rgba(59,130,246,0.12))`,
+    social: `linear-gradient(135deg, rgba(255,255,255,0.08), ${themeColor}29)`,
+    default: 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.04))',
   };
 
   switch (style) {
     case 'minimalist':
-      return { ...base, background: 'transparent', backdropFilter: 'none', border: 'none', boxShadow: 'none', padding: '10px', color: '#fff', textShadow: '0 2px 12px rgba(0,0,0,0.8)' };
+      return { ...base, background: 'transparent', backdropFilter: 'none', border: 'none', boxShadow: 'none', padding: '10px 14px', color: '#fff', textShadow: '0 2px 12px rgba(0,0,0,0.8)' };
     case 'light':
-      return { ...base, background: `rgba(255,255,255,${0.85 + (transparency || 0) * 0.15})`, color: '#18181b', border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 8px 32px rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.1)', backdropFilter: 'blur(20px)' };
+      return { ...base, background: `linear-gradient(135deg, rgba(255,255,255,${0.94 - (transparency || 0) * 0.08}), rgba(255,255,255,${0.8 - (transparency || 0) * 0.06}))`, color: '#18181b', border: '1px solid rgba(255,255,255,0.75)', boxShadow: `0 18px 48px rgba(15,23,42,0.18), 0 0 0 1px ${themeColor}18`, backdropFilter: 'blur(22px)' };
     case 'glass_pro':
-      return { ...base, background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%)', backdropFilter: 'blur(40px) saturate(180%)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2)' };
+      return { ...base, background: accentByType[widgetType] || accentByType.default, backdropFilter: 'blur(36px) saturate(180%)', border: '1px solid rgba(255,255,255,0.24)', boxShadow: `0 18px 48px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.22), 0 0 0 1px ${themeShadow}` };
     case 'neon':
-      return { ...base, border: '2px solid #22d3ee', boxShadow: '0 0 15px rgba(34,211,238,0.5), 0 0 45px rgba(34,211,238,0.2), inset 0 0 20px rgba(34,211,238,0.1)', background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', borderRadius: '16px' };
+      return { ...base, border: `1px solid ${themeColor}`, boxShadow: `0 0 20px ${themeShadow}, 0 0 46px ${themeColor}22, inset 0 0 18px ${themeColor}18`, background: 'linear-gradient(135deg, rgba(2,6,23,0.84), rgba(15,23,42,0.72))', backdropFilter: 'blur(10px)', borderRadius: '18px' };
     case 'border_classic':
-      return { ...base, borderRadius: '6px', border: '3px solid rgba(255,255,255,0.9)', background: `rgba(0,0,0,${0.7 + (transparency || 0) * 0.3})`, padding: '20px 28px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' };
+      return { ...base, borderRadius: '10px', border: '2px solid rgba(255,255,255,0.85)', background: `linear-gradient(135deg, rgba(0,0,0,${alpha + 0.22}), rgba(15,23,42,${alpha + 0.12}))`, padding: '18px 24px', boxShadow: '0 14px 40px rgba(0,0,0,0.45)' };
     default: // dark
-      return { ...base, background: `rgba(0,0,0,${0.5 + (transparency || 0) * 0.4})`, backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 50px rgba(0,0,0,0.4)' };
+      return { ...base, background: `linear-gradient(135deg, rgba(2,6,23,${alpha + 0.16}), rgba(15,23,42,${alpha}))`, backdropFilter: 'blur(18px)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: `0 22px 52px rgba(0,0,0,0.42), 0 0 0 1px ${themeColor}12` };
   }
 };
 
@@ -173,6 +235,17 @@ const PlaylistEditor = () => {
   const [clipboard, setClipboard] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
   const [timeInput, setTimeInput] = useState(null);
+  const [mediaSearch, setMediaSearch] = useState('');
+
+  const mediasFiltradas = useMemo(() => {
+    if (!mediaSearch.trim()) return medias;
+    const termo = mediaSearch.toLowerCase().trim();
+    return medias.filter((midia) =>
+      [midia.name, midia.original_name, midia.type]
+        .filter(Boolean)
+        .some((valor) => valor.toLowerCase().includes(termo))
+    );
+  }, [medias, mediaSearch]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -466,29 +539,174 @@ const PlaylistEditor = () => {
     }
   };
 
-  const totalDuration = selectedItems.reduce((acc, item) => acc + (item.media?.type === 'video' ? 0 : (item.duration || 10)), 0);
+  const totalDuration = selectedItems.reduce((acc, item) => acc + (item.duration || 10), 0);
+  const totalImagens = selectedItems.filter((item) => item.media?.type === 'image').length;
+  const totalVideos = selectedItems.filter((item) => item.media?.type === 'video').length;
+  const maiorClip = selectedItems.reduce((maior, item) => Math.max(maior, item.duration || 0), 0);
+
+  const formatarTempo = (segundos) => {
+    if (segundos >= 3600) {
+      return `${Math.floor(segundos / 3600)}h ${Math.floor((segundos % 3600) / 60).toString().padStart(2, '0')}m`;
+    }
+    if (segundos >= 60) {
+      return `${Math.floor(segundos / 60)}:${(segundos % 60).toString().padStart(2, '0')}`;
+    }
+    return `0:${segundos.toString().padStart(2, '0')}`;
+  };
 
   if (loading) return <div className="loading-screen">Carregando editor...</div>;
 
-  const applyPreset = (preset) => {
-    switch(preset) {
-      case 'cinema':
-        setLayout('fullscreen'); setFooterPosition('bottom'); setTickerHeight(80); setWidgetPosition('top-right'); setLogoPosition('bottom-right');
+  const applyThemeModel = (preset) => {
+    setThemePremium(preset);
+
+    switch (preset) {
+      case 'Corporate':
+        setThemeColor('#2563eb');
+        setLayout('with_footer');
+        setFooterPosition('top');
+        setNewsStyle('minimal');
+        setFooterFontColor('#e2e8f0');
+        setTickerLabel('Comunicados');
+        setTickerHeight(86);
+        setTickerSpeed('medium');
+        setTransitionEffect('fade');
+        setTransitionDuration('1.1s');
+        setOverlayStyle('gradient');
+        setShowClock(true);
+        setClockStyle('digital_solid');
+        setClockCardStyle('glass_pro');
+        setWidgetPosition('top-right');
+        setShowWeather(true);
+        setWeatherCardStyle('light');
+        setWeatherCity((valor) => valor || 'Cuiabá - MT');
+        setShowSocial(false);
+        setLogoPosition('top-right');
         break;
-      case 'corporate':
-        setLayout('with_footer'); setFooterPosition('top'); setTickerHeight(100); setWidgetPosition('bottom-left'); setLogoPosition('top-right');
+      case 'Cyberpunk':
+        setThemeColor('#22d3ee');
+        setLayout('with_footer');
+        setFooterPosition('bottom');
+        setNewsStyle('neon');
+        setFooterFontColor('#ecfeff');
+        setTickerLabel('AO VIVO');
+        setTickerHeight(94);
+        setTickerSpeed('fast');
+        setTransitionEffect('slide');
+        setTransitionDuration('0.9s');
+        setOverlayStyle('vignette');
+        setShowClock(true);
+        setClockStyle('big_bold');
+        setClockCardStyle('neon');
+        setShowWeather(true);
+        setWeatherCardStyle('dark');
+        setShowSocial(true);
+        setSocialCardStyle('neon');
+        setSocialPosition('bottom-right');
+        setShowProgressBar(true);
         break;
-      case 'minimal':
-        setLayout('fullscreen'); setFooterText(''); setRssUrl(''); setWidgetPosition('top-right'); setShowClock(true); setShowWeather(false); setShowProgressBar(false);
+      case 'Luxury Gold':
+        setThemeColor('#d4a017');
+        setLayout('floating');
+        setFooterPosition('bottom');
+        setNewsStyle('elegant');
+        setFooterFontColor('#fef3c7');
+        setTickerLabel('Destaque');
+        setTickerHeight(88);
+        setTickerSpeed('slow');
+        setTransitionEffect('fade');
+        setTransitionDuration('1.4s');
+        setOverlayStyle('vignette');
+        setShowClock(true);
+        setClockStyle('analog_modern');
+        setClockCardStyle('border_classic');
+        setShowWeather(true);
+        setWeatherCardStyle('border_classic');
+        setShowSocial(true);
+        setSocialCardStyle('border_classic');
+        setSocialPosition('bottom-left');
         break;
-      case 'news':
-        setLayout('with_footer'); setFooterPosition('bottom'); setTickerHeight(120); setTickerSpeed('fast'); setTickerFontWeight('800');
+      case 'Minimalist':
+        setThemeColor('#0f172a');
+        setLayout('fullscreen');
+        setFooterPosition('bottom');
+        setNewsStyle('minimal');
+        setFooterFontColor('#f8fafc');
+        setTickerLabel('');
+        setTickerHeight(68);
+        setTickerSpeed('slow');
+        setTransitionEffect('fade');
+        setTransitionDuration('1s');
+        setOverlayStyle('none');
+        setShowClock(true);
+        setClockStyle('digital_solid');
+        setClockCardStyle('minimalist');
+        setShowWeather(true);
+        setWeatherCardStyle('light');
+        setShowSocial(false);
+        setShowProgressBar(false);
         break;
-      case 'social':
-        setLayout('fullscreen'); setShowSocial(true); setSocialPosition('bottom-center'); setSocialCardStyle('style3');
+      case 'Neon Vibrant':
+        setThemeColor('#f43f5e');
+        setLayout('with_footer');
+        setFooterPosition('bottom');
+        setNewsStyle('modern');
+        setFooterFontColor('#fff7ed');
+        setTickerLabel('Promoções');
+        setTickerHeight(102);
+        setTickerSpeed('fast');
+        setTransitionEffect('zoom');
+        setTransitionDuration('0.8s');
+        setOverlayStyle('gradient');
+        setShowClock(true);
+        setClockCardStyle('glass_pro');
+        setShowWeather(true);
+        setWeatherCardStyle('glass_pro');
+        setShowSocial(true);
+        setSocialCardStyle('light');
+        setSocialPosition('bottom-center');
+        break;
+      case 'Fast Food':
+        setThemeColor('#ef4444');
+        setLayout('split');
+        setFooterPosition('bottom');
+        setNewsStyle('news_channel');
+        setFooterFontColor('#111827');
+        setTickerLabel('Combo do Dia');
+        setTickerHeight(96);
+        setTickerSpeed('medium');
+        setTransitionEffect('slide');
+        setTransitionDuration('0.9s');
+        setOverlayStyle('gradient');
+        setShowClock(false);
+        setShowWeather(false);
+        setShowSocial(true);
+        setSocialCardStyle('light');
+        setSocialPosition('bottom-right');
+        setShowProgressBar(true);
+        break;
+      case 'Supermercado':
+        setThemeColor('#16a34a');
+        setLayout('with_footer');
+        setFooterPosition('top');
+        setNewsStyle('classic');
+        setFooterFontColor('#ffffff');
+        setTickerLabel('Ofertas');
+        setTickerHeight(90);
+        setTickerSpeed('medium');
+        setTransitionEffect('fade');
+        setTransitionDuration('1s');
+        setOverlayStyle('gradient');
+        setShowClock(true);
+        setClockCardStyle('dark');
+        setShowWeather(false);
+        setShowSocial(false);
+        setShowProgressBar(true);
+        break;
+      default:
         break;
     }
-    addToast('info', 'Preset Aplicado', `Configurações do modo ${preset} aplicadas.`);
+
+    addToast('info', 'Tema aplicado', `Layout e identidade visual de ${preset} aplicados automaticamente.`);
   };
 
   const handleMouseDown = (e, type) => {
@@ -579,16 +797,25 @@ const PlaylistEditor = () => {
           
           {activeTab === 'themes' && (
             <div style={{ padding: '24px' }}>
-              <h3 style={{ fontSize: '0.85rem', fontWeight: '800', textTransform: 'uppercase', color: '#a1a1aa', letterSpacing: '1px', marginBottom: '20px' }}>Temas Premium</h3>
+              <h3 style={{ fontSize: '0.85rem', fontWeight: '800', textTransform: 'uppercase', color: '#a1a1aa', letterSpacing: '1px', marginBottom: '10px' }}>Modelos Prontos</h3>
+              <p style={{ fontSize: '0.75rem', lineHeight: 1.5, color: '#71717a', marginBottom: '18px' }}>
+                Cada modelo ajusta layout, ticker, widgets, paleta e transições automaticamente.
+              </p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
-                {['Corporate', 'Cyberpunk', 'Luxury Gold', 'Minimalist', 'Neon Vibrant', 'Fast Food', 'Supermercado'].map(t => (
-                  <div key={t} onClick={() => setThemePremium(t)} style={{ 
-                    padding: '16px', borderRadius: '12px', background: themePremium === t ? 'rgba(99,102,241,0.1)' : '#18181b', 
-                    border: themePremium === t ? '1px solid #6366f1' : '1px solid #27272a', cursor: 'pointer',
-                    boxShadow: themePremium === t ? '0 0 20px rgba(99,102,241,0.2)' : 'none', transition: 'all 0.2s'
+                {THEME_MODELOS.map((tema) => (
+                  <div key={tema.id} onClick={() => applyThemeModel(tema.id)} style={{ 
+                    padding: '16px', borderRadius: '14px', background: themePremium === tema.id ? 'rgba(99,102,241,0.12)' : '#18181b', 
+                    border: themePremium === tema.id ? '1px solid #6366f1' : '1px solid #27272a', cursor: 'pointer',
+                    boxShadow: themePremium === tema.id ? '0 0 20px rgba(99,102,241,0.22)' : 'none', transition: 'all 0.2s'
                   }}>
-                    <div style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '4px' }}>{t}</div>
-                    <div style={{ fontSize: '0.7rem', color: '#71717a' }}>Aplica paleta, fontes e animações automáticas.</div>
+                    <div style={{ height: '68px', borderRadius: '12px', background: tema.gradiente, marginBottom: '12px', position: 'relative', overflow: 'hidden' }}>
+                      <div style={{ position: 'absolute', inset: 'auto 12px 10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: '800', color: tema.chip }}>{tema.titulo}</span>
+                        <span style={{ fontSize: '0.62rem', fontWeight: '700', color: '#fff', background: 'rgba(15,23,42,0.4)', padding: '4px 8px', borderRadius: '999px' }}>Auto</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '4px' }}>{tema.id}</div>
+                    <div style={{ fontSize: '0.7rem', color: '#71717a', lineHeight: 1.5 }}>{tema.descricao}</div>
                   </div>
                 ))}
               </div>
@@ -598,10 +825,10 @@ const PlaylistEditor = () => {
           {activeTab === 'medias' && (
             <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%' }}>
               <h3 style={{ fontSize: '0.85rem', fontWeight: '800', textTransform: 'uppercase', color: '#a1a1aa', letterSpacing: '1px', marginBottom: '20px' }}>Biblioteca Visual</h3>
-              <input type="text" placeholder="Buscar mídias..." style={{ width: '100%', padding: '10px 14px', background: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#fff', fontSize: '0.85rem', marginBottom: '16px' }} />
+              <input type="text" value={mediaSearch} onChange={(e) => setMediaSearch(e.target.value)} placeholder="Buscar mídias..." style={{ width: '100%', padding: '10px 14px', background: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#fff', fontSize: '0.85rem', marginBottom: '16px' }} />
               
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', overflowY: 'auto' }}>
-                {medias.map(m => (
+                {mediasFiltradas.map(m => (
                   <div key={m.id} onClick={() => addMedia(m)} style={{ 
                     position: 'relative', borderRadius: '12px', overflow: 'hidden', cursor: 'grab',
                     border: selectedItems.some(i => i.media_id === m.id) ? '2px solid #6366f1' : '1px solid #27272a',
@@ -618,6 +845,11 @@ const PlaylistEditor = () => {
                   </div>
                 ))}
               </div>
+              {mediasFiltradas.length === 0 && (
+                <div style={{ marginTop: '14px', padding: '18px', borderRadius: '12px', border: '1px dashed #27272a', color: '#71717a', textAlign: 'center', fontSize: '0.75rem' }}>
+                  Nenhuma mídia encontrada com esse filtro.
+                </div>
+              )}
             </div>
           )}
 
@@ -947,7 +1179,7 @@ const PlaylistEditor = () => {
                   <div 
                     onMouseDown={(e) => handleMouseDown(e, 'clock')}
                     style={{ 
-                      ...getWidgetBaseStyle(clockCardStyle, cardTransparency),
+                      ...getWidgetBaseStyle(clockCardStyle, cardTransparency, themeColor, 'clock'),
                       position: 'absolute', 
                       left: useCustomPos ? `${clockX}px` : (widgetPosition.split('-')[1] === 'right' ? 'auto' : widgetPosition.includes('center') ? '50%' : '40px'),
                       top: useCustomPos ? `${clockY}px` : (widgetPosition.split('-')[0] === 'bottom' ? 'auto' : '40px'),
@@ -968,7 +1200,7 @@ const PlaylistEditor = () => {
                   <div 
                     onMouseDown={(e) => handleMouseDown(e, 'social')}
                     style={{ 
-                      ...getWidgetBaseStyle(socialCardStyle, cardTransparency),
+                      ...getWidgetBaseStyle(socialCardStyle, cardTransparency, themeColor, 'social'),
                       position: 'absolute', 
                       left: useCustomPos ? `${socialX}px` : (socialPosition.split('-')[1] === 'right' ? 'auto' : socialPosition.includes('center') ? '50%' : '40px'),
                       top: useCustomPos ? `${socialY}px` : (socialPosition.split('-')[0] === 'bottom' ? 'auto' : '40px'),
@@ -993,7 +1225,7 @@ const PlaylistEditor = () => {
                     <div 
                     onMouseDown={(e) => handleMouseDown(e, 'weather')}
                     style={{ 
-                      ...getWidgetBaseStyle(weatherCardStyle, cardTransparency),
+                      ...getWidgetBaseStyle(weatherCardStyle, cardTransparency, themeColor, 'weather'),
                       position: 'absolute', 
                       left: useCustomPos ? `${weatherX}px` : '40px',
                       top: useCustomPos ? `${weatherY}px` : '40px',
@@ -1154,13 +1386,18 @@ const PlaylistEditor = () => {
               onMouseEnter={e => e.currentTarget.style.background = '#6366f1'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'} />
 
             {/* Header */}
-            <div style={{ padding: '4px 16px', background: '#18181b', borderBottom: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, minHeight: '36px' }}>
+            <div style={{ padding: '8px 16px', background: '#18181b', borderBottom: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, minHeight: '54px', gap: '12px', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#71717a', textTransform: 'uppercase', letterSpacing: '1px' }}>Timeline</span>
                 <span style={{ fontSize: '0.6rem', color: '#3f3f46', background: '#1a1a1f', padding: '2px 8px', borderRadius: '8px' }}>{selectedItems.length} clips</span>
+                <span style={{ fontSize: '0.6rem', color: '#a1a1aa', background: '#111827', padding: '2px 8px', borderRadius: '8px' }}>{totalImagens} imagens</span>
+                <span style={{ fontSize: '0.6rem', color: '#a1a1aa', background: '#1e1b4b', padding: '2px 8px', borderRadius: '8px' }}>{totalVideos} vídeos</span>
                 {clipboard && <span style={{ fontSize: '0.55rem', color: '#22c55e', background: 'rgba(34,197,94,0.1)', padding: '2px 8px', borderRadius: '8px' }}>📋 Copiado</span>}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <div style={{ padding: '3px 10px', background: '#1a1a1f', borderRadius: '8px', border: '1px solid #27272a' }}>
+                  <span style={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: '700' }}>Maior clip: {formatarTempo(maiorClip)}</span>
+                </div>
                 {/* Batch duration */}
                 <select onChange={e => { if(e.target.value) { setAllDurations(parseInt(e.target.value)); e.target.value = ''; }}} style={{ background: '#1a1a1f', border: '1px solid #27272a', borderRadius: '6px', color: '#a1a1aa', fontSize: '0.6rem', padding: '3px 6px', cursor: 'pointer', outline: 'none' }}>
                   <option value="">⏱ Definir todos</option>
@@ -1180,7 +1417,7 @@ const PlaylistEditor = () => {
                 {/* Total */}
                 <div style={{ padding: '3px 10px', background: '#1a1a1f', borderRadius: '8px', border: '1px solid #27272a' }}>
                   <span style={{ fontSize: '0.65rem', color: '#818cf8', fontWeight: '800', fontFamily: 'monospace' }}>
-                    {totalDuration >= 3600 ? `${Math.floor(totalDuration/3600)}h${Math.floor((totalDuration%3600)/60).toString().padStart(2,'0')}m` : totalDuration >= 60 ? `${Math.floor(totalDuration / 60)}:${(totalDuration % 60).toString().padStart(2, '0')}` : `0:${totalDuration.toString().padStart(2, '0')}`}
+                    {formatarTempo(totalDuration)}
                   </span>
                 </div>
               </div>
@@ -1216,11 +1453,21 @@ const PlaylistEditor = () => {
 
               {/* Clips Track */}
               <div style={{ display: 'flex', gap: '2px', padding: '8px 16px', minHeight: `${timelineHeight - 76}px`, alignItems: 'stretch' }}>
+                {selectedItems.length === 0 && (
+                  <div style={{ minWidth: '100%', minHeight: `${timelineHeight - 96}px`, border: '1px dashed #27272a', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '10px', color: '#52525b', background: 'linear-gradient(180deg, rgba(24,24,27,0.5), rgba(9,9,11,0.9))' }}>
+                    <span style={{ fontSize: '1.6rem' }}>🎞️</span>
+                    <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#a1a1aa' }}>Adicione mídias para montar a sequência</div>
+                    <div style={{ fontSize: '0.72rem', maxWidth: '320px', textAlign: 'center', lineHeight: 1.5 }}>
+                      Clique em uma mídia na biblioteca ou arraste os clips para reorganizar a ordem de exibição.
+                    </div>
+                  </div>
+                )}
                 {selectedItems.map((item, idx) => {
                   const isImg = item.media?.type === 'image';
                   const dur = item.duration || 10;
                   const w = Math.max(60, dur * 8 * timelineZoom);
                   const sel = selectedElement === `media-${idx}`;
+                  const inicio = selectedItems.slice(0, idx).reduce((acc, clip) => acc + (clip.duration || 10), 0);
                   return (
                     <div key={`tl-${item.media_id}-${idx}`}
                       draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', idx)}
@@ -1267,6 +1514,7 @@ const PlaylistEditor = () => {
                       {/* Name bar */}
                       <div style={{ padding: '3px 6px', background: '#111113', borderRadius: '0 0 6px 6px', borderTop: '1px solid #1e1e22' }}>
                         <div style={{ fontSize: '0.58rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#a1a1aa' }}>{item.media?.name}</div>
+                        <div style={{ fontSize: '0.52rem', color: '#52525b', marginTop: '2px', fontFamily: 'monospace' }}>{formatarTempo(inicio)} - {formatarTempo(inicio + dur)}</div>
                       </div>
                       {/* RIGHT resize handle */}
                       <div onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); setResizingMedia({ idx, startX: e.clientX, startDur: dur }); }}

@@ -78,11 +78,12 @@ async function create(req, res) {
     ticker_speed, ticker_direction, ticker_height, ticker_blur, ticker_font_weight,
     show_social, social_handle, social_platform, card_transparency, ticker_label,
     social_qrcode, widget_position, social_position, show_progress_bar, social_card_style,
+    clock_card_style, weather_card_style, weather_city, transition_duration,
     logo_url, logo_position, logo_size_px, logo_opacity, news_style, rotation,
     clock_size, weather_size, social_size, clock_interval, weather_interval, social_interval,
     clock_duration, weather_duration, social_duration, ticker_interval, ticker_duration,
     clock_effect, weather_effect, social_effect, clock_style,
-    clock_x, clock_y, weather_x, weather_y, social_x, social_y, use_custom_pos
+    clock_x, clock_y, weather_x, weather_y, social_x, social_y, ticker_x, ticker_y, use_custom_pos
   } = req.body;
 
   if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
@@ -98,13 +99,14 @@ async function create(req, res) {
         ticker_speed, ticker_direction, ticker_height, ticker_blur, ticker_font_weight,
         show_social, social_handle, social_platform, card_transparency, ticker_label,
         social_qrcode, widget_position, social_position, show_progress_bar, social_card_style,
+        clock_card_style, weather_card_style, weather_city, transition_duration,
         logo_url, logo_position, logo_size_px, logo_opacity, news_style, rotation,
         clock_size, weather_size, social_size, clock_interval, weather_interval, social_interval,
         clock_duration, weather_duration, social_duration, ticker_interval, ticker_duration,
         clock_effect, weather_effect, social_effect, clock_style,
-        clock_x, clock_y, weather_x, weather_y, social_x, social_y, use_custom_pos
+        clock_x, clock_y, weather_x, weather_y, social_x, social_y, ticker_x, ticker_y, use_custom_pos
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,$56,$57,$58,$59,$60,$61) RETURNING *`,
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,$56,$57,$58,$59,$60,$61,$62,$63,$64,$65,$66,$67) RETURNING *`,
       [
         effectiveClientId, group_id || null,
         name, description || null, layout || 'fullscreen',
@@ -120,6 +122,8 @@ async function create(req, res) {
         social_qrcode || false, widget_position || 'top-right',
         social_position || 'bottom-right', show_progress_bar !== false,
         social_card_style || 'style1',
+        clock_card_style || 'dark', weather_card_style || 'dark',
+        weather_city || 'Cuiabá - MT', transition_duration || '1s',
         logo_url || null, logo_position || 'bottom-right',
         logo_size_px || 80, logo_opacity ?? 0.85, news_style || 'ticker-classic', rotation || 0,
         clock_size || 100, weather_size || 100, social_size || 100,
@@ -128,7 +132,8 @@ async function create(req, res) {
         ticker_interval || 0, ticker_duration || 0,
         clock_effect || 'fade', weather_effect || 'fade', social_effect || 'fade',
         clock_style || 'digital_transparent',
-        clock_x || 0, clock_y || 0, weather_x || 0, weather_y || 0, social_x || 0, social_y || 0, use_custom_pos || false
+        clock_x || 0, clock_y || 0, weather_x || 0, weather_y || 0, social_x || 0, social_y || 0,
+        ticker_x || 0, ticker_y || 640, use_custom_pos || false
       ]
     );
     const playlist = rows[0];
@@ -178,11 +183,12 @@ async function update(req, res) {
     ticker_speed, ticker_direction, ticker_height, ticker_blur, ticker_font_weight,
     show_social, social_handle, social_platform, card_transparency, ticker_label,
     social_qrcode, widget_position, social_position, show_progress_bar, social_card_style,
+    clock_card_style, weather_card_style, weather_city, transition_duration,
     logo_url, logo_position, logo_size_px, logo_opacity, news_style, rotation,
     clock_size, weather_size, social_size, clock_interval, weather_interval, social_interval,
     clock_duration, weather_duration, social_duration, ticker_interval, ticker_duration,
     clock_effect, weather_effect, social_effect, clock_style,
-    clock_x, clock_y, weather_x, weather_y, social_x, social_y, use_custom_pos
+    clock_x, clock_y, weather_x, weather_y, social_x, social_y, ticker_x, ticker_y, use_custom_pos
   } = req.body;
 
   try {
@@ -198,12 +204,12 @@ async function update(req, res) {
       show_social=$24, social_handle=$25, social_platform=$26,
       card_transparency=$27, ticker_label=$28, social_qrcode=$29,
       widget_position=$30, social_position=$31, show_progress_bar=$32,
-      social_card_style=$33, logo_url=$34, logo_position=$35,
-      logo_size_px=$36, logo_opacity=$37, news_style=$38, rotation=$39,
-      clock_size=$40, weather_size=$41, social_size=$42, clock_interval=$43, weather_interval=$44, social_interval=$45,
-      clock_duration=$46, weather_duration=$47, social_duration=$48, ticker_interval=$49, ticker_duration=$50,
-      clock_effect=$51, weather_effect=$52, social_effect=$53, clock_style=$54, 
-      clock_x=$55, clock_y=$56, weather_x=$57, weather_y=$58, social_x=$59, social_y=$60, use_custom_pos=$61,
+      social_card_style=$33, clock_card_style=$34, weather_card_style=$35, weather_city=$36, transition_duration=$37,
+      logo_url=$38, logo_position=$39, logo_size_px=$40, logo_opacity=$41, news_style=$42, rotation=$43,
+      clock_size=$44, weather_size=$45, social_size=$46, clock_interval=$47, weather_interval=$48, social_interval=$49,
+      clock_duration=$50, weather_duration=$51, social_duration=$52, ticker_interval=$53, ticker_duration=$54,
+      clock_effect=$55, weather_effect=$56, social_effect=$57, clock_style=$58, 
+      clock_x=$59, clock_y=$60, weather_x=$61, weather_y=$62, social_x=$63, social_y=$64, ticker_x=$65, ticker_y=$66, use_custom_pos=$67,
       updated_at=NOW()`;
 
     let params = [
@@ -220,7 +226,8 @@ async function update(req, res) {
       card_transparency ?? 0.4, ticker_label || 'NOTÍCIAS',
       social_qrcode || false, widget_position || 'top-right',
       social_position || 'bottom-right', show_progress_bar !== false,
-      social_card_style || 'style1',
+      social_card_style || 'style1', clock_card_style || 'dark', weather_card_style || 'dark',
+      weather_city || 'Cuiabá - MT', transition_duration || '1s',
       logo_url || null, logo_position || 'bottom-right',
       logo_size_px || 80, logo_opacity ?? 0.85, news_style || 'ticker-classic', rotation || 0,
       clock_size || 100, weather_size || 100, social_size || 100,
@@ -229,10 +236,11 @@ async function update(req, res) {
       ticker_interval || 0, ticker_duration || 0,
       clock_effect || 'fade', weather_effect || 'fade', social_effect || 'fade',
       clock_style || 'digital_transparent',
-      clock_x || 0, clock_y || 0, weather_x || 0, weather_y || 0, social_x || 0, social_y || 0, use_custom_pos || false
+      clock_x || 0, clock_y || 0, weather_x || 0, weather_y || 0, social_x || 0, social_y || 0,
+      ticker_x || 0, ticker_y || 640, use_custom_pos || false
     ];
 
-    let idx = 62;
+    let idx = 68;
 
     if (effectiveClientId) {
       query += `, client_id=$${idx++}`;
