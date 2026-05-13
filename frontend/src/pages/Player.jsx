@@ -524,27 +524,6 @@ const Player = () => {
     }
   };
 
-  const normalizeMediaType = (media) => {
-    const typeRaw = `${media?.type || media?.media_type || media?.mime_type || ''}`.toLowerCase();
-    const source = `${media?.url || media?.filename || ''}`.toLowerCase();
-
-    if (typeRaw === 'widget') return 'widget';
-    if (typeRaw.startsWith('image/') || ['image', 'photo', 'imagem'].includes(typeRaw)) return 'image';
-    if (typeRaw.startsWith('video/') || typeRaw === 'video') return 'video';
-
-    if (/\.(jpe?g|png|gif|webp|bmp|avif)(\?|#|$)/.test(source)) return 'image';
-    if (/\.(mp4|webm|ogg|mov|m4v|avi)(\?|#|$)/.test(source)) return 'video';
-
-    return 'video';
-  };
-
-  const resolveMediaSource = (media) => {
-    if (!media) return '';
-    const raw = media.url || media.filename || '';
-    if (!raw) return '';
-    if (/^https?:\/\//i.test(raw) || raw.startsWith('/')) return raw;
-    return `/uploads/${raw.replace(/^\/+/, '')}`;
-  };
 
   const isImageMedia = (media) => normalizeMediaType(media) === 'image';
 
