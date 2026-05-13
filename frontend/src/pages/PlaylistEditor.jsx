@@ -995,7 +995,7 @@ const PlaylistEditor = () => {
             <span style={{ fontSize: '1.2rem' }}>🎬</span>
           </div>
           <div>
-            <h1 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0, letterSpacing: '-0.5px' }}>{playlist.name}</h1>
+            <h1 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0, letterSpacing: '-0.5px' }}>{name || 'Novo Plano de Exibição'}</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e' }}></span>
               <span style={{ fontSize: '0.65rem', color: '#71717a', fontWeight: '600', textTransform: 'uppercase' }}>Editor Pro • Nuvem Sincronizada</span>
