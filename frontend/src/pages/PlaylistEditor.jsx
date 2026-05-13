@@ -990,18 +990,25 @@ const PlaylistEditor = () => {
       {/* HEADER TIPO FIGMA */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '60px', padding: '0 24px', background: '#18181b', borderBottom: '1px solid #27272a', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <Link to="/playlists" style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: '600' }}>
-            <span style={{ fontSize: '1.2rem' }}>←</span>
-          </Link>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-             <span style={{ background: 'var(--primary)', color: '#fff', padding: '4px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: '800', letterSpacing: '1px' }}>PRO EDITOR</span>
-             <input value={name} onChange={e => setName(e.target.value)} placeholder="Nome da Cena / Playlist" style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '1.1rem', fontWeight: '700', outline: 'none', width: '300px' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <div style={{ width: '40px', height: '40px', background: 'linear-gradient(135deg, #6366f1, #a855f7)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(99,102,241,0.3)' }}>
+            <span style={{ fontSize: '1.2rem' }}>🎬</span>
+          </div>
+          <div>
+            <h1 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0, letterSpacing: '-0.5px' }}>{playlist.name}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e' }}></span>
+              <span style={{ fontSize: '0.65rem', color: '#71717a', fontWeight: '600', textTransform: 'uppercase' }}>Editor Pro • Nuvem Sincronizada</span>
+            </div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.75rem', color: '#a1a1aa' }}>Salvamento Automático Ativado</span>
-          <button className="btn btn-outline" style={{ background: '#27272a', borderColor: '#3f3f46', color: '#fff' }} onClick={() => navigate('/playlists')}>Descartar</button>
-          <button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ background: 'linear-gradient(to right, #6366f1, #8b5cf6)', border: 'none', boxShadow: '0 0 15px rgba(99,102,241,0.4)', padding: '8px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: '#18181b', borderRadius: '20px', border: '1px solid #27272a' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: saving ? '#eab308' : '#22c55e', animation: saving ? 'pulse 1.5s infinite' : 'none' }}></div>
+            <span style={{ fontSize: '0.7rem', color: '#a1a1aa', fontWeight: '600' }}>{saving ? 'Sincronizando...' : 'Alterações Salvas'}</span>
+          </div>
+          <button className="btn btn-outline" style={{ background: '#27272a', borderColor: '#3f3f46', color: '#fff', borderRadius: '10px' }} onClick={() => navigate('/playlists')}>Descartar</button>
+          <button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ background: 'linear-gradient(to right, #6366f1, #8b5cf6)', border: 'none', boxShadow: '0 8px 20px rgba(99,102,241,0.35)', padding: '10px 24px', borderRadius: '10px', fontWeight: '700' }}>
             {saving ? 'Publicando...' : 'Publicar na TV 🚀'}
           </button>
         </div>
@@ -1010,20 +1017,23 @@ const PlaylistEditor = () => {
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         
         {/* LEFT SIDEBAR - TOOLS */}
-        <div style={{ width: '80px', background: '#18181b', borderRight: '1px solid #27272a', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0', gap: '16px', zIndex: 10 }}>
+        <div style={{ width: '80px', background: '#09090b', borderRight: '1px solid #1a1a1f', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 0', gap: '8px', zIndex: 10 }}>
           {[
             { id: 'medias', icon: '🖼️', label: 'Mídias' },
-            { id: 'themes', icon: '✨', label: 'Temas' },
+            { id: 'themes', icon: '✨', label: 'Estilos' },
             { id: 'widgets', icon: '🧩', label: 'Widgets' },
-            { id: 'overlays', icon: '🌘', label: 'Efeitos' },
+            { id: 'overlays', icon: '🎬', label: 'Efeitos' },
           ].map(tab => (
             <button key={tab.id} onClick={() => { setActiveTab(tab.id); setSelectedElement(null); }} style={{ 
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '100%', padding: '12px 0',
-              background: activeTab === tab.id ? '#27272a' : 'transparent', border: 'none', color: activeTab === tab.id ? '#fff' : '#a1a1aa',
-              cursor: 'pointer', transition: 'all 0.2s', borderLeft: activeTab === tab.id ? '3px solid #6366f1' : '3px solid transparent'
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '64px', height: '64px', borderRadius: '16px',
+              justifyContent: 'center',
+              background: activeTab === tab.id ? 'rgba(99,102,241,0.1)' : 'transparent', border: 'none', 
+              color: activeTab === tab.id ? '#818cf8' : '#52525b',
+              cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              borderBottom: activeTab === tab.id ? '2px solid #6366f1' : '2px solid transparent'
             }}>
-              <span style={{ fontSize: '1.4rem', fontFamily: 'Outfit, sans-serif' }}>{tab.icon}</span>
-              <span style={{ fontSize: '0.65rem', fontWeight: '600', textTransform: 'uppercase' }}>{tab.label}</span>
+              <span style={{ fontSize: '1.4rem', filter: activeTab === tab.id ? 'grayscale(0)' : 'grayscale(1) opacity(0.5)' }}>{tab.icon}</span>
+              <span style={{ fontSize: '0.6rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{tab.label}</span>
             </button>
           ))}
         </div>
@@ -1432,10 +1442,27 @@ const PlaylistEditor = () => {
 
           {activeTab === 'overlays' && (
             <div style={{ padding: '24px' }}>
-              <h3 style={{ fontSize: '0.85rem', fontWeight: '800', textTransform: 'uppercase', color: '#a1a1aa', letterSpacing: '1px', marginBottom: '20px' }}>Efeitos Visuais</h3>
+              <h3 style={{ fontSize: '0.85rem', fontWeight: '800', textTransform: 'uppercase', color: '#a1a1aa', letterSpacing: '1px', marginBottom: '20px' }}>Efeitos de Transição</h3>
               
               <div style={{ marginBottom: '24px' }}>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#fff', marginBottom: '12px', display: 'block' }}>Estilo de Overlay Global</label>
+                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#fff', marginBottom: '12px', display: 'block' }}>Transição Global</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <select value={transitionEffect} onChange={e => setTransitionEffect(e.target.value)} style={{ width: '100%', padding: '10px', background: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#fff' }}>
+                    <option value="fade">Fade (Crossfade Suave)</option>
+                    <option value="slide-h">Slide Horizontal</option>
+                    <option value="slide-v">Slide Vertical</option>
+                    <option value="zoom">Zoom Suave</option>
+                    <option value="dissolve">Dissolve (Cinematográfico)</option>
+                    <option value="cut">Corte Rápido</option>
+                  </select>
+                  <p style={{ fontSize: '0.62rem', color: '#71717a', lineHeight: 1.4 }}>
+                    O sistema Dual-Layer garante trocas sem piscadas pretas entre as mídias.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#fff', marginBottom: '12px', display: 'block' }}>Overlay de Estilo</label>
                 <select value={overlayStyle} onChange={e => setOverlayStyle(e.target.value)} style={{ width: '100%', padding: '10px', background: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#fff' }}>
                   <option value="none">Nenhum</option>
                   <option value="vignette">Vinheta Escura (Bordas)</option>
@@ -1443,25 +1470,6 @@ const PlaylistEditor = () => {
                   <option value="noise">Textura de Ruído (Film)</option>
                   <option value="glass">Glassmorphism Blur</option>
                 </select>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#fff', marginBottom: '12px', display: 'block' }}>Transições Cinematográficas</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '8px' }}>
-                  <select value={transitionEffect} onChange={e => setTransitionEffect(e.target.value)} style={{ width: '100%', padding: '10px', background: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#fff' }}>
-                    <option value="fade">Fade Suave</option>
-                    <option value="slide">Slide Inteligente</option>
-                    <option value="zoom">Zoom Parallax</option>
-                    <option value="cinematic">Cinematic Blur Cross</option>
-                  </select>
-                  <select value={transitionDuration} onChange={e => setTransitionDuration(e.target.value)} style={{ width: '100%', padding: '10px', background: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#fff' }}>
-                    <option value="0.2s">Rápido 0.2s</option>
-                    <option value="0.5s">Normal 0.5s</option>
-                    <option value="1s">Suave 1.0s</option>
-                    <option value="1.5s">Lento 1.5s</option>
-                    <option value="2.5s">Cinema 2.5s</option>
-                  </select>
-                </div>
               </div>
             </div>
           )}
@@ -1826,11 +1834,11 @@ const PlaylistEditor = () => {
               {/* Clips Track */}
               <div style={{ display: 'flex', gap: '6px', padding: '10px 16px 12px', minHeight: `${timelineTrackHeight + 28}px`, alignItems: 'center' }}>
                 {selectedItems.length === 0 && (
-                  <div style={{ minWidth: '100%', minHeight: `${timelineTrackHeight + 8}px`, border: '1px dashed #27272a', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '10px', color: '#52525b', background: 'linear-gradient(180deg, rgba(24,24,27,0.5), rgba(9,9,11,0.9))' }}>
-                    <span style={{ fontSize: '1.6rem' }}>🎞️</span>
-                    <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#a1a1aa' }}>Adicione mídias para montar a sequência</div>
-                    <div style={{ fontSize: '0.72rem', maxWidth: '320px', textAlign: 'center', lineHeight: 1.5 }}>
-                      Clique em uma mídia na biblioteca ou arraste os clips para reorganizar a ordem de exibição.
+                  <div style={{ minWidth: '100%', minHeight: `${timelineTrackHeight + 20}px`, border: '2px dashed #27272a', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px', color: '#52525b', background: 'rgba(24,24,27,0.4)', backdropFilter: 'blur(10px)' }}>
+                    <div style={{ width: '60px', height: '60px', background: '#1a1a1f', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', marginBottom: '8px', border: '1px solid #27272a' }}>🎞️</div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: '800', color: '#e4e4e7' }}>Sua Timeline está vazia</div>
+                    <div style={{ fontSize: '0.75rem', maxWidth: '380px', textAlign: 'center', lineHeight: 1.6, color: '#71717a' }}>
+                      Arraste mídias da biblioteca para cá ou clique em "Adicionar" para começar a montar sua sequência de exibição profissional.
                     </div>
                   </div>
                 )}
@@ -1841,34 +1849,58 @@ const PlaylistEditor = () => {
                   const sel = selectedElement === `media-${idx}`;
                   const inicio = selectedItems.slice(0, idx).reduce((acc, clip) => acc + (clip.duration || 10), 0);
                   return (
-                    <div key={`tl-${item.media_id}-${idx}`}
-                      draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', idx)}
+                    <React.Fragment key={`tl-frag-${item.media_id}-${idx}`}>
+                      {idx > 0 && (
+                        <div style={{ 
+                          width: '24px', height: '24px', borderRadius: '6px', background: '#27272a', 
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '0.7rem', color: '#71717a', border: '1px solid #3f3f46',
+                          flexShrink: 0, margin: '0 -15px', zIndex: 5, boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                          cursor: 'pointer'
+                        }}
+                        title={`Transição: ${item.transition || 'Padrão'}`}
+                        onClick={(e) => { e.stopPropagation(); setSelectedElement(`media-${idx}`); setActiveTab('overlays'); }}
+                        >
+                          {(() => {
+                            const t = item.transition || 'fade';
+                            if (t === 'fade') return '✦';
+                            if (t === 'slide-h') return '↔';
+                            if (t === 'slide-v') return '↕';
+                            if (t === 'zoom') return '⊕';
+                            if (t === 'dissolve') return '◎';
+                            return '—';
+                          })()}
+                        </div>
+                      )}
+                      <div key={`tl-${item.media_id}-${idx}`}
+                        draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', idx)}
                       onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.boxShadow = 'inset 0 0 0 2px #6366f1'; }}
                       onDragLeave={(e) => e.currentTarget.style.boxShadow = sel ? '0 0 0 2px #6366f1' : 'none'}
                       onDrop={(e) => { e.preventDefault(); e.currentTarget.style.boxShadow = 'none'; const from = parseInt(e.dataTransfer.getData('text/plain')); if (!isNaN(from)) { const n = [...selectedItems]; const [m] = n.splice(from, 1); n.splice(idx, 0, m); setSelectedItems(n); } }}
                       onClick={(e) => { e.stopPropagation(); setSelectedElement(`media-${idx}`); setContextMenu(null); }}
                       onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedElement(`media-${idx}`); setContextMenu({ x: e.clientX, y: e.clientY, idx }); }}
                       style={{
-                        width: `${w}px`, minWidth: '60px', flexShrink: 0,
-                        background: sel ? '#1e1b4b' : '#161618',
-                        borderRadius: '12px', overflow: 'hidden', position: 'relative',
-                        boxShadow: sel ? '0 0 0 2px #6366f1' : 'none',
+                        width: `${w}px`, minWidth: '80px', flexShrink: 0,
+                        background: sel ? 'linear-gradient(180deg, #1e1b4b, #111113)' : '#161618',
+                        borderRadius: '16px', overflow: 'hidden', position: 'relative',
+                        boxShadow: sel ? '0 0 0 2px #6366f1, 0 12px 24px rgba(0,0,0,0.5)' : '0 4px 12px rgba(0,0,0,0.2)',
                         cursor: resizingMedia ? 'ew-resize' : 'grab',
                         display: 'flex', flexDirection: 'column',
-                        transition: 'box-shadow 0.1s, transform 0.15s ease',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                         alignSelf: 'center',
                         height: `${timelineTrackHeight}px`,
-                        boxSizing: 'border-box'
+                        boxSizing: 'border-box',
+                        border: sel ? 'none' : '1px solid #27272a'
                       }}>
                       {/* Thumbnail */}
-                      <div style={{ flex: `0 0 ${timelineThumbHeight}px`, position: 'relative', overflow: 'hidden', borderRadius: '12px 12px 0 0' }}>
+                      <div style={{ flex: `0 0 ${timelineThumbHeight}px`, position: 'relative', overflow: 'hidden', borderRadius: '16px 16px 0 0' }}>
                         {isImg ? (
-                          <img src={item.media?.url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
+                          <img src={item.media?.url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }} />
                         ) : (
-                          <video src={item.media?.url + "#t=0.1"} preload="metadata" muted style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
+                          <video src={item.media?.url + "#t=0.1"} preload="metadata" muted style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }} />
                         )}
-                        {/* Badge */}
-                        <div style={{ position: 'absolute', top: '4px', left: '4px', padding: '2px 6px', borderRadius: '999px', fontSize: '0.48rem', fontWeight: '800', background: isImg ? '#16a34a' : '#6366f1', color: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>{isImg ? 'IMG' : 'VID'}</div>
+                        {/* Type Indicator */}
+                        <div style={{ position: 'absolute', top: '8px', left: '8px', padding: '3px 8px', borderRadius: '6px', fontSize: '0.5rem', fontWeight: '900', background: isImg ? 'rgba(16,185,129,0.9)' : 'rgba(99,102,241,0.9)', color: '#fff', backdropFilter: 'blur(4px)', textTransform: 'uppercase' }}>{isImg ? 'Imagem' : 'Vídeo'}</div>
                         {/* Duration badge */}
                         <div
                           onClick={(e) => { e.stopPropagation(); setTimeInput({ idx, value: dur.toString() }); }}
@@ -1897,6 +1929,7 @@ const PlaylistEditor = () => {
                         onMouseEnter={e => e.currentTarget.style.background = '#6366f1'}
                         onMouseLeave={e => { if (!resizingMedia) e.currentTarget.style.background = sel ? '#6366f1' : 'transparent'; }} />
                     </div>
+                  </React.Fragment>
                   );
                 })}
                 {/* Add btn */}

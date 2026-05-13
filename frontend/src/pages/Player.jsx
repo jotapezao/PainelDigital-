@@ -15,14 +15,20 @@ const Player = () => {
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const isMobile = windowWidth < 768;
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [activeLayer, setActiveLayer] = useState('A'); // 'A' ou 'B'
+  const [layerA, setLayerA] = useState({ item: null, visible: true, effect: 'none' });
+  const [layerB, setLayerB] = useState({ item: null, visible: false, effect: 'none' });
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [mediaNonce, setMediaNonce] = useState(0);
   const [isStarted, setIsStarted] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
   
-  const videoRef = useRef(null);
+  const videoRefA = useRef(null);
+  const videoRefB = useRef(null);
   const containerRef = useRef(null);
   const currentMediaRef = useRef(null);
   const timerRef = useRef(null);
+  const transitionTimerRef = useRef(null);
   const logoutTimerRef = useRef(null);
   const clicksRef = useRef(0);
   const clickTimerRef = useRef(null);
@@ -43,11 +49,36 @@ const Player = () => {
   const mediaCacheRef = useRef(new Map());
   const MAX_CACHED_VIDEO_BYTES = 45 * 1024 * 1024;
 
-  useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const getMediaKey = (media) => media?.id || media?.filename || media?.url || media?.name || '';
+  const resolveMediaSource = (media) => {
+    if (!media) return '';
+    const raw = media.url || media.filename || '';
+    if (!raw) return '';
+    if (/^https?:\/\//i.test(raw) || raw.startsWith('/')) return raw;
+    return `/uploads/${raw.replace(/^\/+/, '')}`;
+  };
+
+  const normalizeMediaType = (media) => {
+    const typeRaw = `${media?.type || media?.media_type || media?.mime_type || ''}`.toLowerCase();
+    const source = `${media?.url || media?.filename || ''}`.toLowerCase();
+
+    if (typeRaw === 'widget') return 'widget';
+    if (typeRaw.startsWith('image/') || ['image', 'photo', 'imagem'].includes(typeRaw)) return 'image';
+    if (typeRaw.startsWith('video/') || ['video', 'movie', 'vídeo'].includes(typeRaw)) return 'video';
+
+    if (/\.(jpe?g|png|gif|webp|bmp|avif)(\?|#|$)/.test(source)) return 'image';
+    if (/\.(mp4|webm|ogg|mov|m4v|avi)(\?|#|$)/.test(source)) return 'video';
+
+    return 'video';
+  };
+
+  const getPlayableMediaSource = (media) => {
+    if (!media) return '';
+    const key = getMediaKey(media);
+    const entry = mediaCacheRef.current.get(key);
+    if (normalizeMediaType(media) === 'video' && entry?.objectUrl) return entry.objectUrl;
+    return resolveMediaSource(media);
+  };
 
   useEffect(() => {
     fetchPlaylist();
@@ -97,38 +128,53 @@ const Player = () => {
     };
   }, [previewId, isStarted, user]);
 
+  // Inicialização da Playlist e Primeira Camada
   useEffect(() => {
     if (!playlist || playlist.items.length === 0) return;
+    
+    const firstItem = playlist.items[currentIndex];
+    setLayerA({ item: firstItem, visible: true, effect: 'none' });
+    currentMediaRef.current = (firstItem.media || firstItem).name || 'Mídia Inicial';
+  }, [playlist?.id]);
 
-    const currentItem = playlist.items[currentIndex];
+  useEffect(() => {
+    if (!playlist || playlist.items.length === 0) return;
+    if (isTransitioning) return;
+
+    const currentItem = activeLayer === 'A' ? layerA.item : layerB.item;
+    if (!currentItem) return;
+
     const itemMedia = currentItem.media || currentItem;
     const type = normalizeMediaType(itemMedia);
     
     currentMediaRef.current = itemMedia.name || currentItem.name || 'Mídia Desconhecida';
     
-    // Looping and duration logic
-    if (type === 'image' || (type === 'video' && currentItem.duration_seconds > 0)) {
+    // Configura o timer para a próxima mídia
+    // Para vídeos: se duration_seconds for 0 ou nulo, espera o evento onEnded.
+    // Se for > 0, o timer corta o vídeo no tempo definido.
+    const isVideo = type === 'video';
+    const forceDuration = currentItem.duration_seconds > 0;
+
+    if (!isVideo || forceDuration) {
       const duration = (currentItem.duration_seconds || 10) * 1000;
+      if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(nextMedia, duration);
     }
     
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [currentIndex, mediaNonce, playlist]);
+  }, [currentIndex, mediaNonce, playlist, activeLayer, isTransitioning]);
 
   useEffect(() => {
-    setMediaLoadError(null);
-  }, [currentIndex, mediaNonce, playlist?.id]);
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
-    if (!playlist || !playlist.items?.length) return;
-
+    if (!playlist) return;
     let cancelled = false;
-
-    const getMediaKey = (media) => media?.id || media?.filename || media?.url || media?.name || '';
-    const getOriginalUrl = (media) => resolveMediaSource(media);
-    const getCacheEntry = (media) => mediaCacheRef.current.get(getMediaKey(media));
 
     const ensureVideoCached = async (media, readyForPlayback = true) => {
       if (!media) return null;
@@ -206,6 +252,7 @@ const Player = () => {
 
     const warmup = async () => {
       const total = playlist.items.length;
+      if (total === 0) return;
       const nextIndexes = [currentIndex, currentIndex + 1, currentIndex + 2].map((idx) => idx % total);
       const keepKeys = new Set();
 
@@ -221,6 +268,17 @@ const Player = () => {
       }
 
       pruneCache(keepKeys);
+
+      // Pré-carrega a próxima mídia na camada inativa
+      const nextIdx = (currentIndex + 1) % total;
+      const nextItem = playlist.items[nextIdx];
+      const effect = playlist.transition_effect || 'fade';
+      
+      if (activeLayer === 'A') {
+        setLayerB({ item: nextItem, visible: false, effect: 'none' });
+      } else {
+        setLayerA({ item: nextItem, visible: false, effect: 'none' });
+      }
     };
 
     warmup();
@@ -228,7 +286,7 @@ const Player = () => {
     return () => {
       cancelled = true;
     };
-  }, [playlist, currentIndex]);
+  }, [playlist, currentIndex, activeLayer]);
 
   useEffect(() => {
     if (!playlist || (playlist.ticker_interval === 0 && playlist.ticker_duration === 0)) {
@@ -424,17 +482,46 @@ const Player = () => {
   };
 
   const nextMedia = () => {
-    setCurrentIndex((prev) => {
-      const next = (prev + 1) % (playlist?.items?.length || 1);
-      if (next === prev) {
-        setMediaNonce(n => n + 1);
-      }
-      return next;
-    });
+    if (!playlist || playlist.items.length === 0 || isTransitioning) return;
+
+    const nextIndex = (currentIndex + 1) % playlist.items.length;
+    const nextItem = playlist.items[nextIndex];
+    const effect = playlist.transition_effect || 'fade';
+    
+    setIsTransitioning(true);
+
+    if (activeLayer === 'A') {
+      // Carrega no B e transita de A para B
+      setLayerB({ item: nextItem, visible: true, effect: `${effect}-in` });
+      setLayerA(prev => ({ ...prev, visible: false, effect: `${effect}-out` }));
+      setActiveLayer('B');
+    } else {
+      // Carrega no A e transita de B para A
+      setLayerA({ item: nextItem, visible: true, effect: `${effect}-in` });
+      setLayerB(prev => ({ ...prev, visible: false, effect: `${effect}-out` }));
+      setActiveLayer('A');
+    }
+
+    setCurrentIndex(nextIndex);
+    if (nextIndex === currentIndex) setMediaNonce(n => n + 1);
+
+    // Tempo da transição CSS (respeita a configuração da playlist ou padrão 0.8s)
+    const transitionDur = parseFloat(playlist.transition_duration) || 0.8;
+    if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+    transitionTimerRef.current = setTimeout(() => {
+      setIsTransitioning(false);
+    }, (transitionDur * 1000) + 50); 
   };
 
-  const handleVideoEnd = () => {
-    nextMedia();
+  const handleVideoEnd = (layer) => {
+    // Só avança se o vídeo que terminou for o da camada ativa
+    if (layer === activeLayer) {
+      const currentItem = activeLayer === 'A' ? layerA.item : layerB.item;
+      // Se tiver duração forçada, o timer já vai cuidar disso
+      if (!(currentItem?.duration_seconds > 0)) {
+        nextMedia();
+      }
+    }
   };
 
   const normalizeMediaType = (media) => {
@@ -534,35 +621,63 @@ const Player = () => {
   const mediaUrl = resolveMediaSource(itemMedia);
   const mediaType = normalizeMediaType(itemMedia);
   const transitionEffect = playlist.transition_effect || 'fade';
-  const getMediaCacheKey = (media) => media?.id || media?.filename || media?.url || media?.name || '';
-  const getPlayableMediaSource = (media) => {
-    if (!media) return '';
-    const key = getMediaCacheKey(media);
-    const entry = mediaCacheRef.current.get(key);
-    if (normalizeMediaType(media) === 'video' && entry?.objectUrl) return entry.objectUrl;
-    return resolveMediaSource(media);
-  };
-  const currentMediaSource = getPlayableMediaSource(itemMedia) || mediaUrl;
+  const getPlayableMediaSourceStub = (media) => getPlayableMediaSource(media);
 
-  const getMediaTransitionStyle = (effect) => {
-    const base = {
-      willChange: 'transform, opacity, filter',
-      animationDuration: playlist.transition_duration || '1s',
-      animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+  const renderMediaLayer = (layerId, layerData, videoRef) => {
+    if (!layerData.item) return null;
+
+    const item = layerData.item;
+    const media = item.media || item;
+    const type = normalizeMediaType(media);
+    const source = getPlayableMediaSource(media);
+    const isVisible = layerData.visible;
+    const effectClass = layerData.effect !== 'none' ? `effect-${layerData.effect}` : '';
+    const layerClass = isVisible ? 'layer-visible' : 'layer-hidden';
+
+    const transitionDur = playlist.transition_duration || '0.8s';
+
+    const mediaStyle = {
+      width: '100%',
+      height: '100%',
+      objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'),
+      backgroundColor: '#000',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      animationDuration: transitionDur,
     };
 
-    switch (effect) {
-      case 'slide':
-        return { ...base, animationName: 'slideIn', transformOrigin: 'center' };
-      case 'zoom':
-        return { ...base, animationName: 'zoomInMedia' };
-      case 'cinematic':
-        return { ...base, animationName: 'cinematicIn' };
-      case 'none':
-        return { ...base, animation: 'none' };
-      default:
-        return { ...base, animationName: 'fadeIn' };
-    }
+    return (
+      <div className={`media-layer ${layerClass} ${effectClass}`} key={`${layerId}-${item.id || currentIndex}-${mediaNonce}`}>
+        {playlist.scale_mode === 'blur-fill' && (
+          type === 'image' ? (
+            <img src={source} style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
+          ) : (
+            <video src={source} muted autoPlay playsInline loop style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
+          )
+        )}
+        
+        {type === 'image' ? (
+          <img 
+            src={source} 
+            alt="" 
+            style={{ ...mediaStyle, zIndex: 1 }} 
+            onError={() => setMediaLoadError(item.id || currentIndex)}
+          />
+        ) : (
+          <video
+            ref={videoRef}
+            src={source}
+            autoPlay 
+            muted 
+            playsInline
+            onEnded={() => handleVideoEnd(layerId)}
+            style={{ ...mediaStyle, zIndex: 1 }}
+            onError={() => setMediaLoadError(item.id || currentIndex)}
+          />
+        )}
+      </div>
+    );
   };
 
   const getScreenRatio = () => {
@@ -845,90 +960,24 @@ const Player = () => {
         flexDirection: playlist.layout === 'split' ? 'row' : 'column',
         position: 'relative' 
       }}>
-        {/* ÁREA DE MÍDIA */}
         <div style={{ 
           flex: playlist.layout === 'split' ? (isMobile ? 0.6 : 0.7) : 1, 
           position: 'relative', overflow: 'hidden',
           display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000'
         }}>
-          {playlist.scale_mode === 'blur-fill' && (
-            mediaType === 'image' ? (
-              <img src={currentMediaSource} style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
-            ) : (
-              <video src={currentMediaSource} muted autoPlay playsInline preload="auto" style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
-            )
-          )}
+          {renderMediaLayer('A', layerA, videoRefA)}
+          {renderMediaLayer('B', layerB, videoRefB)}
 
-          {mediaType === 'image' ? (
-            mediaLoadError ? (
-              <div style={{
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'column',
-                gap: '10px',
-                color: '#fff',
-                background: 'linear-gradient(135deg, #0f172a, #111827)'
-              }}>
-                <div style={{ fontSize: '2.2rem' }}>🖼️</div>
-                <div style={{ fontSize: '1rem', fontWeight: '700' }}>Imagem indisponível</div>
-                <div style={{ fontSize: '0.85rem', opacity: 0.7, textAlign: 'center', maxWidth: '80%' }}>
-                  {itemMedia.name || currentItem.name || 'Mídia sem nome'}
-                </div>
-              </div>
-            ) : (
-              <img 
-                key={`${currentItem.id || currentIndex}-${mediaNonce}`}
-                src={currentMediaSource}
-                alt={itemMedia.name || 'Imagem da playlist'}
-                className={`transition-${transitionEffect}`}
-                loading="eager"
-                decoding="async"
-                onLoad={() => setMediaLoadError(null)}
-                onError={() => setMediaLoadError(currentItem.id || currentIndex)}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'),
-                  zIndex: 1,
-                  position: 'relative',
-                  backgroundColor: '#000',
-                  ...getMediaTransitionStyle(transitionEffect)
-                }}
+          {/* Widgets e Elementos Fixos */}
+          {playlist.show_progress_bar !== false && (
+            <div style={{ position: 'absolute', bottom: 0, left: 0, height: '8px', background: 'rgba(255,255,255,0.1)', width: '100%', zIndex: 50 }}>
+              <div 
+                key={`${currentIndex}-${mediaNonce}`}
+                style={{ 
+                  height: '100%', background: playlist.theme_color || '#818cf8', width: '100%', 
+                  animation: `progressAnim ${(activeLayer === 'A' ? layerA.item : layerB.item)?.duration_seconds || 10}s linear forwards` 
+                }} 
               />
-            )
-          ) : (
-            <video
-              key={`${currentItem.id || currentIndex}-${mediaNonce}`}
-              ref={videoRef}
-              src={currentMediaSource}
-              autoPlay muted 
-              playsInline
-              preload="auto"
-              onEnded={handleVideoEnd}
-              onError={() => setMediaLoadError(currentItem.id || currentIndex)}
-              className={`transition-${transitionEffect}`}
-              style={{ width: '100%', height: '100%', objectFit: playlist.scale_mode === 'blur-fill' ? 'contain' : (playlist.scale_mode || 'cover'), zIndex: 1, position: 'relative', backgroundColor: '#000', ...getMediaTransitionStyle(transitionEffect) }}
-            />
-          )}
-
-          {/* Preloader da Próxima Mídia (Cache Inteligente) */}
-          {playlist.items.length > 1 && (
-            <div style={{ display: 'none', visibility: 'hidden', width: 0, height: 0, overflow: 'hidden' }}>
-              {(() => {
-                const nextIdx = (currentIndex + 1) % playlist.items.length;
-                const nextItem = playlist.items[nextIdx];
-                const nextItemMedia = nextItem.media || nextItem;
-                const nextUrl = getPlayableMediaSource(nextItemMedia) || nextItemMedia.url || nextItemMedia.filename;
-                const nextType = normalizeMediaType(nextItemMedia);
-                return nextType === 'image' ? (
-                  <img src={nextUrl} key={`preload-${nextIdx}`} alt="" />
-                ) : (
-                  <video src={nextUrl} preload="auto" muted playsInline key={`preload-${nextIdx}`} />
-                );
-              })()}
             </div>
           )}
 
