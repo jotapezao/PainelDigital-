@@ -1013,10 +1013,9 @@ const PlaylistEditor = () => {
           </button>
         </div>
       </div>
+    </div>
 
-      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-        
-        {/* LEFT SIDEBAR - TOOLS */}
+    <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <div style={{ width: '80px', background: '#09090b', borderRight: '1px solid #1a1a1f', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 0', gap: '8px', zIndex: 10 }}>
           {[
             { id: 'medias', icon: '🖼️', label: 'Mídias' },
