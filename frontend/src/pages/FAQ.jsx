@@ -51,6 +51,24 @@ const FAQ_DATA = [
         q: 'O que é o modo "Blur Fill"?',
         a: 'É um modo de escala que resolve o problema de imagens quadradas ou verticais em TVs horizontais. O sistema cria uma cópia da imagem com desfoque máximo como fundo e exibe a imagem original no centro sem distorção, resultando em um visual profissional.'
       },
+      {
+        q: 'Como funciona o Widget de QR Code / Redes Sociais?',
+        a: 'O Widget de Redes Sociais agora suporta links universais (Campanhas, Promoções, Sites) além de Instagram e WhatsApp. Basta selecionar a plataforma ou "Campanha Genérica", inserir o link/texto e ativar a opção de QR Code. O sistema gerará o código automaticamente na tela.'
+      },
+    ]
+  },
+  {
+    category: 'Agendamentos',
+    icon: '🗓️',
+    items: [
+      {
+        q: 'Como funciona a prioridade dos agendamentos?',
+        a: 'Agendamentos com prioridade "Alta" pausam automaticamente qualquer conteúdo de prioridade menor. Quando o horário programado chega ao fim, a reprodução é pausada ou o sistema retorna automaticamente para o plano de exibição padrão (prioridade normal).'
+      },
+      {
+        q: 'Posso agendar para TVs específicas e para um Grupo ao mesmo tempo?',
+        a: 'Não. Um agendamento deve ser direcionado para uma TV individual OU para um Grupo inteiro, evitando conflitos de sobreposição.'
+      }
     ]
   },
   {

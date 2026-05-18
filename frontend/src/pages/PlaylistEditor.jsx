@@ -1004,7 +1004,12 @@ const PlaylistEditor = () => {
             <span style={{ fontSize: '1.2rem' }}>🎬</span>
           </div>
           <div>
-            <h1 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0, letterSpacing: '-0.5px' }}>{name || 'Novo Plano de Exibição'}</h1>
+            <input 
+              value={name} 
+              onChange={e => setName(e.target.value)} 
+              placeholder="Nome do Plano de Exibição" 
+              style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0, letterSpacing: '-0.5px', background: 'transparent', border: 'none', color: '#fff', outline: 'none', borderBottom: '1px solid #3f3f46', paddingBottom: '2px', width: '250px' }} 
+            />
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e' }}></span>
               <span style={{ fontSize: '0.65rem', color: '#71717a', fontWeight: '600', textTransform: 'uppercase' }}>Editor Pro • Nuvem Sincronizada</span>
@@ -1202,7 +1207,7 @@ const PlaylistEditor = () => {
                         <input type="number" value={clockInterval} onChange={e => setClockInterval(parseInt(e.target.value))} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
                       </div>
                       <div>
-                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir por (min):</label>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir por (seg):</label>
                         <input type="number" value={clockDuration} onChange={e => setClockDuration(parseInt(e.target.value))} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
                       </div>
                     </div>
@@ -1303,7 +1308,7 @@ const PlaylistEditor = () => {
                         <input type="number" value={tickerInterval} onChange={e => setTickerInterval(parseInt(e.target.value))} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
                       </div>
                       <div>
-                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir por (min):</label>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir por (seg):</label>
                         <input type="number" value={tickerDuration} onChange={e => setTickerDuration(parseInt(e.target.value))} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
                       </div>
                     </div>
@@ -1363,7 +1368,7 @@ const PlaylistEditor = () => {
                         <input type="number" value={weatherInterval} onChange={e => setWeatherInterval(parseInt(e.target.value))} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
                       </div>
                       <div>
-                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir por (min):</label>
+                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir por (seg):</label>
                         <input type="number" value={weatherDuration} onChange={e => setWeatherDuration(parseInt(e.target.value))} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
                       </div>
                     </div>
@@ -1392,6 +1397,10 @@ const PlaylistEditor = () => {
                           <option value="instagram">Instagram</option>
                           <option value="tiktok">TikTok</option>
                           <option value="youtube">YouTube</option>
+                          <option value="facebook">Facebook</option>
+                          <option value="whatsapp">WhatsApp</option>
+                          <option value="website">Site / Linktree</option>
+                          <option value="custom">Campanha Genérica</option>
                         </select>
                       </div>
                       <div>
@@ -1438,7 +1447,7 @@ const PlaylistEditor = () => {
                         <input type="number" value={socialInterval} onChange={e => setSocialInterval(parseInt(e.target.value))} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
                       </div>
                       <div>
-                        <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir por (min):</label>
+                          <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir por (seg):</label>
                         <input type="number" value={socialDuration} onChange={e => setSocialDuration(parseInt(e.target.value))} style={{ width: '100%', padding: '6px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }} />
                       </div>
                     </div>
@@ -2526,7 +2535,7 @@ const PlaylistEditor = () => {
                     <input type="number" value={socialInterval} onChange={e => setSocialInterval(parseInt(e.target.value))} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }} />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir por (min):</label>
+                    <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir por (seg):</label>
                     <input type="number" value={socialDuration} onChange={e => setSocialDuration(parseInt(e.target.value))} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }} />
                   </div>
                 </div>
@@ -2699,7 +2708,7 @@ const PlaylistEditor = () => {
                     <input type="number" value={tickerInterval} onChange={e => setTickerInterval(parseInt(e.target.value))} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }} />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir por (min):</label>
+                    <label style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>Exibir por (seg):</label>
                     <input type="number" value={tickerDuration} onChange={e => setTickerDuration(parseInt(e.target.value))} style={{ width: '100%', padding: '10px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fff' }} />
                   </div>
                 </div>

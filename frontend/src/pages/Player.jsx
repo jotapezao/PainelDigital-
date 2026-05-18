@@ -332,17 +332,21 @@ const Player = () => {
     }
 
     const intervalMin = playlist.ticker_interval || 0;
-    const durationMin = playlist.ticker_duration || 1;
+    const durationSec = playlist.ticker_duration || 30; // 30 segundos por padrão
+
+    const intervalMs = (intervalMin || 1) * 60 * 1000;
+    const durationMs = durationSec * 1000;
 
     const runCycle = () => {
       setShowTicker(true);
       tickerTimerRef.current = setTimeout(() => {
         setShowTicker(false);
-      }, durationMin * 60 * 1000);
+      }, durationMs);
     };
 
     runCycle();
-    const cycleInterval = setInterval(runCycle, (intervalMin + durationMin) * 60 * 1000);
+    // Inicia um novo ciclo a cada 'intervalMs'
+    const cycleInterval = setInterval(runCycle, intervalMs);
 
     return () => {
       clearInterval(cycleInterval);
@@ -353,19 +357,23 @@ const Player = () => {
   useEffect(() => {
     if (!playlist) return;
 
-    const setupWidgetCycle = (intervalMin, durationMin, setShow, timerRef) => {
-      if (!intervalMin && !durationMin) {
+    const setupWidgetCycle = (intervalMin, durationSec, setShow, timerRef) => {
+      // Se ambos são 0 ou undefined, o widget fica visível o tempo todo
+      if (!intervalMin && !durationSec) {
         setShow(true);
         return () => {};
       }
       
+      const intervalMs = (intervalMin || 1) * 60 * 1000;
+      const durationMs = (durationSec || 30) * 1000; // 30 segundos padrão
+      
       const runCycle = () => {
         setShow(true);
-        timerRef.current = setTimeout(() => setShow(false), (durationMin || 1) * 60 * 1000);
+        timerRef.current = setTimeout(() => setShow(false), durationMs);
       };
       
       runCycle();
-      const cycleInterval = setInterval(runCycle, ((intervalMin || 0) + (durationMin || 1)) * 60 * 1000);
+      const cycleInterval = setInterval(runCycle, intervalMs);
       
       return () => {
         clearInterval(cycleInterval);
@@ -836,6 +844,10 @@ const Player = () => {
         return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.95v7.4c-.01 2.98-1.73 5.82-4.5 6.94-2.77 1.13-6.1.48-8.19-1.57-2.1-2.05-2.7-5.46-1.4-8.16 1.3-2.7 4.54-4.25 7.49-3.55v4.07c-1.3-.12-2.65.34-3.48 1.34-.84 1.01-.98 2.5-.32 3.65.65 1.15 2.16 1.7 3.44 1.25 1.28-.46 2.06-1.8 2.05-3.16V.02z"/></svg>;
       case 'website':
         return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>;
+      case 'whatsapp':
+        return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>;
+      case 'custom':
+        return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>;
       default:
         return null;
     }
@@ -1023,11 +1035,19 @@ const Player = () => {
               transformOrigin: playlist.use_custom_pos ? 'top left' : `${(playlist.social_position || 'bottom-right').split('-')[0]} ${(playlist.social_position || 'bottom-right').split('-')[1]}`,
             }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
-                <div style={{ fontSize: '1.1rem', opacity: 0.8, fontWeight: '700', letterSpacing: '0.5px' }}>Conecte-se conosco:</div>
+                <div style={{ fontSize: '1.1rem', opacity: 0.8, fontWeight: '700', letterSpacing: '0.5px' }}>
+                  {playlist.social_platform === 'instagram' ? 'Siga no Instagram:' :
+                   playlist.social_platform === 'tiktok' ? 'Siga no TikTok:' :
+                   playlist.social_platform === 'youtube' ? 'Siga no YouTube:' :
+                   playlist.social_platform === 'facebook' ? 'Curta no Facebook:' :
+                   playlist.social_platform === 'whatsapp' ? 'Fale pelo WhatsApp:' :
+                   playlist.social_platform === 'website' ? 'Acesse nosso Site:' :
+                   playlist.social_platform === 'custom' ? 'Acesse o Link:' : 'Conecte-se conosco:'}
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                   {getSocialIcon(playlist.social_platform, playlist.social_card_style)}
                   <span style={{ fontSize: '1.6rem', fontWeight: '900', fontFamily: 'Outfit', letterSpacing: '0.5px' }}>
-                    {playlist.social_handle || '@seu_negocio'}
+                    {playlist.social_handle || (playlist.social_platform === 'custom' ? 'Saiba mais' : '@seu_negocio')}
                   </span>
                 </div>
               </div>

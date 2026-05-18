@@ -231,8 +231,6 @@ async function getById(req, res) {
 
 async function validarEPrepararCorpo(req, modo = 'create') {
   const {
-    device_id,
-    group_id,
     playlist_id,
     name,
     start_datetime,
@@ -249,6 +247,9 @@ async function validarEPrepararCorpo(req, modo = 'create') {
     active,
   } = req.body;
 
+  const device_id = req.body.device_id && String(req.body.device_id).trim() ? String(req.body.device_id).trim() : null;
+  const group_id = req.body.group_id && String(req.body.group_id).trim() ? String(req.body.group_id).trim() : null;
+
   const erroEscopo = validarEscopo(device_id, group_id);
   if (erroEscopo) {
     const err = new Error(erroEscopo);
@@ -263,8 +264,8 @@ async function validarEPrepararCorpo(req, modo = 'create') {
   }
 
   const payload = {
-    device_id: device_id || null,
-    group_id: group_id || null,
+    device_id,
+    group_id,
     playlist_id,
     name: name || null,
     start_datetime: start_datetime || null,
