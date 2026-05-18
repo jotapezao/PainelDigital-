@@ -699,6 +699,19 @@ async function runMigrations() {
       console.log('✅ Default admin created: admin@sistema.com / admin123');
     }
 
+    // V3.0 — Widget de Cotações Financeiras
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='show_quotes') THEN
+          ALTER TABLE playlists ADD COLUMN show_quotes BOOLEAN DEFAULT false;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='playlists' AND column_name='quotes_currencies') THEN
+          ALTER TABLE playlists ADD COLUMN quotes_currencies VARCHAR(100) DEFAULT 'USD,EUR,BTC';
+        END IF;
+      END $$;
+    `);
+
     console.log('✅ Migrations completed successfully');
   } catch (err) {
     console.error('❌ Migration error:', err);

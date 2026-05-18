@@ -91,7 +91,8 @@ async function create(req, res) {
     clock_size, weather_size, social_size, clock_interval, weather_interval, social_interval,
     clock_duration, weather_duration, social_duration, ticker_interval, ticker_duration,
     clock_effect, weather_effect, social_effect, clock_style,
-    clock_x, clock_y, weather_x, weather_y, social_x, social_y, ticker_x, ticker_y, use_custom_pos
+    clock_x, clock_y, weather_x, weather_y, social_x, social_y, ticker_x, ticker_y, use_custom_pos,
+    show_quotes, quotes_currencies
   } = req.body;
 
   if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
@@ -112,9 +113,10 @@ async function create(req, res) {
         clock_size, weather_size, social_size, clock_interval, weather_interval, social_interval,
         clock_duration, weather_duration, social_duration, ticker_interval, ticker_duration,
         clock_effect, weather_effect, social_effect, clock_style,
-        clock_x, clock_y, weather_x, weather_y, social_x, social_y, ticker_x, ticker_y, use_custom_pos
+        clock_x, clock_y, weather_x, weather_y, social_x, social_y, ticker_x, ticker_y, use_custom_pos,
+        show_quotes, quotes_currencies
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,$56,$57,$58,$59,$60,$61,$62,$63,$64,$65,$66,$67) RETURNING *`,
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,$56,$57,$58,$59,$60,$61,$62,$63,$64,$65,$66,$67,$68,$69) RETURNING *`,
       [
         effectiveClientId, group_id || null,
         name, description || null, layout || 'fullscreen',
@@ -142,7 +144,8 @@ async function create(req, res) {
         clock_effect || 'fade', weather_effect || 'fade', social_effect || 'fade',
         clock_style || 'digital_transparent',
         clock_x || 0, clock_y || 0, weather_x || 0, weather_y || 0, social_x || 0, social_y || 0,
-        ticker_x || 0, ticker_y || 640, use_custom_pos || false
+        ticker_x || 0, ticker_y || 640, use_custom_pos || false,
+        show_quotes || false, quotes_currencies || 'USD,EUR,BTC'
       ]
     );
     const playlist = rows[0];
@@ -220,7 +223,8 @@ async function update(req, res) {
     clock_size, weather_size, social_size, clock_interval, weather_interval, social_interval,
     clock_duration, weather_duration, social_duration, ticker_interval, ticker_duration,
     clock_effect, weather_effect, social_effect, clock_style,
-    clock_x, clock_y, weather_x, weather_y, social_x, social_y, ticker_x, ticker_y, use_custom_pos
+    clock_x, clock_y, weather_x, weather_y, social_x, social_y, ticker_x, ticker_y, use_custom_pos,
+    show_quotes, quotes_currencies
   } = req.body;
 
   try {
@@ -242,6 +246,7 @@ async function update(req, res) {
       clock_duration=$55, weather_duration=$56, social_duration=$57, ticker_interval=$58, ticker_duration=$59,
       clock_effect=$60, weather_effect=$61, social_effect=$62, clock_style=$63, 
       clock_x=$64, clock_y=$65, weather_x=$66, weather_y=$67, social_x=$68, social_y=$69, ticker_x=$70, ticker_y=$71, use_custom_pos=$72,
+      show_quotes=$73, quotes_currencies=$74,
       updated_at=NOW()`;
 
     let params = [
@@ -271,10 +276,11 @@ async function update(req, res) {
       clock_effect || 'fade', weather_effect || 'fade', social_effect || 'fade',
       clock_style || 'digital_transparent',
       clock_x || 0, clock_y || 0, weather_x || 0, weather_y || 0, social_x || 0, social_y || 0,
-      ticker_x || 0, ticker_y || 640, use_custom_pos || false
+      ticker_x || 0, ticker_y || 640, use_custom_pos || false,
+      show_quotes || false, quotes_currencies || 'USD,EUR,BTC'
     ];
 
-    let idx = 73;
+    let idx = 75;
 
     if (effectiveClientId) {
       query += `, client_id=$${idx++}`;

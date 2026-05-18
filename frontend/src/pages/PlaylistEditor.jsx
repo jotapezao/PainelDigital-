@@ -243,6 +243,9 @@ const PlaylistEditor = () => {
   const [socialCardStyle, setSocialCardStyle] = useState('dark');
   const [showProgressBar, setShowProgressBar] = useState(true);
   const [rotation, setRotation] = useState(0);
+  // Widget de Cotações Financeiras
+  const [showQuotes, setShowQuotes] = useState(false);
+  const [quotesCurrencies, setQuotesCurrencies] = useState('USD,EUR,BTC');
   
   // V2 — Logo persistente e estilos de feed
   const [logoUrl, setLogoUrl] = useState('');
@@ -437,6 +440,9 @@ const PlaylistEditor = () => {
           setTickerY(p.ticker_y || 640);
           setTickerHeight(p.ticker_height || 85);
           setUseCustomPos(p.use_custom_pos || false);
+          // Cotações
+          setShowQuotes(p.show_quotes || false);
+          setQuotesCurrencies(p.quotes_currencies || 'USD,EUR,BTC');
         }
       } catch (err) {
         addToast('error', 'Erro', 'Falha ao carregar dados do plano.');
@@ -612,6 +618,9 @@ const PlaylistEditor = () => {
         social_x: Math.round(socialX), social_y: Math.round(socialY), 
         ticker_x: Math.round(tickerX), ticker_y: Math.round(tickerY),
         use_custom_pos: useCustomPos,
+        // Cotações
+        show_quotes: showQuotes,
+        quotes_currencies: quotesCurrencies,
         items: selectedItems.map((item, i) => ({
           media_id: item.media_id,
           duration_seconds: item.duration || (item.media?.type === 'video' ? 0 : 10),

@@ -84,8 +84,8 @@ const Medias = () => {
         // For simplicity, if Admin sees multiple, let's sum them.
         if (user?.role === 'admin') {
           const totalUsed = data.reduce((acc, c) => acc + parseInt(c.storage_used || 0), 0);
-          const totalQuota = data.reduce((acc, c) => acc + parseInt(c.storage_quota_bytes || 0), 0);
-          setStorageInfo({ used: totalUsed, quota: totalQuota || 10 * 1024 * 1024 * 1024 });
+          const totalQuota = 10 * 1024 * 1024 * 1024; // Fix: Use 10 GB standard instead of summing up (which caused 40 GB)
+          setStorageInfo({ used: totalUsed, quota: totalQuota });
         } else {
           const clientData = data[0];
           setStorageInfo({

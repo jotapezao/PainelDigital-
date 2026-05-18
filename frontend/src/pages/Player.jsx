@@ -40,6 +40,8 @@ const Player = () => {
   const [showSocialWidget, setShowSocialWidget] = useState(true);
   const [weatherData, setWeatherData] = useState({ temp: '--', icon: '⛅', city: '' });
   const [mediaLoadError, setMediaLoadError] = useState(null);
+  const [currentTime, setCurrentTime] = useState(new Date()); // Relógio em tempo real
+  const [quotesData, setQuotesData] = useState({}); // Cotações financeiras
 
   const clockTimerRef = useRef(null);
   const weatherTimerRef = useRef(null);
@@ -171,6 +173,41 @@ const Player = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Atualiza o relógio a cada segundo
+  useEffect(() => {
+    const clockInterval = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(clockInterval);
+  }, []);
+
+  // Busca cotações financeiras (AwesomeAPI BR — gratuita)
+  useEffect(() => {
+    if (!playlist?.show_quotes) return;
+    const fetchQuotes = async () => {
+      try {
+        const currencies = (playlist.quotes_currencies || 'USD,EUR,BTC')
+          .split(',').map(c => c.trim().toUpperCase()).filter(Boolean);
+        const pairs = currencies.map(c => `${c}-BRL`).join(',');
+        const res = await fetch(`https://economia.awesomeapi.com.br/last/${pairs}`);
+        const data = await res.json();
+        const parsed = {};
+        for (const key of Object.keys(data)) {
+          const item = data[key];
+          parsed[item.code] = {
+            bid: parseFloat(item.bid).toFixed(2),
+            pct: parseFloat(item.pctChange).toFixed(2),
+            name: item.name,
+          };
+        }
+        setQuotesData(parsed);
+      } catch (e) {
+        console.error('[Quotes] Erro ao buscar cotações:', e);
+      }
+    };
+    fetchQuotes();
+    const interval = setInterval(fetchQuotes, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [playlist?.show_quotes, playlist?.quotes_currencies]);
 
   useEffect(() => {
     if (!playlist) return;
@@ -711,8 +748,7 @@ const Player = () => {
   };
 
   // Helper para estilos de Cards padronizados (6 ESTILOS PREMIUM)
-  const getWidgetBaseStyle = (styleType, transparency = 0.5, widgetType = 'default') => {
-    const themeColor = playlist?.theme_color || '#6366f1';
+  const getWidgetBaseStyle = (styleType, transparency = 0.5, themeColor = '#818cf8', widgetType = 'default') => {
     const alpha = 0.34 + transparency * 0.4;
     const base = {
       padding: isMobile ? '14px 18px' : '22px 28px',
@@ -752,7 +788,7 @@ const Player = () => {
   };
 
   const renderClock = () => {
-    const time = new Date();
+    const time = currentTime; // usa estado em tempo real
     const clockStyle = playlist?.clock_style || 'digital_solid';
     const themeColor = playlist?.theme_color || '#6366f1';
 
@@ -947,19 +983,6 @@ const Player = () => {
           {renderMediaLayer('A', layerA, videoRefA)}
           {renderMediaLayer('B', layerB, videoRefB)}
 
-          {/* Widgets e Elementos Fixos */}
-          {playlist.show_progress_bar !== false && (
-            <div style={{ position: 'absolute', bottom: 0, left: 0, height: '8px', background: 'rgba(255,255,255,0.1)', width: '100%', zIndex: 50 }}>
-              <div 
-                key={`${currentIndex}-${mediaNonce}`}
-                style={{ 
-                  height: '100%', background: playlist.theme_color || '#818cf8', width: '100%', 
-                  animation: `progressAnim ${(activeLayer === 'A' ? layerA.item : layerB.item)?.duration_seconds || 10}s linear forwards` 
-                }} 
-              />
-            </div>
-          )}
-
           {/* Relógio Widget */}
           {playlist.layout !== 'split' && playlist.layout !== 'with_header' && playlist.show_clock && showClockWidget && (
             <div className={`player-widget-clock ${playlist.clock_style || 'digital_transparent'}`} style={{
@@ -1021,6 +1044,44 @@ const Player = () => {
             </div>
           )}
 
+          {/* Widget de Cotações Financeiras */}
+          {playlist.show_quotes && (
+            <div style={{
+              ...getWidgetBaseStyle('glass_pro', playlist.card_transparency || 0.4, playlist.theme_color || '#22c55e', 'default'),
+              ...getPositionStyles('bottom-left', isMobile ? '20px' : '40px', isMobile ? '20px' : '40px'),
+              flexDirection: 'column',
+              gap: '8px',
+              minWidth: isMobile ? '160px' : '200px',
+              transform: `scale(${responsiveScale(80)})`,
+              transformOrigin: 'bottom left',
+            }}>
+              <div style={{ fontSize: '0.7rem', fontWeight: '800', opacity: 0.6, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px' }}>Cotações</div>
+              {(playlist.quotes_currencies || 'USD,EUR,BTC').split(',').map(c => c.trim().toUpperCase()).filter(Boolean).map(cur => {
+                const q = quotesData[cur];
+                const pct = q ? parseFloat(q.pct) : 0;
+                const isPos = pct >= 0;
+                const icons = { USD: '$', EUR: '€', GBP: '£', BTC: '₿', ETH: 'Ξ', BRL: 'R$' };
+                return (
+                  <div key={cur} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                    <span style={{ fontSize: isMobile ? '0.85rem' : '1rem', fontWeight: '800', opacity: 0.9 }}>
+                      {icons[cur] || cur} {cur}
+                    </span>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: isMobile ? '0.9rem' : '1.1rem', fontWeight: '900', fontFamily: 'Outfit', lineHeight: 1 }}>
+                        {q ? `R$ ${q.bid}` : '...'}
+                      </div>
+                      {q && (
+                        <div style={{ fontSize: '0.65rem', color: isPos ? '#22c55e' : '#ef4444', fontWeight: '700' }}>
+                          {isPos ? '▲' : '▼'} {Math.abs(pct)}%
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {/* Barra de Progresso */}
           {playlist.show_progress_bar !== false && (
             <div style={{ position: 'absolute', bottom: 0, left: 0, height: '8px', background: 'rgba(255,255,255,0.1)', width: '100%', zIndex: 15 }}>
@@ -1043,11 +1104,11 @@ const Player = () => {
           }}>
             <div style={{ marginBottom: isMobile ? '20px' : '50px', textAlign: 'center' }}>
               <div style={{ fontSize: isMobile ? '2rem' : '5rem', fontWeight: '900', fontFamily: 'Outfit', letterSpacing: '-1px' }}>
-                {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                {currentTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
               </div>
               {!isMobile && (
                 <div style={{ fontSize: '1.6rem', opacity: 0.7, fontWeight: '600' }}>
-                  {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                  {currentTime.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
                 </div>
               )}
             </div>
@@ -1088,7 +1149,7 @@ const Player = () => {
       {/* Faixa de Notícias / Ticker */}
       {(playlist.footer_text || playlist.rss_url || playlist.layout === 'with_footer') && playlist.layout !== 'split' && (() => {
         const text = buildTickerText(playlist.footer_text);
-        const label = playlist.ticker_label || '';
+        const label = (playlist.ticker_label !== undefined && playlist.ticker_label !== null) ? playlist.ticker_label : ''; // respeita label vazio
         const speed = getTickerSpeedDuration(playlist.ticker_speed);
         const direction = playlist.ticker_direction || 'rtl';
         const color = playlist.theme_color || '#818cf8';
