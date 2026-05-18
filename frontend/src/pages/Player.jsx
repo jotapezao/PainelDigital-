@@ -185,7 +185,13 @@ const Player = () => {
     } else {
       if (videoRefA.current) {
         videoRefA.current.pause();
-        videoRefA.current.currentTime = 0;
+        try {
+          if (videoRefA.current.readyState > 0) {
+            videoRefA.current.currentTime = 0;
+          }
+        } catch (e) {
+          // Ignora erro se o elemento estiver sem fonte carregada
+        }
       }
     }
   }, [layerA.visible, layerA.item]);
@@ -200,7 +206,13 @@ const Player = () => {
     } else {
       if (videoRefB.current) {
         videoRefB.current.pause();
-        videoRefB.current.currentTime = 0;
+        try {
+          if (videoRefB.current.readyState > 0) {
+            videoRefB.current.currentTime = 0;
+          }
+        } catch (e) {
+          // Ignora erro se o elemento estiver sem fonte carregada
+        }
       }
     }
   }, [layerB.visible, layerB.item]);
@@ -703,7 +715,7 @@ const Player = () => {
     };
 
     return (
-      <div className={`media-layer ${layerClass} ${effectClass}`} key={`${layerId}-${item.id || currentIndex}-${mediaNonce}`}>
+      <div className={`media-layer ${layerClass} ${effectClass}`} key={layerId}>
         {playlist.scale_mode === 'blur-fill' && (
           type === 'image' ? (
             <img src={source} style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
@@ -724,6 +736,7 @@ const Player = () => {
             ref={videoRef}
             src={source}
             preload="auto"
+            autoPlay={isVisible}
             muted 
             playsInline
             onEnded={() => handleVideoEnd(layerId)}
