@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import api from '../services/api';
 
 const Icon = ({ name }) => {
   const icons = {
@@ -35,7 +35,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await axios.get('/api/settings');
+        const res = await api.get('/settings');
         setSettings(res.data);
       } catch (err) {
         console.error('Failed to fetch settings', err);

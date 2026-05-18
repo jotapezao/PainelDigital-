@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import api from '../services/api';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -22,7 +22,7 @@ const Settings = () => {
 
   const fetchSettings = async () => {
     try {
-      const res = await axios.get('/api/settings');
+      const res = await api.get('/settings');
       setSettings(res.data);
     } catch (err) {
       addToast('Erro ao carregar configurações', 'error');
@@ -35,10 +35,7 @@ const Settings = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      const token = localStorage.getItem('token');
-      await axios.put('/api/settings', settings, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.put('/settings', settings);
       addToast('Configurações atualizadas com sucesso!', 'success');
     } catch (err) {
       addToast('Erro ao atualizar configurações', 'error');
@@ -150,12 +147,8 @@ const Settings = () => {
                       const formData = new FormData();
                       formData.append('file', file);
                       try {
-                        const token = localStorage.getItem('token');
-                        const res = await axios.post('/api/settings/logo', formData, {
-                          headers: { 
-                            'Content-Type': 'multipart/form-data',
-                            Authorization: `Bearer ${token}` 
-                          }
+                        const res = await api.post('/settings/logo', formData, {
+                          headers: { 'Content-Type': 'multipart/form-data' }
                         });
                         setSettings({ ...settings, logo_url: res.data.url });
                         addToast('Logo carregada com sucesso!', 'success');

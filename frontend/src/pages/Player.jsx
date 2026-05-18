@@ -87,8 +87,9 @@ const Player = () => {
     
     // Connect Socket for real-time updates
     const socketUrl = (import.meta.env.VITE_API_URL || 'https://midiamais.up.railway.app/api').replace('/api', '');
+    const token = localStorage.getItem('@DigitalSignage:token') || sessionStorage.getItem('@DigitalSignage:token');
     const socket = io(socketUrl, {
-      auth: { token: localStorage.getItem('token') }
+      auth: { token }
     });
 
     socket.on('connect', () => {
