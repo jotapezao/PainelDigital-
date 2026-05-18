@@ -360,6 +360,7 @@ const PlaylistEditor = () => {
           const normalizedItems = (p.items || []).map(item => ({
             ...item,
             duration: item.duration_seconds,
+            original_duration: item.duration_seconds, // Usa o salvo como fallback
             media: item.media || {
               id: item.media_id,
               name: item.media_name,
@@ -467,6 +468,7 @@ const PlaylistEditor = () => {
           media_id: media.id,
           media: media,
           duration: dur || 10,
+          original_duration: dur || 10,
           transition: 'fade'
         }]);
       };
@@ -479,6 +481,7 @@ const PlaylistEditor = () => {
           media_id: media.id,
           media: media,
           duration: media.duration || 60, // Default to 60s fallback
+          original_duration: media.duration || 60,
           transition: 'fade'
         }]);
       }, 2000);
@@ -487,6 +490,7 @@ const PlaylistEditor = () => {
         media_id: media.id,
         media: media,
         duration: 10, // Default 10s for images
+        original_duration: 10,
         transition: 'fade'
       }]);
     }
@@ -503,7 +507,14 @@ const PlaylistEditor = () => {
   const updateDuration = (idx, duration) => {
     setSelectedItems(prev => {
       const copy = [...prev];
-      copy[idx].duration = Math.max(1, parseInt(duration) || 1);
+      const newDur = Math.max(1, parseInt(duration) || 1);
+      const item = copy[idx];
+      
+      if (item.media?.type === 'video' && item.original_duration && newDur !== item.original_duration) {
+        addToast('warning', 'Aviso de Tempo', 'Tempo definido excede o tempo do video ou é menor que a duração do video');
+      }
+      
+      item.duration = newDur;
       return copy;
     });
   };
