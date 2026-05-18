@@ -35,17 +35,17 @@ O coração do sistema. É onde você cria a programação visual que será exib
 
 1. Vá em **Planos** e clique em **Novo Plano**.
 2. A tela é dividida em 3 passos fáceis (Você pode deslizar os passos lateralmente caso esteja usando no Celular):
-   - **Passo 1 (Informações)**: Defina o nome, qual o cliente dono daquele plano, orientação da TV (Vertical/Horizontal) e a forma de corte. **Dica**: Use o modo **Blur-fill (Preenchimento Desfocado)** para preencher vídeos ou fotos em formatos diferentes da TV usando uma borra de vidro inteligente no fundo!
-   - **Passo 2 (Mídias)**: Escolha os vídeos e imagens, arraste e ordene a posição que devem tocar, e defina os segundos de cada foto (vídeos rodam até acabar automaticamente).
+    - **Passo 1 (Informações)**: Defina o nome (você também pode editá-lo diretamente no cabeçalho superior do Editor Pro sem sair do editor), qual o cliente dono daquele plano, orientação da TV (Vertical/Horizontal) e a forma de corte. **Dica**: Use o modo **Blur-fill (Preenchimento Desfocado)** para preencher vídeos ou fotos em formatos diferentes da TV usando uma borra de vidro inteligente no fundo!
+   - **Passo 2 (Mídias)**: Escolha os vídeos e imagens, arraste e ordene a posição que devem tocar. **Vídeos entram automaticamente com a sua duração original**. Se você decidir encurtar ou alongar o tempo de um vídeo manualmente, a timeline exibirá um aviso: *"Tempo definido excede o tempo do video ou é menor que a duração do video"*, permitindo o ajuste consciente. Ao término do último item, a playlist sempre reinicia do início de forma nativa e automática.
    - **Passo 3 (Personalização Visual)**: A grande mágica acontece aqui. 
 
 ### Personalizações Disponíveis (Passo 3)
 - **Notícias RSS (Ticker)**: Adicione o link de um feed RSS (ex: *https://g1.globo.com/rss/g1/*) ou escreva uma mensagem manual. O rodapé animado buscará e passará essas notícias sem parar na tela. Você pode regular a opacidade, velocidade e a altura desse rodapé.
 - **Relógio, Data e Clima**: Pode ativar e definir em qual dos 4 cantos da tela eles aparecem.
-- **Redes Sociais Inteligentes**: Ative o card de rede social. Escolha a plataforma (Instagram, YouTube, etc.) e o seu @. 
-  - Você pode habilitar um **QR Code dinâmico** que é gerado na hora!
-  - Pode escolher entre 5 temas diferentes (Recomendamos o "Vibrante" ou "Vidro Moderno").
-  - Você controla a transparência (`0.1` a `1.0`) dos cards por um controle deslizante.
+- **Widget de Redes Sociais e Campanhas**: Ative o card de conversão visual. Ele foi expandido para ir além de redes tradicionais (Instagram, YouTube, TikTok, Facebook), integrando agora **WhatsApp (Fale Conosco)**, **Site/Linktree** e **Campanhas de Divulgação Genéricas**.
+  - **Título Inteligente**: O card ajusta o cabeçalho automaticamente (ex: *"Fale pelo WhatsApp:"*, *"Acesse o Link:"*, *"Siga no Instagram:"*).
+  - **QR Code Dinâmico**: Gera instantaneamente na tela o QR Code do seu link ou número cadastrado, facilitando a interação física do espectador.
+  - **Estilos Visuais**: Escolha entre os temas Vidro Moderno, Escuro Minimalista, Vibrante (usa a cor oficial da rede, inclusive o verde no WhatsApp), Claro e Pílula. Controlado por um slider suave de opacidade para não obstruir o conteúdo principal.
 
 ---
 

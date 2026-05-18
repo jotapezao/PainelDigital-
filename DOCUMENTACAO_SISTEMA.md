@@ -58,12 +58,15 @@ O Playlist Editor é o módulo mais complexo da aplicação, atuando quase como 
 
 ### 4.1. Fila de Reprodução (Items)
 A ordem na qual as imagens e vídeos aparecem na tela, manipuladas por *Drag and Drop*.
-*   **Duração Inteligente (`duration_seconds`)**: Para imagens, o cliente define quantos segundos quer que ela fique em tela (ex: 15s). Para vídeos, o sistema entende a extensão `.mp4` ou tipo de mime, ignora o tempo predefinido, espera o vídeo carregar nativamente e avança a fila *apenas e exatamente* quando o vídeo der o trigger de evento de "Fim de Reprodução" do HTML5.
+*   **Duração Inteligente (`duration_seconds`)**: Para imagens, o cliente define quantos segundos quer que ela fique em tela (ex: 15s). Para vídeos, o sistema cria um elemento virtual e extrai automaticamente os metadados reais de duração do arquivo. O clipe é adicionado com a duração original do vídeo como padrão. 
+*   **Alerta de Tempo Customizado**: O editor oferece a flexibilidade de alterar manualmente a duração de um vídeo na timeline, porém, caso o usuário defina um tempo diferente (maior ou menor) do tempo original do arquivo, a interface Pro dispara um aviso amigável: *"Tempo definido excede o tempo do video ou é menor que a duração do video"*.
+*   **Loops Automáticos**: Ao fim da reprodução do último item do Plano de Exibição, a engine do Player reseta o índice de exibição para 0 automaticamente usando um cálculo modular (`(currentIndex + 1) % length`), recomeçando a programação de maneira contínua e sem interrupções.
 
 ### 4.2. Efeitos e Comportamento Visual
 *   **`transition_effect`**: Ao invés de uma troca seca e feia entre uma foto e outra, o React aplica animações CSS de Fade (Esmaecer), Slide (Deslizar lados) ou Zoom, disfarçando o tempo de carregamento da próxima mídia na rede.
 *   **`scale_mode` (A Mágica do Blur-fill)**: O maior problema em Painéis Digitais é colocar uma imagem quadrada/vertical numa TV horizontal. O modo `blur-fill` cria um clone da própria imagem que está tocando, aplica um desfoque máximo no fundo da tela em formato 16:9, e sobrepõe a imagem original no centro sem distorcê-la. O resultado é profissional e automático.
 *   **`orientation`**: Gira o layout do HTML via CSS Transformations (`horizontal` vs `portrait`). Extremamente útil para Menu Boards e Totens de shopping que ficam na vertical (9:16).
+*   **Edição do Nome do Plano**: No Editor Pro, o nome da playlist pode ser alterado diretamente no cabeçalho superior através de um campo de texto inteligente integrado, sincronizando em tempo real com o banco de dados.
 
 ---
 
@@ -81,16 +84,18 @@ Uma faixa rodapé ou topo (News Ticker) semelhante a canais de notícias na TV (
 *   **Posicionamento Livres (`widget_position`)**: Relógio e Clima podem ser afixados em qualquer um dos 4 cantos da tela.
 *   **`show_progress_bar`**: Uma fina linha na extrema borda inferior da tela, que cresce sutilmente de 0% a 100% durante os segundos configurados na foto, ou baseado no tempo do vídeo, indicando visualmente quando a mídia vai passar.
 
-### 5.3. Widget: Redes Sociais Inteligentes (Com QR Code)
-Um card de alta conversão projetado para fazer quem passa pela TV seguir a empresa.
-*   **Renderização SVG Premium (`social_platform`)**: Se o cliente selecionar Instagram, a logo oficial carrega em formato vetorial sem perder resolução.
+### 5.3. Widget: Redes Sociais e Campanhas (Com QR Code Universal)
+Um card de alta conversão projetado para direcionar a audiência de forma extremamente interativa e elegante.
+*   **Formatos Suportados (`social_platform`)**: Evoluiu de simples redes sociais para um widget de marketing multicanal. Suporta *Instagram, TikTok, YouTube, Facebook, WhatsApp (Fale Conosco), Site / Linktree* e **`Campanha Genérica`** (para promoções, campanhas locais ou trabalhe conosco).
+*   **Títulos e Chamadas Inteligentes**: O cabeçalho do widget muda dinamicamente de acordo com a plataforma selecionada para instruir corretamente o espectador (ex: *"Siga no Instagram:"*, *"Fale pelo WhatsApp:"*, *"Acesse nosso Site:"*, *"Acesse o Link:"*).
+*   **Ícones SVG Customizados**: Renderização vetorial premium com ícones oficiais e novos ícones desenhados especialmente para o WhatsApp e para o redirecionamento genérico de campanhas.
 *   **Estilos Dinâmicos (`social_card_style`)**: O usuário altera com um clique a estética do card:
     *   *Vidro Moderno*: Translúcido com reflexo.
     *   *Escuro Minimalista*: Discreto em tom grafite.
-    *   *Vibrante*: Usa a cor original da rede (ex: rosa/laranja do Instagram, vermelho do Youtube).
+    *   *Vibrante*: Usa a cor original da rede (ex: rosa/laranja do Instagram, vermelho do Youtube, verde do WhatsApp).
     *   *Claro*: Fundo sólido branco com sombras suaves.
     *   *Arredondado / Pílula*: Formato oval para locais sem cantos vivos.
-*   **Geração Real-Time de QR Code (`social_qrcode`)**: Se ativo, o painel processa a plataforma e o "@" (`social_handle`) digitado, constrói a URL e injeta um QR Code válido na tela sem precisar hospedar ou baixar nenhuma imagem extra.
+*   **Geração Real-Time de QR Code (`social_qrcode`)**: Se ativo, o painel processa a URL configurada no perfil e renderiza dinamicamente um QR Code limpo com bordas integradas, perfeito para campanhas de Linktree ou geração rápida de leads.
 *   **Transparência Granular (`card_transparency`)**: Controle de opacidade num slider indo de 10% a 100%, garantindo que o card não bloqueie a visualização vital do vídeo que corre atrás dele.
 
 ---

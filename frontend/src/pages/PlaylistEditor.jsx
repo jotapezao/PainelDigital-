@@ -454,8 +454,10 @@ const PlaylistEditor = () => {
     fetchData();
   }, [id, user]);
 
+  // Adiciona uma nova mídia da biblioteca à linha do tempo da playlist
   const addMedia = (media) => {
     if (media.type === 'video') {
+      // Cria elemento de vídeo em memória para carregar metadados do arquivo e obter duração original
       const vid = document.createElement('video');
       vid.src = media.url;
       let durationSet = false;
@@ -463,33 +465,35 @@ const PlaylistEditor = () => {
       vid.onloadedmetadata = () => {
         if (durationSet) return;
         durationSet = true;
-        const dur = Math.min(Math.round(vid.duration), 3600); // max 60 min
+        // Limita a duração máxima a 1 hora (3600 segundos) por precaução
+        const dur = Math.min(Math.round(vid.duration), 3600);
         setSelectedItems(prev => [...prev, {
           media_id: media.id,
           media: media,
           duration: dur || 10,
-          original_duration: dur || 10,
+          original_duration: dur || 10, // Armazena a duração original para validação posterior
           transition: 'fade'
         }]);
       };
       
-      // Fallback timeout in case metadata fails to load (CORS, etc)
+      // Fallback de 2 segundos caso o CORS ou erro de rede impeça o carregamento dos metadados
       setTimeout(() => {
         if (durationSet) return;
         durationSet = true;
         setSelectedItems(prev => [...prev, {
           media_id: media.id,
           media: media,
-          duration: media.duration || 60, // Default to 60s fallback
+          duration: media.duration || 60, // Padrão de 60 segundos de fallback
           original_duration: media.duration || 60,
           transition: 'fade'
         }]);
       }, 2000);
     } else {
+      // Mídias de imagem entram com tempo padrão de 10 segundos
       setSelectedItems(prev => [...prev, {
         media_id: media.id,
         media: media,
-        duration: 10, // Default 10s for images
+        duration: 10,
         original_duration: 10,
         transition: 'fade'
       }]);
@@ -504,12 +508,14 @@ const PlaylistEditor = () => {
     });
   };
 
+  // Atualiza a duração de um item da linha do tempo. Dispara alerta se o tempo do vídeo for alterado.
   const updateDuration = (idx, duration) => {
     setSelectedItems(prev => {
       const copy = [...prev];
       const newDur = Math.max(1, parseInt(duration) || 1);
       const item = copy[idx];
       
+      // Valida se o novo tempo é diferente do tempo original do vídeo e alerta o usuário
       if (item.media?.type === 'video' && item.original_duration && newDur !== item.original_duration) {
         addToast('warning', 'Aviso de Tempo', 'Tempo definido excede o tempo do video ou é menor que a duração do video');
       }

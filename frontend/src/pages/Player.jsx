@@ -174,6 +174,37 @@ const Player = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Controle programático de reprodução/pausa de vídeos para evitar reprodução oculta e garantir carregamento instantâneo
+  useEffect(() => {
+    if (layerA.visible) {
+      if (videoRefA.current) {
+        videoRefA.current.play().catch((err) => {
+          console.warn('[Player Layer A] Erro ao reproduzir vídeo:', err.message);
+        });
+      }
+    } else {
+      if (videoRefA.current) {
+        videoRefA.current.pause();
+        videoRefA.current.currentTime = 0;
+      }
+    }
+  }, [layerA.visible, layerA.item]);
+
+  useEffect(() => {
+    if (layerB.visible) {
+      if (videoRefB.current) {
+        videoRefB.current.play().catch((err) => {
+          console.warn('[Player Layer B] Erro ao reproduzir vídeo:', err.message);
+        });
+      }
+    } else {
+      if (videoRefB.current) {
+        videoRefB.current.pause();
+        videoRefB.current.currentTime = 0;
+      }
+    }
+  }, [layerB.visible, layerB.item]);
+
   // Atualiza o relógio a cada segundo
   useEffect(() => {
     const clockInterval = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -677,7 +708,7 @@ const Player = () => {
           type === 'image' ? (
             <img src={source} style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
           ) : (
-            <video src={source} muted autoPlay playsInline loop style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
+            <video src={source} muted autoPlay={isVisible} preload="auto" playsInline loop style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
           )
         )}
         
@@ -692,7 +723,7 @@ const Player = () => {
           <video
             ref={videoRef}
             src={source}
-            autoPlay 
+            preload="auto"
             muted 
             playsInline
             onEnded={() => handleVideoEnd(layerId)}

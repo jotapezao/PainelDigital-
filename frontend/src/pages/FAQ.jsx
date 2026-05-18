@@ -36,8 +36,20 @@ const FAQ_DATA = [
         a: 'É uma lista de mídias (imagens e vídeos) que serão exibidas em sequência nas telas. Cada plano pode ter configurações visuais como ticker de notícias, relógio, logo persistente, efeitos de transição e muito mais.'
       },
       {
-        q: 'Como funciona a ordem de exibição?',
-        a: 'As mídias são exibidas na ordem que aparecem na lista. Você pode reordenar usando as setas ▲▼ no editor do plano. Para imagens, é possível definir o tempo de exibição em segundos. Vídeos avançam automaticamente ao terminar.'
+        q: 'Como funciona a ordem e o tempo de exibição na timeline?',
+        a: 'As mídias são exibidas na ordem configurada. Você pode arrastá-las para mudar a ordem. Para imagens, você define o tempo (segundos). Para vídeos, o sistema detecta automaticamente os metadados reais e adiciona o item com a duração original do vídeo. Você pode alterar essa duração manualmente se quiser encurtar ou estender o vídeo na timeline.'
+      },
+      {
+        q: 'O que acontece ao alterar a duração original de um vídeo?',
+        a: 'Você é livre para definir o tempo desejado de reprodução do vídeo. Porém, se definir um valor diferente (maior ou menor) do tempo nativo do arquivo, o Editor Pro exibirá um aviso: "Tempo definido excede o tempo do video ou é menor que a duração do video", servindo de guia para evitar cortes bruscos ou telas estáticas.'
+      },
+      {
+        q: 'Como renomear um Plano de Exibição?',
+        a: 'Você pode renomear o seu plano de exibição diretamente a partir do cabeçalho superior no Editor Pro. Basta clicar no nome no topo da tela, digitar o novo título e a alteração será salva automaticamente!'
+      },
+      {
+        q: 'A programação para de rodar no fim da playlist?',
+        a: 'Não. Ao chegar ao término da reprodução do último item do Plano de Exibição, a engine do Player reseta o índice de exibição para 0 de forma automática e nativa, garantindo que o ciclo de anúncios e mídias continue rodando infinitamente sem interrupções.'
       },
       {
         q: 'Como adicionar um ticker de notícias?',
@@ -53,7 +65,7 @@ const FAQ_DATA = [
       },
       {
         q: 'Como funciona o Widget de QR Code / Redes Sociais?',
-        a: 'O Widget de Redes Sociais agora suporta links universais (Campanhas, Promoções, Sites) além de Instagram e WhatsApp. Basta selecionar a plataforma ou "Campanha Genérica", inserir o link/texto e ativar a opção de QR Code. O sistema gerará o código automaticamente na tela.'
+        a: 'O Widget de Redes Sociais agora suporta links universais (Campanhas, Promoções, Sites) além de Instagram, TikTok, YouTube, Facebook e WhatsApp. Basta selecionar a plataforma ou "Campanha Genérica", inserir o link/texto e ativar a opção de QR Code. O sistema gerará o código automaticamente na tela.'
       },
     ]
   },
