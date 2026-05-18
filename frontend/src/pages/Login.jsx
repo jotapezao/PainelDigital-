@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
 
 const Login = () => {
   const [loginIdentifier, setLoginIdentifier] = useState(() => localStorage.getItem('pd_remember_email') || '');
@@ -9,6 +10,10 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [tvModeChecked, setTvModeChecked] = useState(false);
+  const [settings, setSettings] = useState({
+    system_name: 'Painel Digital',
+    logo_url: null
+  });
   
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -21,6 +26,27 @@ const Login = () => {
       setTvModeChecked(true);
     }
   }, []);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await api.get('/settings');
+        if (res.data) {
+          setSettings({
+            system_name: res.data.system_name || 'Painel Digital',
+            logo_url: res.data.logo_url || null
+          });
+        }
+      } catch (err) {
+        console.error('Erro ao carregar configurações do sistema:', err);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  useEffect(() => {
+    document.title = settings.system_name || 'Painel Digital';
+  }, [settings.system_name]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -168,8 +194,8 @@ const Login = () => {
             justify-content: center;
           }
           .login-logo {
-            width: 50px !important;
-            height: 50px !important;
+            width: 80px !important;
+            height: 80px !important;
             margin-bottom: 10px !important;
           }
           .login-title {
@@ -197,8 +223,8 @@ const Login = () => {
             margin: auto;
           }
           .login-logo {
-            width: 64px !important;
-            height: 64px !important;
+            width: 100px !important;
+            height: 100px !important;
           }
           .login-title {
             font-size: 1.75rem !important;
@@ -279,19 +305,20 @@ const Login = () => {
       <div className="login-card animate-fade-in">
         <div className="login-header" style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div className="login-logo" style={{ 
-            width: '80px', 
-            height: '80px', 
-            background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', 
-            borderRadius: '20px', 
+            width: '120px', 
+            height: '120px', 
+            background: settings.logo_url ? 'rgba(255, 255, 255, 0.02)' : 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', 
+            borderRadius: '24px', 
             margin: '0 auto 20px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 12px 24px -8px rgba(99, 102, 241, 0.5)',
+            boxShadow: settings.logo_url ? '0 8px 32px rgba(0, 0, 0, 0.4)' : '0 12px 24px -8px rgba(99, 102, 241, 0.5)',
             overflow: 'hidden',
-            border: '1px solid rgba(255,255,255,0.1)'
+            border: settings.logo_url ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(255,255,255,0.1)',
+            padding: settings.logo_url ? '12px' : '0'
           }}>
-             <img src="./logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+             <img src={settings.logo_url || "./logo.png"} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <h1 className="login-title" style={{ 
             fontSize: '2.25rem', 
@@ -302,7 +329,7 @@ const Login = () => {
             WebkitBackgroundClip: 'text', 
             WebkitTextFillColor: 'transparent' 
           }}>
-            Painel Digital
+            {settings.system_name}
           </h1>
           <p style={{ color: '#a1a1aa', fontWeight: '500', fontSize: '0.9rem', lineHeight: '1.4' }}>Controle suas telas de qualquer lugar com inteligência</p>
         </div>
@@ -388,7 +415,7 @@ const Login = () => {
         </div>
         
         <div style={{ marginTop: '24px', textAlign: 'center' }}>
-          <p style={{ fontSize: '0.7rem', color: '#3f3f46', fontWeight: '600', letterSpacing: '1px' }}>VERSION 3.0.5 • PAINEL DIGITAL</p>
+          <p style={{ fontSize: '0.7rem', color: '#3f3f46', fontWeight: '600', letterSpacing: '1px' }}>VERSION 3.0.5 • {settings.system_name.toUpperCase()}</p>
         </div>
       </div>
     </div>
