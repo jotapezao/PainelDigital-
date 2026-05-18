@@ -247,8 +247,17 @@ async function validarEPrepararCorpo(req, modo = 'create') {
     active,
   } = req.body;
 
-  const device_id = req.body.device_id && String(req.body.device_id).trim() ? String(req.body.device_id).trim() : null;
-  const group_id = req.body.group_id && String(req.body.group_id).trim() ? String(req.body.group_id).trim() : null;
+  let device_id = req.body.device_id;
+  if (typeof device_id === 'string') {
+    device_id = device_id.trim();
+    if (device_id === '' || device_id === 'null' || device_id === 'undefined') device_id = null;
+  }
+
+  let group_id = req.body.group_id;
+  if (typeof group_id === 'string') {
+    group_id = group_id.trim();
+    if (group_id === '' || group_id === 'null' || group_id === 'undefined') group_id = null;
+  }
 
   const erroEscopo = validarEscopo(device_id, group_id);
   if (erroEscopo) {
