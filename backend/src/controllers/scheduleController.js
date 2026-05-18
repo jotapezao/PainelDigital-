@@ -247,20 +247,32 @@ async function validarEPrepararCorpo(req, modo = 'create') {
     active,
   } = req.body;
 
+  console.log('--- [Schedule Debug] Corpo recebido no Backend ---');
+  console.log('device_id recebido:', req.body.device_id, 'tipo:', typeof req.body.device_id);
+  console.log('group_id recebido:', req.body.group_id, 'tipo:', typeof req.body.group_id);
+
   let device_id = req.body.device_id;
   if (typeof device_id === 'string') {
     device_id = device_id.trim();
-    if (device_id === '' || device_id === 'null' || device_id === 'undefined') device_id = null;
+  }
+  if (!device_id || device_id === 'null' || device_id === 'undefined' || device_id === '') {
+    device_id = null;
   }
 
   let group_id = req.body.group_id;
   if (typeof group_id === 'string') {
     group_id = group_id.trim();
-    if (group_id === '' || group_id === 'null' || group_id === 'undefined') group_id = null;
   }
+  if (!group_id || group_id === 'null' || group_id === 'undefined' || group_id === '') {
+    group_id = null;
+  }
+
+  console.log('device_id pós-coerção:', device_id);
+  console.log('group_id pós-coerção:', group_id);
 
   const erroEscopo = validarEscopo(device_id, group_id);
   if (erroEscopo) {
+    console.log('Erro de Escopo detectado:', erroEscopo);
     const err = new Error(erroEscopo);
     err.statusCode = 400;
     throw err;

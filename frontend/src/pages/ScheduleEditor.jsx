@@ -63,7 +63,7 @@ const ScheduleEditor = () => {
       try {
         const [devicesRes, groupsRes, playlistsRes] = await Promise.all([
           api.get('/devices'),
-          api.get('/client-groups'),
+          api.get('/device-groups'),
           api.get('/playlists')
         ]);
         setDevices(devicesRes.data);
