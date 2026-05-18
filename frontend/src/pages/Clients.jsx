@@ -9,7 +9,6 @@ const Clients = () => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filterPlan, setFilterPlan] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [deleteModal, setDeleteModal] = useState({ open: false, client: null });
   const { addToast } = useToast();
@@ -46,17 +45,13 @@ const Clients = () => {
       c.email?.toLowerCase().includes(q) ||
       c.company?.toLowerCase().includes(q) ||
       c.phone?.includes(q);
-    const matchPlan = !filterPlan || c.plan === filterPlan;
     const matchStatus = filterStatus === '' || (filterStatus === 'active' ? c.active : !c.active);
-    return matchSearch && matchPlan && matchStatus;
+    return matchSearch && matchStatus;
   });
 
   const getInitials = (name) => name?.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?';
   const AVATAR_COLORS = ['#6366f1', '#ec4899', '#8b5cf6', '#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#14b8a6'];
   const getAvatarColor = (id) => AVATAR_COLORS[parseInt(id?.slice(-2) || 0, 16) % AVATAR_COLORS.length];
-
-  const PLAN_LABELS = { basic: 'Básico', pro: 'Pro', enterprise: 'Enterprise' };
-  const PLAN_COLORS = { basic: 'var(--text-dim)', pro: 'var(--primary)', enterprise: 'var(--accent)' };
 
   return (
     <div className="animate-fade-in">
@@ -83,20 +78,14 @@ const Clients = () => {
             style={{ paddingLeft: '40px' }}
           />
         </div>
-        <select value={filterPlan} onChange={e => setFilterPlan(e.target.value)} style={{ width: 'auto', minWidth: '140px' }}>
-          <option value="">Todos os Planos</option>
-          <option value="basic">Básico</option>
-          <option value="pro">Pro</option>
-          <option value="enterprise">Enterprise</option>
-        </select>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ width: 'auto', minWidth: '130px' }}>
           <option value="">Qualquer Status</option>
           <option value="active">Ativos</option>
           <option value="inactive">Inativos</option>
         </select>
-        {(search || filterPlan || filterStatus) && (
+        {(search || filterStatus) && (
           <button className="btn btn-outline" style={{ padding: '10px 16px', fontSize: '0.875rem' }}
-            onClick={() => { setSearch(''); setFilterPlan(''); setFilterStatus(''); }}>
+            onClick={() => { setSearch(''); setFilterStatus(''); }}>
             ✕ Limpar
           </button>
         )}
@@ -142,7 +131,7 @@ const Clients = () => {
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-input)' }}>
-                  {['Empresa / Cliente', 'Plano', 'Dispositivos', 'Usuários', 'Status', 'Ações'].map(col => (
+                  {['Empresa / Cliente', 'Dispositivos', 'Usuários', 'Status', 'Ações'].map(col => (
                     <th key={col} style={{ padding: '14px 20px', textAlign: 'left', fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: '600', whiteSpace: 'nowrap' }}>{col}</th>
                   ))}
                 </tr>
@@ -170,16 +159,6 @@ const Clients = () => {
                           <p style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{client.email}</p>
                         </div>
                       </div>
-                    </td>
-                    {/* Plan */}
-                    <td style={{ padding: '14px 20px' }}>
-                      <span style={{
-                        fontSize: '0.75rem', fontWeight: '700', padding: '4px 10px',
-                        borderRadius: '20px', background: `${PLAN_COLORS[client.plan] || PLAN_COLORS.basic}1a`,
-                        color: PLAN_COLORS[client.plan] || PLAN_COLORS.basic
-                      }}>
-                        {PLAN_LABELS[client.plan] || client.plan}
-                      </span>
                     </td>
                     {/* Devices */}
                     <td style={{ padding: '14px 20px' }}>

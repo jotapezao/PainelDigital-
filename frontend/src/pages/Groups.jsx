@@ -12,9 +12,7 @@ const Groups = () => {
   const [form, setForm] = useState({
     name: '',
     description: '',
-    default_plan: 'basic',
     default_theme_color: '#6366f1',
-    default_storage_quota_gb: 10,
     active: true
   });
 
@@ -38,15 +36,18 @@ const Groups = () => {
   const handleOpenModal = (group = null) => {
     if (group) {
       setEditingGroup(group);
-      setForm({ ...group });
+      setForm({
+        name: group.name || '',
+        description: group.description || '',
+        default_theme_color: group.default_theme_color || '#6366f1',
+        active: group.active !== false
+      });
     } else {
       setEditingGroup(null);
       setForm({
         name: '',
         description: '',
-        default_plan: 'basic',
         default_theme_color: '#6366f1',
-        default_storage_quota_gb: 10,
         active: true
       });
     }
@@ -87,7 +88,7 @@ const Groups = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
         <div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '800' }}>🏢 Grupos de Empresas</h2>
-          <p style={{ color: 'var(--text-muted)' }}>Gerencie herança de configurações e planos em lote.</p>
+          <p style={{ color: 'var(--text-muted)' }}>Gerencie herança de configurações em lote.</p>
         </div>
         <button className="btn btn-primary" onClick={() => handleOpenModal()}>+ Novo Grupo</button>
       </div>
@@ -115,20 +116,12 @@ const Groups = () => {
                 </span>
               </div>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Empresas Vinculadas:</span>
-                  <span style={{ fontWeight: '700', color: 'var(--text-main)' }}>{group.client_count || 0}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Empresas Vinculadas:</span>
+                    <span style={{ fontWeight: '700', color: 'var(--text-main)' }}>{group.client_count || 0}</span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Plano Padrão:</span>
-                  <span style={{ fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase' }}>{group.default_plan}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Cota de Storage:</span>
-                  <span style={{ fontWeight: '700', color: 'var(--text-main)' }}>{group.default_storage_quota_gb} GB</span>
-                </div>
-              </div>
 
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button className="btn btn-outline" style={{ flex: 1, padding: '8px', fontSize: '0.8125rem' }} onClick={() => handleOpenModal(group)}>✏️ Editar</button>
@@ -154,20 +147,6 @@ const Groups = () => {
               <div className="input-group">
                 <label>Descrição</label>
                 <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Breve descrição do grupo..." rows={2} />
-              </div>
-              <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div className="input-group">
-                  <label>Plano Padrão</label>
-                  <select value={form.default_plan} onChange={e => setForm({ ...form, default_plan: e.target.value })}>
-                    <option value="basic">Basic (Gratuito)</option>
-                    <option value="pro">Pro (Profissional)</option>
-                    <option value="enterprise">Enterprise (Ilimitado)</option>
-                  </select>
-                </div>
-                <div className="input-group">
-                  <label>Cota Storage (GB)</label>
-                  <input type="number" value={form.default_storage_quota_gb} onChange={e => setForm({ ...form, default_storage_quota_gb: e.target.value })} />
-                </div>
               </div>
               <div className="input-group">
                 <label>Cor Identidade Visual</label>

@@ -27,14 +27,19 @@ async function getById(req, res) {
 
 // POST /api/client-groups
 async function create(req, res) {
-  const { name, description, default_plan, default_theme_color, default_storage_quota_gb } = req.body;
+  const { name, description, default_theme_color } = req.body;
   if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
   try {
     const { rows } = await pool.query(
       `INSERT INTO client_groups (name, description, default_plan, default_theme_color, default_storage_quota_gb)
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [name, description || null, default_plan || 'basic', 
-       default_theme_color || '#6366f1', default_storage_quota_gb || 10]
+      [
+        name,
+        description || null,
+        'basic',
+        default_theme_color || '#6366f1',
+        10,
+      ]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -44,15 +49,21 @@ async function create(req, res) {
 
 // PUT /api/client-groups/:id
 async function update(req, res) {
-  const { name, description, default_plan, default_theme_color, default_storage_quota_gb, active } = req.body;
+  const { name, description, default_theme_color, active } = req.body;
   try {
     const { rows } = await pool.query(
       `UPDATE client_groups SET name=$1, description=$2, default_plan=$3, 
        default_theme_color=$4, default_storage_quota_gb=$5, active=$6, updated_at=NOW()
        WHERE id=$7 RETURNING *`,
-      [name, description || null, default_plan || 'basic', 
-       default_theme_color || '#6366f1', default_storage_quota_gb || 10, 
-       active !== false, req.params.id]
+      [
+        name,
+        description || null,
+        'basic',
+        default_theme_color || '#6366f1',
+        10,
+        active !== false,
+        req.params.id
+      ]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Grupo não encontrado' });
     res.json(rows[0]);

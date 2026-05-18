@@ -262,7 +262,7 @@ const UserEditor = () => {
               </select>
               {selectedClient && (
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '6px' }}>
-                  {selectedClient.device_count || 0} dispositivos · Plano: {selectedClient.plan || 'basic'}
+                  {selectedClient.device_count || 0} dispositivos
                 </p>
               )}
             </div>

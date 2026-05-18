@@ -20,9 +20,8 @@ const ClientEditor = () => {
     email: '',
     company: '',
     phone: '',
-    plan: 'basic',
+    group_id: '',
     theme_color: '#6366f1',
-    storage_quota_gb: 10,
     notes: '',
     active: true,
   });
@@ -36,6 +35,7 @@ const ClientEditor = () => {
   });
 
   const [linkedUsers, setLinkedUsers] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
@@ -43,6 +43,9 @@ const ClientEditor = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const groupsRes = await api.get('/client-groups');
+        setGroups(Array.isArray(groupsRes.data) ? groupsRes.data : []);
+
         if (!isNew) {
           const [clientRes, usersRes] = await Promise.allSettled([
             api.get(`/clients/${id}`),
@@ -75,6 +78,9 @@ const ClientEditor = () => {
     try {
       const payload = {
         ...form,
+        // Padronização: plano e cota não são mais configuráveis por empresa
+        plan: 'basic',
+        storage_quota_gb: 10,
         ...(isNew && userForm.create ? {
           user_name: userForm.name,
           user_email: userForm.email,
@@ -184,16 +190,17 @@ const ClientEditor = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
               <div className="input-group">
-                <label>Plano de Assinatura</label>
-                <select value={form.plan} onChange={e => set('plan', e.target.value)}>
-                  <option value="basic">Básico</option>
-                  <option value="pro">Profissional (Pro)</option>
-                  <option value="enterprise">Corporativo (Enterprise)</option>
+                <label>Grupo</label>
+                <select value={form.group_id || ''} onChange={e => set('group_id', e.target.value)}>
+                  <option value="">— Sem grupo —</option>
+                  {groups.filter(g => g.active !== false).map(g => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
                 </select>
               </div>
               <div className="input-group">
                 <label>Cota de Armazenamento (GB)</label>
-                <input type="number" value={form.storage_quota_gb || 10} onChange={e => set('storage_quota_gb', parseInt(e.target.value) || 0)} placeholder="Ex: 10" />
+                <input value="10" disabled />
               </div>
               <div className="input-group">
                 <label>Cor do Tema</label>

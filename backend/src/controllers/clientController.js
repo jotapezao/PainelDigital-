@@ -69,7 +69,7 @@ async function getUsers(req, res) {
 // POST /api/clients
 // Accepts optional user fields: user_name, user_email, user_password, user_role
 async function create(req, res) {
-  const { name, email, company, phone, plan, theme_color, notes, storage_quota_gb,
+  const { name, email, company, phone, group_id, theme_color, notes,
           user_name, user_email, user_password, user_role } = req.body;
 
   if (!name || !email) return res.status(400).json({ error: 'Nome e email são obrigatórios' });
@@ -79,10 +79,19 @@ async function create(req, res) {
     await db.query('BEGIN');
 
     const clientResult = await db.query(
-      `INSERT INTO clients (name, email, company, phone, plan, theme_color, notes, storage_quota_gb)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [name, email, company || null, phone || null, plan || 'basic',
-       theme_color || '#6366f1', notes || null, parseInt(storage_quota_gb) || 10]
+      `INSERT INTO clients (name, email, company, phone, plan, group_id, theme_color, notes, storage_quota_gb)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [
+        name,
+        email,
+        company || null,
+        phone || null,
+        'basic',
+        group_id || null,
+        theme_color || '#6366f1',
+        notes || null,
+        10
+      ]
     );
     const newClient = clientResult.rows[0];
 
@@ -110,15 +119,25 @@ async function create(req, res) {
 
 // PUT /api/clients/:id
 async function update(req, res) {
-  const { name, email, company, phone, plan, active, theme_color, notes, storage_quota_gb } = req.body;
+  const { name, email, company, phone, group_id, active, theme_color, notes } = req.body;
   try {
     const { rows } = await pool.query(
-      `UPDATE clients SET name=$1, email=$2, company=$3, phone=$4, plan=$5,
-       active=$6, theme_color=$7, notes=$8, storage_quota_gb=$9, updated_at=NOW()
-       WHERE id=$10 RETURNING *`,
-      [name, email, company || null, phone || null, plan || 'basic',
-       active !== false, theme_color || '#6366f1', notes || null,
-       parseInt(storage_quota_gb) || 10, req.params.id]
+      `UPDATE clients SET name=$1, email=$2, company=$3, phone=$4, plan=$5, group_id=$6,
+       active=$7, theme_color=$8, notes=$9, storage_quota_gb=$10, updated_at=NOW()
+       WHERE id=$11 RETURNING *`,
+      [
+        name,
+        email,
+        company || null,
+        phone || null,
+        'basic',
+        group_id || null,
+        active !== false,
+        theme_color || '#6366f1',
+        notes || null,
+        10,
+        req.params.id
+      ]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Cliente não encontrado' });
     res.json(rows[0]);
