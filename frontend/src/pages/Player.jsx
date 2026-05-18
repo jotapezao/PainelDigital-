@@ -578,15 +578,29 @@ const Player = () => {
     
     setIsTransitioning(true);
 
+    const outgoingLayer = activeLayer; // Salva qual camada está saindo ('A' ou 'B')
+
     if (activeLayer === 'A') {
-      // Carrega no B e transita de A para B
+      // Inicia o vídeo na camada B imediatamente para evitar atraso/tela preta
+      if (videoRefB.current) {
+        videoRefB.current.play().catch(err => {
+          console.warn('[Player] Falha ao iniciar play no B:', err.message);
+        });
+      }
+      // Torna B visível e inicia a transição, mas MANTÉM A visível (para continuar reproduzindo o vídeo/imagem no fade)
       setLayerB({ item: nextItem, visible: true, effect: `${effect}-in` });
-      setLayerA(prev => ({ ...prev, visible: false, effect: `${effect}-out` }));
+      setLayerA(prev => ({ ...prev, effect: `${effect}-out` }));
       setActiveLayer('B');
     } else {
-      // Carrega no A e transita de B para A
+      // Inicia o vídeo na camada A imediatamente para evitar atraso/tela preta
+      if (videoRefA.current) {
+        videoRefA.current.play().catch(err => {
+          console.warn('[Player] Falha ao iniciar play no A:', err.message);
+        });
+      }
+      // Torna A visível e inicia a transição, mas MANTÉM B visível
       setLayerA({ item: nextItem, visible: true, effect: `${effect}-in` });
-      setLayerB(prev => ({ ...prev, visible: false, effect: `${effect}-out` }));
+      setLayerB(prev => ({ ...prev, effect: `${effect}-out` }));
       setActiveLayer('A');
     }
 
@@ -596,8 +610,16 @@ const Player = () => {
     // Tempo da transição CSS (respeita a configuração da playlist ou padrão 0.8s)
     const transitionDur = parseFloat(playlist.transition_duration) || 0.8;
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+    
     transitionTimerRef.current = setTimeout(() => {
       setIsTransitioning(false);
+      
+      // Apenas apaga/pausa a camada que saiu DEPOIS que a transição visual completou totalmente!
+      if (outgoingLayer === 'A') {
+        setLayerA(prev => ({ ...prev, visible: false, effect: 'none' }));
+      } else {
+        setLayerB(prev => ({ ...prev, visible: false, effect: 'none' }));
+      }
     }, (transitionDur * 1000) + 50); 
   };
 
@@ -701,7 +723,8 @@ const Player = () => {
     const effectClass = layerData.effect !== 'none' ? `effect-${layerData.effect}` : '';
     const layerClass = isVisible ? 'layer-visible' : 'layer-hidden';
 
-    const transitionDur = playlist.transition_duration || '0.8s';
+    const durSec = parseFloat(playlist.transition_duration) ?? 0.8;
+    const transitionDur = `${durSec}s`;
 
     const mediaStyle = {
       width: '100%',
