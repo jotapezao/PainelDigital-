@@ -157,12 +157,19 @@ const Player = () => {
     const isVideo = type === 'video';
     const forceDuration = currentItem.duration_seconds > 0;
 
-    if (!isVideo || forceDuration) {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = null;
+
+    if (!isVideo) {
       const duration = (currentItem.duration_seconds || 10) * 1000;
-      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(nextMedia, duration);
+    } else if (forceDuration) {
+      // Para vídeos com duração forçada: avança no tempo definido,
+      // mas também deixa o onEnded avançar antes caso o vídeo termine primeiro.
+      const duration = (currentItem.duration_seconds || 10) * 1000;
       timerRef.current = setTimeout(nextMedia, duration);
     }
-    
+     
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
@@ -626,11 +633,11 @@ const Player = () => {
   const handleVideoEnd = (layer) => {
     // Só avança se o vídeo que terminou for o da camada ativa
     if (layer === activeLayer) {
-      const currentItem = activeLayer === 'A' ? layerA.item : layerB.item;
-      // Se tiver duração forçada, o timer já vai cuidar disso
-      if (!(currentItem?.duration_seconds > 0)) {
-        nextMedia();
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
       }
+      nextMedia();
     }
   };
 

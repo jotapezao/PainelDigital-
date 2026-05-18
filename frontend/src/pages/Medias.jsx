@@ -68,37 +68,23 @@ const Medias = () => {
     fetchStorage();
   }, [user]);
 
+  useEffect(() => {
+    const usedBytes = (medias || []).reduce((acc, m) => acc + (parseInt(m.size_bytes || 0) || 0), 0);
+    setStorageInfo(prev => ({ ...prev, used: usedBytes }));
+  }, [medias]);
+
   const fetchStorage = async () => {
     try {
-      // If admin, we should probably fetch the client-specific storage or total storage.
-      // For now, let's fetch the client storage for the current context.
-      const endpoint = user?.role === 'admin' ? '/clients' : `/clients/${user.client_id}`;
-      const res = await api.get(endpoint);
-      
-      // If admin, it returns an array. We'll sum all or show the first one depending on context.
-      // But user complained about "não soma as mídias existente", so let's make sure we sum all medias for the current client.
-      let data = res.data;
-      if (Array.isArray(data)) {
-        // If Admin and multiple clients, we'll sum up for a "Global" view, or just take the first if it's the only one.
-        // If Admin is managing a specific client, they should see that client's quota.
-        // For simplicity, if Admin sees multiple, let's sum them.
-        if (user?.role === 'admin') {
-          const totalUsed = data.reduce((acc, c) => acc + parseInt(c.storage_used || 0), 0);
-          const totalQuota = 10 * 1024 * 1024 * 1024; // Fix: Use 10 GB standard instead of summing up (which caused 40 GB)
-          setStorageInfo({ used: totalUsed, quota: totalQuota });
-        } else {
-          const clientData = data[0];
-          setStorageInfo({
-            used: parseInt(clientData?.storage_used || 0),
-            quota: parseInt(clientData?.storage_quota_bytes || 10 * 1024 * 1024 * 1024)
-          });
-        }
-      } else {
-        setStorageInfo({
-          used: parseInt(data?.storage_used || 0),
-          quota: parseInt(data?.storage_quota_bytes || 10 * 1024 * 1024 * 1024)
-        });
-      }
+      // A barra deve refletir exatamente a biblioteca exibida.
+      // Para a cota, usamos a empresa do usuário logado (quando existir).
+      if (!user?.client_id) return;
+
+      const res = await api.get(`/clients/${user.client_id}`);
+      const data = res.data || {};
+      setStorageInfo(prev => ({
+        ...prev,
+        quota: parseInt(data?.storage_quota_bytes || 10 * 1024 * 1024 * 1024),
+      }));
     } catch (e) {
       console.error('Error fetching storage:', e);
     }
@@ -107,7 +93,8 @@ const Medias = () => {
   const fetchMedias = async () => {
     try {
       const response = await api.get('/medias');
-      setMedias(response.data);
+      const list = response.data || [];
+      setMedias(list);
     } catch {
       addToast('error', 'Erro', 'Não foi possível carregar as mídias.');
     } finally {
