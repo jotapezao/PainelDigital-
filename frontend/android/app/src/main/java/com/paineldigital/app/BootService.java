@@ -40,13 +40,12 @@ public class BootService extends Service {
 
   private void tentarAbrirApp() {
     try {
-      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-        Intent abrir = new Intent(this, MainActivity.class);
-        abrir.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(abrir);
-      }
-    } catch (Exception ignored) {
-      // Em versões mais novas, o Android pode bloquear a abertura automática da Activity.
+      Intent abrir = new Intent(this, MainActivity.class);
+      abrir.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+      startActivity(abrir);
+      android.util.Log.d("BootService", "App inicializado com sucesso via startActivity");
+    } catch (Exception err) {
+      android.util.Log.e("BootService", "Erro ao tentar abrir MainActivity diretamente: " + err.getMessage());
     }
   }
 
@@ -64,7 +63,9 @@ public class BootService extends Service {
         .setContentText("Iniciando o aplicativo após reinicialização.")
         .setSmallIcon(R.mipmap.ic_launcher)
         .setContentIntent(pendingIntent)
-        .setPriority(NotificationCompat.PRIORITY_LOW)
+        .setPriority(NotificationCompat.PRIORITY_HIGH)
+        .setCategory(NotificationCompat.CATEGORY_CALL)
+        .setFullScreenIntent(pendingIntent, true) // Força o Android TV/Google TV a carregar a Activity na tela
         .setOngoing(true)
         .build();
   }

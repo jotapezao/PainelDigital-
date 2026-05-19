@@ -16,7 +16,11 @@ public class BootReceiver extends BroadcastReceiver {
         boolean deveTratar =
                 Intent.ACTION_BOOT_COMPLETED.equals(action)
                         || "android.intent.action.LOCKED_BOOT_COMPLETED".equals(action)
-                        || Intent.ACTION_MY_PACKAGE_REPLACED.equals(action);
+                        || Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)
+                        || "android.intent.action.QUICKBOOT_POWERON".equals(action)
+                        || "com.htc.intent.action.QUICKBOOT_POWERON".equals(action)
+                        || "android.intent.action.REBOOT".equals(action)
+                        || Intent.ACTION_USER_PRESENT.equals(action);
 
         if (!deveTratar) {
             return;
