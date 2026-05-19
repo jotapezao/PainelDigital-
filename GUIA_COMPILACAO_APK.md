@@ -69,3 +69,30 @@ Na prática, em muitos dispositivos o Android pode limitar inicialização autom
 Por padrão, o APK será empacotado com a URL configurada no seu `.env` do Frontend (exemplo: seu domínio de produção). Certifique-se de que o backend já esteja rodando na internet (ex: Railway) e que o Frontend saiba conversar com ele.
 
 Você pode instalar o app em quantas Android TVs quiser e todas sincronizarão perfeitamente através do backend!
+
+---
+
+## 🤖 6. Automação Completa de Build, Versão e Release
+
+Para facilitar e agilizar o processo de atualização do aplicativo, criamos um assistente interativo que faz todo o trabalho pesado de forma automática!
+
+### O que o assistente faz?
+1. **Lê e incrementa a versão** no arquivo `build.gradle` e no código do React (`UpdateManager.jsx`).
+2. **Gera a build do React** (`npm run build`) e sincroniza com o Capacitor (`npx cap sync android`).
+3. **Compila o APK nativo** em plano de fundo usando o Gradle local (`assembleDebug`).
+4. **Copia e renomeia o APK** para a pasta `/releases` com o nome da versão (ex: `PainelDigital-v1.0.1.apk`).
+5. **Cria um Release no GitHub** e faz o upload automático do APK como asset.
+6. **Atualiza o Banco de Dados local** com a nova versão e o link de download direto do APK.
+7. **Faz o commit e push** das alterações de versão para o seu repositório no GitHub.
+
+### Como usar o assistente?
+1. No terminal do projeto, execute o comando:
+   ```bash
+   npm run release
+   ```
+2. O assistente é totalmente interativo e perguntará o que você deseja fazer em cada etapa (basta responder com `S` para Sim ou `N` para Não).
+
+### Pré-requisitos para Recursos Online (GitHub/Database):
+- **Token do GitHub**: Para fazer upload automático dos APKs nas Releases do seu repositório, crie um *Personal Access Token (PAT)* no GitHub com permissão `repo` e configure-o como `GITHUB_TOKEN=seu_token` no seu `.env` do backend ou insira-o quando solicitado pelo script.
+- **Integração no Sistema**: Ao criar a Release no GitHub, se o campo **Repositório GitHub** nas configurações do Painel Digital (`Settings.jsx` / `/settings` no painel administrativo) estiver configurado com o nome do seu repositório (ex: `jotapezao/PainelDigital-`), o backend irá buscar as novas versões automaticamente usando a API do GitHub sem nenhuma configuração adicional!
+
