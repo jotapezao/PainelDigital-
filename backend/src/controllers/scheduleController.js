@@ -173,6 +173,19 @@ async function resolverClienteDoPayload(payload) {
   return null;
 }
 
+async function notificarAtualizacaoAgendamento(req, clientId) {
+  try {
+    const io = req.app.get('io');
+    if (!io || !clientId) return;
+    io.to(`client:${clientId}`).emit('playlist:updated', {
+      reason: 'schedule_changed',
+      updated_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('[Schedule notify]', err.message);
+  }
+}
+
 // GET /api/schedules
 async function list(req, res) {
   try {
@@ -382,6 +395,8 @@ async function create(req, res) {
       message: conflitosFiltrados.length ? 'Agendamento criado com conflitos de horário' : 'Agendamento criado',
     });
 
+    await notificarAtualizacaoAgendamento(req, await resolverClienteDoPayload(agendamento));
+
     res.status(201).json({
       ...agendamento,
       ...montarCampoEscopo(agendamento),
@@ -448,6 +463,8 @@ async function update(req, res) {
       message: conflitosFiltrados.length ? 'Agendamento atualizado com conflitos de horário' : 'Agendamento atualizado',
     });
 
+    await notificarAtualizacaoAgendamento(req, await resolverClienteDoPayload(agendamento));
+
     res.json({
       ...agendamento,
       ...montarCampoEscopo(agendamento),
@@ -513,8 +530,19 @@ async function history(req, res) {
 // DELETE /api/schedules/:id
 async function remove(req, res) {
   try {
+    const { rows } = await pool.query(
+      `SELECT COALESCE(d.client_id, g.client_id, p.client_id) AS client_id
+       FROM schedules s
+       LEFT JOIN devices d ON s.device_id = d.id
+       LEFT JOIN device_groups g ON s.group_id = g.id
+       LEFT JOIN playlists p ON s.playlist_id = p.id
+       WHERE s.id = $1`,
+      [req.params.id]
+    );
+    const clientId = rows[0]?.client_id || null;
     const { rowCount } = await pool.query('DELETE FROM schedules WHERE id = $1', [req.params.id]);
     if (rowCount === 0) return res.status(404).json({ error: 'Agendamento não encontrado' });
+    await notificarAtualizacaoAgendamento(req, clientId);
     res.json({ message: 'Agendamento removido!' });
   } catch (err) {
     res.status(500).json({ error: 'Erro interno' });

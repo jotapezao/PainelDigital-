@@ -55,6 +55,9 @@ Conecta a nuvem às suas televisões.
 1. Instale o aplicativo (APK) na Android TV ou TV Box, abra o Player pelo link de cliente.
 2. No menu **Dispositivos** do Painel Admin, cadastre o equipamento e veja em tempo real se ele está *Online* ou *Offline*.
 
+### Dica profissional (mais estabilidade)
+Quando o APK está rodando em TV/Box, o Player pode manter o plano e as mídias em cache local e sincronizar apenas mudanças. Isso reduz travamentos em redes lentas e mantém a exibição mesmo com oscilações de internet.
+
 ---
 
 ## 6. Dúvidas e Suporte

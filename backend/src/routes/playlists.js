@@ -4,6 +4,7 @@ const { authMiddleware } = require('../middleware/auth');
 
 router.use(authMiddleware);
 router.get('/', ctrl.list);
+router.get('/active/manifest', ctrl.getManifest);
 router.get('/active', ctrl.getActive);
 router.get('/:id', ctrl.getById);
 router.post('/', ctrl.create);

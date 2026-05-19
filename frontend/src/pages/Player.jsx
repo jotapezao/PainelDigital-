@@ -4,6 +4,7 @@ import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { io } from 'socket.io-client';
 import { getTickerVisualConfig, buildTickerText, getTickerSpeedDuration } from '../utils/tickerVisual';
+import { limparObjectUrlsDoPlayer, sincronizarPlaylistComCache } from '../services/playerCache';
 
 
 const Player = () => {
@@ -82,6 +83,9 @@ const Player = () => {
     return resolveMediaSource(media);
   };
 
+  const getOriginalUrl = (media) => media?.original_url || resolveMediaSource(media);
+  const getCacheEntry = (media) => mediaCacheRef.current.get(getMediaKey(media));
+
   useEffect(() => {
     fetchPlaylist();
     
@@ -128,17 +132,21 @@ const Player = () => {
       if (heartbeat) clearInterval(heartbeat);
       clearInterval(interval);
       socket.disconnect();
+      limparObjectUrlsDoPlayer();
     };
   }, [previewId, isStarted, user]);
 
   // Inicialização da Playlist e Primeira Camada
   useEffect(() => {
     if (!playlist || playlist.items.length === 0) return;
-    
-    const firstItem = playlist.items[currentIndex];
+
+    setCurrentIndex(0);
+    const firstItem = playlist.items[0];
     setLayerA({ item: firstItem, visible: true, effect: 'none' });
+    setLayerB({ item: null, visible: false, effect: 'none' });
+    setActiveLayer('A');
     currentMediaRef.current = (firstItem.media || firstItem).name || 'Mídia Inicial';
-  }, [playlist?.id]);
+  }, [playlist?.id, playlist?.manifest?.version]);
 
   useEffect(() => {
     if (!playlist || playlist.items.length === 0) return;
@@ -542,11 +550,11 @@ const Player = () => {
       if (previewId) {
         response = await api.get(`/playlists/${previewId}`);
       } else {
-        response = await api.get('/playlists/active'); 
+        response = await api.get('/playlists/active/manifest');
       }
       
       if (response.data && (response.data.items || response.data.media)) {
-        const data = response.data;
+        let data = response.data;
         if (!data.items && data.media) data.items = data.media;
         
         // Fetch RSS if provided
@@ -566,6 +574,10 @@ const Player = () => {
           }
         }
         
+        if (!previewId) {
+          data = await sincronizarPlaylistComCache(data);
+        }
+
         setPlaylist(data);
       } else {
         setPlaylist(null);

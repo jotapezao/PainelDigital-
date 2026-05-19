@@ -39,7 +39,7 @@ Gerencia quem tem acesso à plataforma.
 *   **Cota de Armazenamento (`storage_quota`)**: O sistema defende a integridade do disco/nuvem bloqueando novos uploads se a cota total for atingida (Padrão: 10GB, customizável pelo Admin ao editar o cliente).
 
 ### 3.2. Biblioteca de Mídias (Pipeline de Upload)
-*   **Upload em Stream**: Ao enviar um arquivo, o Multer recebe o *stream* via Node.js e repassa simultaneamente para o Cloudflare R2, sem estourar a memória RAM do servidor.
+*   **Upload para R2**: Ao enviar um arquivo, o backend recebe o upload via Multer e envia para o Cloudflare R2, armazenando no PostgreSQL apenas os metadados (nome, tamanho, tipo, etc).
 *   **Limites de Arquivo**: Configurado para aceitar arquivos de até **1GB** por envio, focando em suportar vídeos 4K prolongados.
 *   **Clean Up Lógico**: Caso uma mídia seja deletada da biblioteca, o backend aciona uma API para apagar o arquivo real no Cloudflare R2, evitando arquivos órfãos pagando hospedagem indevida.
 *   **Preview**: O dashboard gera previews das imagens e vídeos antes mesmo de serem alocados num Plano de Exibição.
@@ -105,6 +105,11 @@ A engine que roda na ponta (nas TVs) é o ápice da lógica.
 
 *   **Auto-Restart e Resiliência**: Caso a conexão com a internet ou R2 caia enquanto baixa a próxima mídia, o player tem tratamento de erros (`onError`). Ele cancela a transição e pula para a mídia seguinte já cacheada, não deixando a tela ficar preta ("tela morta" em locais públicos).
 *   **Sincronização via WebSockets (Socket.io)**: Substituímos o antigo sistema de polling (checar a cada 2 minutos) por uma conexão bidirecional persistente. Quando o administrador clica em "Publicar na TV", o backend emite um evento instantâneo via Socket.io para a sala específica do cliente (`client:ID`), disparando o refresh da playlist no Player em milissegundos.
+*   **Manifesto versionado + cache local (APK)**: O endpoint `/api/playlists/active/manifest` retorna a playlist ativa junto com um `manifest.version` (hash). No APK, o Player pode baixar e manter as mídias do manifesto em cache local e somente sincronizar os arquivos alterados. Caso a sincronização falhe, o Player usa o último plano salvo e continua reproduzindo.
 *   **Modo Imersivo Android (MainActivity.java)**: Implementamos uma lógica nativa de "Immersive Mode" que utiliza o `WindowInsetsController` (Android 11+) e `SystemUiVisibility` (Legado) para ocultar permanentemente as barras de status e navegação, além de gerenciar o `DisplayCutoutMode` para usar a área total de telas com "furo" de câmera (Notch).
 *   **Escalonamento de Coordenadas (Coordinate Scaling)**: Para garantir que o layout criado no editor (base 960x540) seja idêntico em TVs 4K ou celulares, o Player agora aplica um fator de escala dinâmico (`getScaledPos`) que recalcula as posições `X` e `Y` baseadas na resolução real da tela de exibição.
 *   **Resiliência Mobile**: Otimização automática de widgets (`responsiveScale`) que reduz o tamanho dos elementos em 55% quando detecta telas menores que 768px, evitando sobreposição de cards em celulares.
+
+### 6.1. Observações importantes (Produção)
+*   **CORS do R2**: para o APK conseguir baixar mídias via `fetch()` e armazenar no cache local do WebView, o domínio público do R2 precisa permitir CORS para a origem do app.
+*   **Robustez de agendamento**: alterações de agendamento disparam notificação em tempo real (mesmo evento de atualização de playlist) para o Player sincronizar imediatamente.

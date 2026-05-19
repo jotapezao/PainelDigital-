@@ -1,4 +1,5 @@
 const { pool } = require('../database/db');
+const crypto = require('crypto');
 const {
   verificarAgendamentoAtivo,
   resolverAgendamentoVigente,
@@ -7,6 +8,64 @@ const {
 } = require('../services/agendamentoService');
 
 const estadoExecucaoAgendamentos = new Map();
+
+function criarVersaoManifesto(playlist, items) {
+  const payload = {
+    playlist_id: playlist?.id,
+    playlist_updated_at: playlist?.updated_at,
+    schedule_id: playlist?.schedule?.id || null,
+    items: (items || []).map(item => ({
+      id: item.id,
+      media_id: item.media_id,
+      position: item.position,
+      duration_seconds: item.duration_seconds,
+      transition: item.transition,
+      filename: item.media_filename || item.filename,
+      media_updated_at: item.media_updated_at,
+      size_bytes: item.size_bytes,
+    })),
+  };
+
+  return crypto
+    .createHash('sha256')
+    .update(JSON.stringify(payload))
+    .digest('hex');
+}
+
+function anexarManifesto(playlist) {
+  const items = playlist.items || [];
+  const mediasMap = new Map();
+
+  for (const item of items) {
+    const tipo = item.media_type || item.type;
+    if (tipo === 'widget') continue;
+
+    const mediaId = item.media_id || item.id;
+    const arquivo = item.media_filename || item.filename;
+    if (!mediaId || !arquivo || !item.url) continue;
+
+    mediasMap.set(mediaId, {
+      id: mediaId,
+      name: item.media_name || item.name || arquivo,
+      type: tipo,
+      filename: arquivo,
+      url: item.url,
+      mime_type: item.mime_type || null,
+      size_bytes: Number(item.size_bytes || 0),
+      updated_at: item.media_updated_at || item.updated_at || null,
+    });
+  }
+
+  playlist.manifest = {
+    version: criarVersaoManifesto(playlist, items),
+    generated_at: new Date().toISOString(),
+    playlist_id: playlist.id,
+    schedule_id: playlist.schedule?.id || null,
+    medias: Array.from(mediasMap.values()),
+  };
+
+  return playlist;
+}
 
 // GET /api/playlists
 async function list(req, res) {
@@ -476,7 +535,8 @@ async function getActive(req, res) {
     }
 
     const { rows: items } = await pool.query(
-      `SELECT pi.*, m.type, m.filename, m.name as media_name
+      `SELECT pi.*, m.type, m.filename, m.name as media_name,
+        m.mime_type, m.size_bytes, m.updated_at as media_updated_at
        FROM playlist_items pi 
        JOIN medias m ON pi.media_id = m.id
        WHERE pi.playlist_id = $1 
@@ -512,11 +572,15 @@ async function getActive(req, res) {
       };
     }
 
-    res.json(playlist);
+    res.json(anexarManifesto(playlist));
   } catch (err) {
     console.error('[getActive]', err.message);
     res.status(500).json({ error: 'Erro interno no servidor' });
   }
 }
 
-module.exports = { list, getById, create, update, remove, setItems, getActive };
+async function getManifest(req, res) {
+  return getActive(req, res);
+}
+
+module.exports = { list, getById, create, update, remove, setItems, getActive, getManifest };

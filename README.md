@@ -22,6 +22,7 @@ O sistema é construído utilizando tecnologias modernas e escaláveis:
 
 - **Multi-tenant (Multi-Empresas)**: Administração central de múltiplos clientes isolados.
 - **Automação de Player**: Contas de cliente iniciam o player imediatamente ao fazer login (`autoStart=true`).
+- **Cache inteligente no Player (APK)**: O Player pode manter o plano e as mídias em cache local e sincronizar somente mudanças (manifesto versionado), reduzindo travamentos em internet instável.
 - **Widgets de Alta Personalização**:
   - **Redes Sociais**: 5 estilos (Vidro Moderno, Minimalista, Vibrante, Claro, Pílula) com suporte a QR Code em tempo real.
   - **Relógio e Clima**: Personalizáveis nos quatro cantos da tela.

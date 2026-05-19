@@ -55,7 +55,17 @@ O projeto já está com todas as dependências do Capacitor (`@capacitor/core`, 
 
 ---
 
-## 📡 4. Apontando para o Servidor de Produção
+## 🔁 4. Iniciar o app automaticamente após reiniciar (Android 8+)
+O projeto Android já inclui um receiver de boot e um serviço para tentar iniciar o aplicativo após reinicialização.
+
+Na prática, em muitos dispositivos o Android pode limitar inicialização automática. Para garantir comportamento “kiosk” em TV/Box, o método mais confiável é:
+1. Ir em **Configurações do Android** > **Apps** > **Apps padrão**.
+2. Definir o **Aplicativo de Tela Inicial (Launcher/Home)** como **Painel Digital**.
+3. Desativar otimizações de bateria para o app (quando existir no dispositivo).
+
+---
+
+## 📡 5. Apontando para o Servidor de Produção
 Por padrão, o APK será empacotado com a URL configurada no seu `.env` do Frontend (exemplo: seu domínio de produção). Certifique-se de que o backend já esteja rodando na internet (ex: Railway) e que o Frontend saiba conversar com ele.
 
 Você pode instalar o app em quantas Android TVs quiser e todas sincronizarão perfeitamente através do backend!
