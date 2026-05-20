@@ -26,22 +26,23 @@ public class BootReceiver extends BroadcastReceiver {
             return;
         }
 
-        Intent serviceIntent = new Intent(context, BootService.class);
+        Intent abrir = new Intent(context, MainActivity.class);
+        abrir.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(serviceIntent);
-            } else {
-                context.startService(serviceIntent);
-            }
-        } catch (Exception ignored) {
-            // Se não for possível iniciar o serviço, tenta abrir a Activity (pode falhar em versões novas).
+            // Tenta abrir a Activity diretamente (melhor chance em TV Boxes)
+            context.startActivity(abrir);
+        } catch (Exception e) {
+            // Se falhar (ex: bloqueio do Android 10+ sem permissão SYSTEM_ALERT_WINDOW),
+            // tenta via serviço de foreground que usa Full-Screen Intent
             try {
-                Intent abrir = new Intent(context, MainActivity.class);
-                abrir.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(abrir);
-            } catch (Exception ignoredToo) {
-                // Sem ação adicional.
-            }
+                Intent serviceIntent = new Intent(context, BootService.class);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(serviceIntent);
+                } else {
+                    context.startService(serviceIntent);
+                }
+            } catch (Exception ignored) {}
         }
     }
 }

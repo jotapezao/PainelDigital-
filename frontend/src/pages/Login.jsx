@@ -121,38 +121,19 @@ const Login = () => {
   const UpdateBanner = () => {
     if (!isUpdateAvailable || !settings.app_download_url) return null;
     return (
-      <div style={{
-        background: 'rgba(234, 179, 8, 0.15)',
-        border: '1px solid rgba(234, 179, 8, 0.4)',
-        borderRadius: '16px',
-        padding: '16px',
-        marginBottom: '24px',
-        textAlign: 'center'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
-          <span style={{ fontSize: '1.2rem' }}>🚀</span>
-          <strong style={{ color: '#fef08a', fontSize: '0.95rem' }}>Nova Atualização Disponível! (v{settings.latest_app_version})</strong>
-        </div>
-        <p style={{ color: '#fef9c3', fontSize: '0.85rem', marginBottom: '12px', lineHeight: '1.4' }}>
-          {settings.app_update_message || 'Uma nova versão mais rápida e estável do aplicativo está disponível para sua TV.'}
-        </p>
+      <div style={{ textAlign: 'center', marginTop: '16px' }}>
         <a 
           href={settings.app_download_url} 
           target="_blank" 
           rel="noopener noreferrer"
           style={{
-            display: 'inline-block',
-            background: '#eab308',
-            color: '#422006',
-            padding: '8px 16px',
-            borderRadius: '8px',
-            fontWeight: '700',
-            textDecoration: 'none',
-            fontSize: '0.85rem',
-            boxShadow: '0 4px 12px rgba(234, 179, 8, 0.3)'
+            color: '#a1a1aa',
+            fontSize: '0.8rem',
+            textDecoration: 'underline',
+            fontWeight: '500'
           }}
         >
-          ⬇️ Baixar Nova Versão
+          Nova versão ({settings.latest_app_version}) disponível. Clique para baixar a atualização.
         </a>
       </div>
     );
@@ -399,7 +380,6 @@ const Login = () => {
 
         <div style={{ flex: 1 }}>
           <TvModeBanner />
-          <UpdateBanner />
 
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: '18px' }}>
@@ -476,6 +456,8 @@ const Login = () => {
               )}
             </button>
           </form>
+          
+          <UpdateBanner />
         </div>
         
         <div style={{ marginTop: '24px', textAlign: 'center' }}>
