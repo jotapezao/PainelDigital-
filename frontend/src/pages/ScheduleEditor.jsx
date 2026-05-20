@@ -47,7 +47,7 @@ const ScheduleEditor = () => {
     status_reason: '',
   });
 
-  const [devices, setDevices] = useState([]);
+  const [clients, setClients] = useState([]);
   const [groups, setGroups] = useState([]);
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,13 +61,13 @@ const ScheduleEditor = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [devicesRes, groupsRes, playlistsRes] = await Promise.all([
-          api.get('/devices'),
+        const [clientsRes, groupsRes, playlistsRes] = await Promise.all([
+          api.get('/clients'),
           api.get('/device-groups'),
           api.get('/playlists')
         ]);
-        setDevices(devicesRes.data);
-        setGroups(groupsRes.data);
+        setClients(clientsRes.data || []);
+        setGroups(Array.isArray(groupsRes.data) ? groupsRes.data : (groupsRes.data?.groups || []));
         setPlaylists(playlistsRes.data);
 
         if (id && id !== 'new') {
@@ -111,7 +111,7 @@ const ScheduleEditor = () => {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim() || (!form.device_id && !form.group_id) || !form.playlist_id) {
+    if (!form.name.trim() || (!form.client_id && !form.group_id) || !form.playlist_id) {
       addToast('warning', 'Atenção', 'Preencha o nome, o destino e o plano.');
       return;
     }
@@ -120,11 +120,30 @@ const ScheduleEditor = () => {
     try {
       const payload = {
         ...form,
+        device_id: null,
         repeat_config: {
           ...(form.repeat_config || {}),
           duration_minutes: Number(form.repeat_config?.duration_minutes || 60),
         },
       };
+      // Se veio client_id, busca o device do cliente para enviar ao backend
+      if (form.client_id && !form.group_id) {
+        try {
+          const devRes = await api.get('/devices', { params: { client_id: form.client_id } });
+          const devs = devRes.data || [];
+          if (devs.length > 0) {
+            payload.device_id = devs[0].id;
+          } else {
+            addToast('warning', 'Atenção', 'Este cliente não possui nenhum dispositivo cadastrado.');
+            setSaving(false);
+            return;
+          }
+        } catch {
+          addToast('error', 'Erro', 'Não foi possível buscar o dispositivo do cliente.');
+          setSaving(false);
+          return;
+        }
+      }
 
       if (id && id !== 'new') {
         const res = await api.put(`/schedules/${id}`, payload);
@@ -163,8 +182,8 @@ const ScheduleEditor = () => {
     inativo: 'Inativo',
   }[form.status] || 'Aguardando';
 
-  const resumoEscopo = form.device_id
-    ? devices.find((device) => device.id === form.device_id)?.name || 'TV selecionada'
+  const resumoEscopo = form.client_id
+    ? (clients.find((c) => c.id === form.client_id)?.name || 'Cliente selecionado')
     : (groups.find((group) => group.id === form.group_id)?.name || 'Grupo selecionado');
 
   const resumoPlaylist = playlists.find((playlist) => playlist.id === form.playlist_id)?.name || 'Plano de exibição';
@@ -199,15 +218,15 @@ const ScheduleEditor = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '18px' }}>
               <div className="input-group">
-                <label>Dispositivo (TV)</label>
-                <select value={form.device_id} onChange={e => setForm(p => ({ ...p, device_id: e.target.value, group_id: '' }))}>
-                  <option value="">— Selecione a TV —</option>
-                  {devices.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                <label>Cliente (Usuário) *</label>
+                <select value={form.client_id || ''} onChange={e => setForm(p => ({ ...p, client_id: e.target.value, group_id: '' }))}>
+                  <option value="">— Selecione o cliente —</option>
+                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}{c.company ? ` — ${c.company}` : ''}</option>)}
                 </select>
               </div>
               <div className="input-group">
-                <label>Grupo de dispositivos</label>
-                <select value={form.group_id} onChange={e => setForm(p => ({ ...p, group_id: e.target.value, device_id: '' }))}>
+                <label>Ou Grupo de Clientes</label>
+                <select value={form.group_id || ''} onChange={e => setForm(p => ({ ...p, group_id: e.target.value, client_id: '' }))}>
                   <option value="">— Selecione o grupo —</option>
                   {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                 </select>

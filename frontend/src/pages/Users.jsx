@@ -14,6 +14,7 @@ const Users = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [clients, setClients] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterRole, setFilterRole] = useState('');
@@ -24,9 +25,15 @@ const Users = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [uRes, cRes] = await Promise.all([api.get('/auth/users'), api.get('/clients')]);
+      const [uRes, cRes, gRes] = await Promise.all([
+        api.get('/auth/users'),
+        api.get('/clients'),
+        api.get('/device-groups')
+      ]);
       setUsers(uRes.data);
       setClients(cRes.data);
+      const grpList = Array.isArray(gRes.data) ? gRes.data : (gRes.data?.groups || []);
+      setGroups(grpList);
     } catch {
       addToast('error', 'Erro', 'Falha ao carregar usuários.');
     } finally {
@@ -137,16 +144,16 @@ const Users = () => {
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-input)' }}>
-                {['Usuário', 'Função', 'Empresa Vinculada', 'Status', 'Criado em', 'Ações'].map(col => (
+                {['Usuário', 'Função', 'Empresa Vinculada', 'Grupo', 'Status', 'Criado em', 'Ações'].map(col => (
                   <th key={col} style={{ padding: '13px 20px', textAlign: 'left', fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: '600' }}>{col}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '60px', color: 'var(--text-dim)' }}>Carregando...</td></tr>
+                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '60px', color: 'var(--text-dim)' }}>Carregando...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '60px', color: 'var(--text-dim)' }}>
+                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '60px', color: 'var(--text-dim)' }}>
                   <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🔎</div>
                   <p>Nenhum usuário encontrado.</p>
                   {hasFilters && <button className="btn btn-outline" style={{ marginTop: '12px', fontSize: '0.875rem' }} onClick={clearFilters}>Limpar filtros</button>}
@@ -183,6 +190,17 @@ const Users = () => {
                     </td>
                     <td style={{ padding: '13px 20px', color: u.client_name ? 'var(--text-muted)' : 'var(--text-dim)', fontSize: '0.875rem' }}>
                       {u.client_name || '—'}
+                    </td>
+                    <td style={{ padding: '13px 20px', fontSize: '0.875rem' }}>
+                      {(() => {
+                        const client = clients.find(c => c.id === u.client_id);
+                        const group = groups.find(g => g.id === client?.group_id);
+                        return group ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '3px 10px', borderRadius: '999px', background: 'rgba(99,102,241,0.12)', color: 'var(--primary)', fontSize: '0.78rem', fontWeight: '600' }}>
+                            📂 {group.name}
+                          </span>
+                        ) : <span style={{ color: 'var(--text-dim)' }}>—</span>;
+                      })()}
                     </td>
                     <td style={{ padding: '13px 20px' }}>
                       <span style={{ fontSize: '0.8rem', fontWeight: '600', color: u.active ? 'var(--success)' : 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: '6px' }}>
