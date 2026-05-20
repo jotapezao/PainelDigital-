@@ -24,7 +24,7 @@ function salvarPlaylist(playlist) {
   localStorage.setItem(PLAYLIST_KEY, JSON.stringify(playlist));
 }
 
-function carregarPlaylistSalva() {
+export function carregarPlaylistSalva() {
   try {
     return JSON.parse(localStorage.getItem(PLAYLIST_KEY) || 'null');
   } catch {

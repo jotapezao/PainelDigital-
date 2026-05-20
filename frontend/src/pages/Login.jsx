@@ -117,10 +117,10 @@ const Login = () => {
     return 0;
   };
 
-  const isUpdateAvailable = settings.latest_app_version && compareVersions(settings.latest_app_version, CURRENT_APP_VERSION) > 0;
-
   const UpdateBanner = () => {
-    if (!isUpdateAvailable || !settings.app_download_url) return null;
+    if (!settings.app_download_url) return null;
+    
+    const isUpdateAvailable = settings.latest_app_version && compareVersions(settings.latest_app_version, CURRENT_APP_VERSION) > 0;
     
     const handleDownloadClick = async (e) => {
       e.preventDefault();
@@ -138,13 +138,17 @@ const Login = () => {
           onClick={handleDownloadClick}
           style={{
             color: '#a1a1aa',
-            fontSize: '0.8rem',
+            fontSize: '0.9rem',
             textDecoration: 'underline',
             fontWeight: '500',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            display: 'inline-block',
+            padding: '8px'
           }}
         >
-          Nova versão ({settings.latest_app_version}) disponível. Clique para baixar a atualização.
+          {isUpdateAvailable 
+            ? `🚀 Nova versão (${settings.latest_app_version}) disponível. Baixar APK.`
+            : '⬇️ Baixar Aplicativo Android (APK)'}
         </a>
       </div>
     );
@@ -191,14 +195,14 @@ const Login = () => {
           100% { transform: translate(5%, 5%) scale(1.1); }
         }
         .login-card {
-          background: rgba(24, 24, 27, 0.7);
+          background: rgba(24, 24, 27, 0.75);
           backdrop-filter: blur(24px);
           -webkit-backdrop-filter: blur(24px);
           border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 32px;
-          padding: 40px;
+          padding: 48px;
           width: 90%;
-          max-width: 420px;
+          max-width: 480px;
           max-height: 95vh;
           overflow-y: auto;
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
@@ -315,10 +319,11 @@ const Login = () => {
         .login-button {
           width: 100%;
           padding: 16px;
-          background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+          background-color: #6366f1;
+          background-image: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
           border: none;
           border-radius: 16px;
-          color: #fff;
+          color: #ffffff;
           font-size: 1.05rem;
           font-weight: 800;
           cursor: pointer;

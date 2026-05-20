@@ -4,7 +4,7 @@ import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { io } from 'socket.io-client';
 import { getTickerVisualConfig, buildTickerText, getTickerSpeedDuration } from '../utils/tickerVisual';
-import { limparObjectUrlsDoPlayer, sincronizarPlaylistComCache } from '../services/playerCache';
+import { limparObjectUrlsDoPlayer, sincronizarPlaylistComCache, carregarPlaylistSalva } from '../services/playerCache';
 
 
 const Player = () => {
@@ -588,6 +588,14 @@ const Player = () => {
       setLoading(false);
     } catch (error) {
       console.error('Erro ao buscar playlist:', error);
+      if (!playlist && !previewId) {
+        const cached = carregarPlaylistSalva();
+        if (cached && (cached.items || cached.media)) {
+          console.log('[Player] Sem conexão. Carregando playlist armazenada no cache...');
+          const playlistComUrls = await sincronizarPlaylistComCache(cached);
+          setPlaylist(playlistComUrls);
+        }
+      }
       setLoading(false);
     }
   };
