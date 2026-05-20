@@ -575,7 +575,10 @@ const Player = () => {
         }
         
         if (!previewId) {
-          data = await sincronizarPlaylistComCache(data);
+          data = await sincronizarPlaylistComCache(data, (playlistCompleta) => {
+            console.log('[Player] Cache em segundo plano concluído. Atualizando fontes de mídia para locais.');
+            setPlaylist(playlistCompleta);
+          });
         }
 
         setPlaylist(data);
