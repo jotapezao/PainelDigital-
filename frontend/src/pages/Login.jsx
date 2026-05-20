@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { Browser } from '@capacitor/browser';
 
 const Login = () => {
   const [loginIdentifier, setLoginIdentifier] = useState(() => localStorage.getItem('pd_remember_email') || '');
@@ -120,17 +121,27 @@ const Login = () => {
 
   const UpdateBanner = () => {
     if (!isUpdateAvailable || !settings.app_download_url) return null;
+    
+    const handleDownloadClick = async (e) => {
+      e.preventDefault();
+      try {
+        await Browser.open({ url: settings.app_download_url });
+      } catch (err) {
+        window.open(settings.app_download_url, '_blank');
+      }
+    };
+
     return (
       <div style={{ textAlign: 'center', marginTop: '16px' }}>
         <a 
           href={settings.app_download_url} 
-          target="_blank" 
-          rel="noopener noreferrer"
+          onClick={handleDownloadClick}
           style={{
             color: '#a1a1aa',
             fontSize: '0.8rem',
             textDecoration: 'underline',
-            fontWeight: '500'
+            fontWeight: '500',
+            cursor: 'pointer'
           }}
         >
           Nova versão ({settings.latest_app_version}) disponível. Clique para baixar a atualização.

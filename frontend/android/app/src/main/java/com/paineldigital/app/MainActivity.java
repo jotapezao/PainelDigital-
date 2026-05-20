@@ -65,9 +65,13 @@ public class MainActivity extends BridgeActivity {
         // Sobreposição / Iniciar do background (Android 6+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!Settings.canDrawOverlays(this)) {
-                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        Uri.parse("package:" + getPackageName()));
-                startActivityForResult(intent, 102);
+                try {
+                    Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:" + getPackageName()));
+                    startActivityForResult(intent, 102);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
