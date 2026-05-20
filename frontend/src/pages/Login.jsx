@@ -12,8 +12,13 @@ const Login = () => {
   const [tvModeChecked, setTvModeChecked] = useState(false);
   const [settings, setSettings] = useState({
     system_name: 'Painel Digital',
-    logo_url: null
+    logo_url: null,
+    latest_app_version: null,
+    app_download_url: null,
+    app_update_message: null
   });
+  
+  const CURRENT_APP_VERSION = '3.0.5';
   
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -34,7 +39,10 @@ const Login = () => {
         if (res.data) {
           setSettings({
             system_name: res.data.system_name || 'Painel Digital',
-            logo_url: res.data.logo_url || null
+            logo_url: res.data.logo_url || null,
+            latest_app_version: res.data.latest_app_version,
+            app_download_url: res.data.app_download_url,
+            app_update_message: res.data.app_update_message
           });
         }
       } catch (err) {
@@ -94,6 +102,61 @@ const Login = () => {
       <span>Este dispositivo está vinculado a: <strong style={{ color: 'var(--primary)' }}>{deviceCompany}</strong></span>
     </div>
   ) : null;
+
+  const compareVersions = (v1, v2) => {
+    if (!v1 || !v2) return 0;
+    const p1 = v1.replace(/[^0-9.]/g, '').split('.').map(Number);
+    const p2 = v2.replace(/[^0-9.]/g, '').split('.').map(Number);
+    for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
+      const n1 = p1[i] || 0;
+      const n2 = p2[i] || 0;
+      if (n1 > n2) return 1;
+      if (n1 < n2) return -1;
+    }
+    return 0;
+  };
+
+  const isUpdateAvailable = settings.latest_app_version && compareVersions(settings.latest_app_version, CURRENT_APP_VERSION) > 0;
+
+  const UpdateBanner = () => {
+    if (!isUpdateAvailable || !settings.app_download_url) return null;
+    return (
+      <div style={{
+        background: 'rgba(234, 179, 8, 0.15)',
+        border: '1px solid rgba(234, 179, 8, 0.4)',
+        borderRadius: '16px',
+        padding: '16px',
+        marginBottom: '24px',
+        textAlign: 'center'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
+          <span style={{ fontSize: '1.2rem' }}>🚀</span>
+          <strong style={{ color: '#fef08a', fontSize: '0.95rem' }}>Nova Atualização Disponível! (v{settings.latest_app_version})</strong>
+        </div>
+        <p style={{ color: '#fef9c3', fontSize: '0.85rem', marginBottom: '12px', lineHeight: '1.4' }}>
+          {settings.app_update_message || 'Uma nova versão mais rápida e estável do aplicativo está disponível para sua TV.'}
+        </p>
+        <a 
+          href={settings.app_download_url} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-block',
+            background: '#eab308',
+            color: '#422006',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            fontWeight: '700',
+            textDecoration: 'none',
+            fontSize: '0.85rem',
+            boxShadow: '0 4px 12px rgba(234, 179, 8, 0.3)'
+          }}
+        >
+          ⬇️ Baixar Nova Versão
+        </a>
+      </div>
+    );
+  };
 
   return (
     <div style={{
@@ -336,6 +399,7 @@ const Login = () => {
 
         <div style={{ flex: 1 }}>
           <TvModeBanner />
+          <UpdateBanner />
 
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: '18px' }}>
@@ -415,7 +479,7 @@ const Login = () => {
         </div>
         
         <div style={{ marginTop: '24px', textAlign: 'center' }}>
-          <p style={{ fontSize: '0.7rem', color: '#3f3f46', fontWeight: '600', letterSpacing: '1px' }}>VERSION 3.0.5 • {settings.system_name.toUpperCase()}</p>
+          <p style={{ fontSize: '0.7rem', color: '#3f3f46', fontWeight: '600', letterSpacing: '1px' }}>VERSION {CURRENT_APP_VERSION} • {settings.system_name.toUpperCase()}</p>
         </div>
       </div>
     </div>
