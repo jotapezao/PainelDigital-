@@ -18,6 +18,12 @@ const Login = () => {
     app_download_url: null,
     app_update_message: null
   });
+  const [updateInfo, setUpdateInfo] = useState({
+    latestVersion: null,
+    url: null,
+    force: false,
+    message: ''
+  });
   
   const CURRENT_APP_VERSION = '3.0.5';
   
@@ -36,14 +42,28 @@ const Login = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await api.get('/settings');
-        if (res.data) {
+        const [settingsResult, versionResult] = await Promise.allSettled([
+          api.get('/settings'),
+          api.get('/app-version')
+        ]);
+
+        if (settingsResult.status === 'fulfilled' && settingsResult.value?.data) {
+          const res = settingsResult.value;
           setSettings({
             system_name: res.data.system_name || 'Painel Digital',
             logo_url: res.data.logo_url || null,
             latest_app_version: res.data.latest_app_version,
             app_download_url: res.data.app_download_url,
             app_update_message: res.data.app_update_message
+          });
+        }
+
+        if (versionResult.status === 'fulfilled' && versionResult.value?.data) {
+          setUpdateInfo({
+            latestVersion: versionResult.value.data.latestVersion || null,
+            url: versionResult.value.data.url || null,
+            force: !!versionResult.value.data.force,
+            message: versionResult.value.data.message || ''
           });
         }
       } catch (err) {
@@ -118,38 +138,56 @@ const Login = () => {
   };
 
   const UpdateBanner = () => {
-    if (!settings.app_download_url) return null;
+    const downloadUrl = updateInfo.url || settings.app_download_url;
+    if (!downloadUrl) return null;
     
-    const isUpdateAvailable = settings.latest_app_version && compareVersions(settings.latest_app_version, CURRENT_APP_VERSION) > 0;
+    const latestVersion = updateInfo.latestVersion || settings.latest_app_version;
+    const updateMessage = updateInfo.message || settings.app_update_message || '';
+    const isUpdateAvailable = latestVersion && compareVersions(latestVersion, CURRENT_APP_VERSION) > 0;
     
     const handleDownloadClick = async (e) => {
       e.preventDefault();
       try {
-        await Browser.open({ url: settings.app_download_url });
+        await Browser.open({ url: downloadUrl });
       } catch (err) {
-        window.open(settings.app_download_url, '_blank');
+        window.open(downloadUrl, '_blank');
       }
     };
 
     return (
-      <div style={{ textAlign: 'center', marginTop: '16px' }}>
-        <a 
-          href={settings.app_download_url} 
+      <div style={{ textAlign: 'center', marginTop: '14px' }}>
+        <a
+          href={downloadUrl}
           onClick={handleDownloadClick}
           style={{
-            color: '#a1a1aa',
-            fontSize: '0.9rem',
-            textDecoration: 'underline',
-            fontWeight: '500',
+            color: '#e4e4e7',
+            fontSize: '0.85rem',
+            textDecoration: 'none',
+            fontWeight: '700',
             cursor: 'pointer',
-            display: 'inline-block',
-            padding: '8px'
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            padding: '11px 16px',
+            borderRadius: '999px',
+            border: '1px solid rgba(99, 102, 241, 0.35)',
+            background: 'rgba(99, 102, 241, 0.12)',
+            boxShadow: '0 8px 18px rgba(0, 0, 0, 0.18)'
           }}
         >
-          {isUpdateAvailable 
-            ? `🚀 Nova versão (${settings.latest_app_version}) disponível. Baixar APK.`
-            : '⬇️ Baixar Aplicativo Android (APK)'}
+          <span>⬇️</span>
+          <span>
+            {isUpdateAvailable
+              ? `Nova versão ${latestVersion} disponível`
+              : 'Baixar APK'}
+          </span>
         </a>
+        {updateMessage && (
+          <div style={{ marginTop: '8px', color: '#a1a1aa', fontSize: '0.72rem', lineHeight: '1.35' }}>
+            {updateMessage}
+          </div>
+        )}
       </div>
     );
   };
@@ -200,9 +238,9 @@ const Login = () => {
           -webkit-backdrop-filter: blur(24px);
           border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 32px;
-          padding: 48px;
+          padding: 40px;
           width: 90%;
-          max-width: 480px;
+          max-width: 460px;
           max-height: 95vh;
           overflow-y: auto;
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
@@ -218,12 +256,12 @@ const Login = () => {
         /* Landscape Optimization for Mobile */
         @media (max-height: 500px) and (orientation: landscape) {
           .login-card {
-            padding: 20px 40px;
-            max-width: 600px;
+            padding: 18px 28px;
+            max-width: 560px;
             display: flex;
             flex-direction: row;
             align-items: center;
-            gap: 40px;
+            gap: 28px;
             border-radius: 24px;
           }
           .login-header {
@@ -274,29 +312,57 @@ const Login = () => {
           }
         }
 
+        @media (max-height: 820px) {
+          .login-card {
+            padding: 26px 22px;
+            max-width: 430px;
+            border-radius: 26px;
+          }
+          .login-header {
+            margin-bottom: 22px !important;
+          }
+          .login-logo {
+            width: 90px !important;
+            height: 90px !important;
+            margin-bottom: 14px !important;
+          }
+          .login-title {
+            font-size: 1.9rem !important;
+          }
+          .login-input {
+            padding: 11px 14px !important;
+            font-size: 0.92rem !important;
+          }
+          .login-button {
+            padding: 13px !important;
+            margin-top: 18px !important;
+            font-size: 0.95rem !important;
+          }
+        }
+
         @media (max-width: 480px) {
           .login-card {
-            padding: 32px 24px;
+            padding: 28px 20px;
             border-radius: 28px;
             width: 90%;
             margin: auto;
           }
           .login-logo {
-            width: 100px !important;
-            height: 100px !important;
+            width: 84px !important;
+            height: 84px !important;
           }
           .login-title {
-            font-size: 1.75rem !important;
+            font-size: 1.6rem !important;
           }
           .login-input {
-            padding: 12px 16px !important;
-            font-size: 0.95rem !important;
+            padding: 11px 14px !important;
+            font-size: 0.92rem !important;
             margin-top: 6px;
           }
           .login-button {
-            padding: 15px !important;
-            margin-top: 24px !important;
-            font-size: 1rem !important;
+            padding: 13px !important;
+            margin-top: 20px !important;
+            font-size: 0.95rem !important;
           }
         }
         .login-input {
@@ -363,13 +429,13 @@ const Login = () => {
       `}</style>
 
       <div className="login-card animate-fade-in">
-        <div className="login-header" style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <div className="login-header" style={{ textAlign: 'center', marginBottom: '28px' }}>
           <div className="login-logo" style={{ 
-            width: '120px', 
-            height: '120px', 
+            width: '108px',
+            height: '108px',
             background: settings.logo_url ? 'rgba(255, 255, 255, 0.02)' : 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', 
             borderRadius: '24px', 
-            margin: '0 auto 20px',
+            margin: '0 auto 16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -381,7 +447,7 @@ const Login = () => {
              <img src={settings.logo_url || "./logo.png"} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <h1 className="login-title" style={{ 
-            fontSize: '2.25rem', 
+            fontSize: '2rem',
             fontWeight: '900', 
             letterSpacing: '-0.04em',
             marginBottom: '8px', 
@@ -391,7 +457,7 @@ const Login = () => {
           }}>
             {settings.system_name}
           </h1>
-          <p style={{ color: '#a1a1aa', fontWeight: '500', fontSize: '0.9rem', lineHeight: '1.4' }}>Controle suas telas de qualquer lugar com inteligência</p>
+          <p style={{ color: '#a1a1aa', fontWeight: '500', fontSize: '0.84rem', lineHeight: '1.45', margin: 0 }}>Controle suas telas de qualquer lugar com inteligência</p>
         </div>
 
         <div style={{ flex: 1 }}>
@@ -476,8 +542,8 @@ const Login = () => {
           <UpdateBanner />
         </div>
         
-        <div style={{ marginTop: '24px', textAlign: 'center' }}>
-          <p style={{ fontSize: '0.7rem', color: '#3f3f46', fontWeight: '600', letterSpacing: '1px' }}>VERSION {CURRENT_APP_VERSION} • {settings.system_name.toUpperCase()}</p>
+        <div style={{ marginTop: '18px', textAlign: 'center' }}>
+          <p style={{ fontSize: '0.64rem', color: '#3f3f46', fontWeight: '700', letterSpacing: '1.2px', margin: 0 }}>VERSION {CURRENT_APP_VERSION} • {settings.system_name.toUpperCase()}</p>
         </div>
       </div>
     </div>

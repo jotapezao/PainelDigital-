@@ -1,4 +1,4 @@
-const CACHE_NAME = 'painel-digital-player-cache-v1';
+const CACHE_NAME = 'painel-digital-player-cache-v2';
 const INDEX_KEY = '@DigitalSignage:playerCacheIndex';
 const PLAYLIST_KEY = '@DigitalSignage:lastCachedPlaylist';
 
@@ -37,16 +37,25 @@ function chaveMidia(media) {
   return `${media.id}:${versao}`;
 }
 
+function resolverUrlMidia(media) {
+  return media?.original_url || media?.url || media?.cached_url || '';
+}
+
 function clonarPlaylist(playlist) {
   return JSON.parse(JSON.stringify(playlist));
 }
 
 async function baixarMidia(cache, media) {
-  const response = await fetch(media.url, { cache: 'reload' });
+  const url = resolverUrlMidia(media);
+  if (!url) {
+    throw new Error('url_indisponivel');
+  }
+
+  const response = await fetch(url, { cache: 'reload' });
   if (!response.ok) {
     throw new Error(`download_${response.status}`);
   }
-  await cache.put(media.url, response.clone());
+  await cache.put(url, response.clone());
 }
 
 async function obterObjectUrl(cache, url) {
@@ -61,6 +70,29 @@ async function obterObjectUrl(cache, url) {
   return objectUrl;
 }
 
+async function aplicarUrlLocalEmItem(cache, item) {
+  const urlOriginal = resolverUrlMidia(item);
+  if (!urlOriginal) return item;
+
+  const localUrl = await obterObjectUrl(cache, urlOriginal);
+  return {
+    ...item,
+    url: localUrl,
+    original_url: item.original_url || urlOriginal,
+    cached_url: localUrl,
+    cached: localUrl !== urlOriginal,
+    media: item.media
+      ? {
+          ...item.media,
+          url: localUrl,
+          original_url: item.media.original_url || urlOriginal,
+          cached_url: localUrl,
+          cached: localUrl !== urlOriginal,
+        }
+      : item.media,
+  };
+}
+
 async function aplicarUrlsLocais(playlist, indice) {
   const cache = await caches.open(CACHE_NAME);
   const copia = clonarPlaylist(playlist);
@@ -68,22 +100,22 @@ async function aplicarUrlsLocais(playlist, indice) {
   copia.items = await Promise.all((copia.items || []).map(async (item) => {
     const mediaId = item.media_id || item.id;
     const registro = indice[mediaId];
-    if (!registro?.url || (item.type || item.media_type) === 'widget') return item;
+    if ((item.type || item.media_type) === 'widget') return item;
+    if (!registro?.url) return aplicarUrlLocalEmItem(cache, item);
 
-    const localUrl = await obterObjectUrl(cache, registro.url);
-    return {
+    const itemComRegistro = {
       ...item,
-      url: localUrl,
-      original_url: item.original_url || item.url,
-      cached_url: localUrl,
-      cached: localUrl !== registro.url,
+      url: registro.url,
+      original_url: item.original_url || item.url || registro.url,
     };
+
+    return aplicarUrlLocalEmItem(cache, itemComRegistro);
   }));
 
   return copia;
 }
 
-async function limparMidiasAntigas(cache, indiceAtual, mediasAtuais) {
+async function limparMidiasRemovidas(cache, indiceAtual, mediasAtuais) {
   const chavesAtuais = new Set(mediasAtuais.map((media) => media.id));
   const proximoIndice = {};
 
@@ -101,7 +133,76 @@ async function limparMidiasAntigas(cache, indiceAtual, mediasAtuais) {
   return proximoIndice;
 }
 
-export async function sincronizarPlaylistComCache(playlist, onSyncComplete) {
+async function sincronizarMidias(cache, playlist, indiceAtual, { preservarAntigos = true } = {}) {
+  const medias = (playlist.manifest?.medias || []).filter((media) => media.url && media.type !== 'widget');
+  const indiceBase = preservarAntigos ? await limparMidiasRemovidas(cache, indiceAtual, medias) : { ...indiceAtual };
+  const falhas = [];
+
+  try {
+    for (const media of medias) {
+      const mediaId = media.id;
+      const chave = chaveMidia(media);
+      const registroAnterior = indiceBase[mediaId] || indiceAtual[mediaId];
+      const urlAtual = resolverUrlMidia(media);
+
+      if (!urlAtual) continue;
+
+      const registroAtual = indiceBase[mediaId];
+      const cacheHit = registroAtual?.key === chave && registroAtual?.url && await cache.match(registroAtual.url);
+      if (cacheHit && await cache.match(urlAtual)) {
+        indiceBase[mediaId] = {
+          key: chave,
+          url: urlAtual,
+          filename: media.filename,
+          size_bytes: media.size_bytes || 0,
+          updated_at: media.updated_at || null,
+        };
+        continue;
+      }
+
+      try {
+        await baixarMidia(cache, { ...media, url: urlAtual });
+
+        if (registroAnterior?.url && registroAnterior.url !== urlAtual) {
+          await cache.delete(registroAnterior.url);
+          const objectUrlAntigo = objectUrls.get(registroAnterior.url);
+          if (objectUrlAntigo) URL.revokeObjectURL(objectUrlAntigo);
+          objectUrls.delete(registroAnterior.url);
+        }
+
+        indiceBase[mediaId] = {
+          key: chave,
+          url: urlAtual,
+          filename: media.filename,
+          size_bytes: media.size_bytes || 0,
+          updated_at: media.updated_at || null,
+        };
+      } catch (downloadError) {
+        console.warn(`[Player Cache] Falha ao baixar mídia ${media.filename} em segundo plano:`, downloadError.message);
+        falhas.push(mediaId);
+        if (registroAnterior) {
+          indiceBase[mediaId] = registroAnterior;
+        }
+      }
+    }
+
+    salvarIndice(indiceBase);
+    return {
+      indice: indiceBase,
+      completo: falhas.length === 0,
+      falhas,
+    };
+  } catch (err) {
+    console.warn('[Player Cache] Falha na sincronização:', err.message);
+    return {
+      indice: indiceAtual,
+      completo: false,
+      falhas: medias.map((media) => media.id),
+    };
+  }
+}
+
+export async function sincronizarPlaylistComCache(playlist, onSyncComplete, opcoes = {}) {
   if (!playlist?.manifest?.medias?.length || !cacheDisponivel()) {
     if (playlist) salvarPlaylist(playlist);
     return playlist;
@@ -113,57 +214,46 @@ export async function sincronizarPlaylistComCache(playlist, onSyncComplete) {
   // 2. Obtém o índice atual e gera a playlist com URLs locais do que já está em cache
   const indiceAtual = carregarIndice();
   const playlistComCacheExistente = await aplicarUrlsLocais(playlist, indiceAtual);
+  const cache = await caches.open(CACHE_NAME);
+  const resultado = await sincronizarMidias(cache, playlist, indiceAtual, opcoes);
+  const playlistTotalmenteLocal = await aplicarUrlsLocais(playlist, resultado.indice);
 
-  // 3. Dispara a sincronização de downloads em segundo plano (totalmente assíncrona/non-blocking)
-  (async () => {
-    try {
-      const cache = await caches.open(CACHE_NAME);
-      const medias = playlist.manifest.medias.filter((media) => media.url && media.type !== 'widget');
-      
-      // Limpa mídias antigas em segundo plano
-      const proximoIndice = await limparMidiasAntigas(cache, indiceAtual, medias);
+  if (resultado.completo) {
+    salvarPlaylist(playlistTotalmenteLocal);
+  }
 
-      // Baixa novos itens de forma sequencial em segundo plano
-      for (const media of medias) {
-        const chave = chaveMidia(media);
-        const registro = proximoIndice[media.id];
-        const cacheHit = registro?.key === chave && registro?.url && await cache.match(registro.url);
+  if (onSyncComplete && resultado.completo) {
+    onSyncComplete(playlistTotalmenteLocal);
+  }
 
-        if (!cacheHit) {
-          try {
-            await baixarMidia(cache, media);
-          } catch (downloadError) {
-            console.warn(`[Player Cache] Falha ao baixar mídia ${media.filename} em segundo plano:`, downloadError.message);
-            // Ignora erro de download individual para continuar cacheando os demais arquivos
-            continue;
-          }
-        }
+  if (resultado.completo && playlistTotalmenteLocal?.items?.length) {
+    return playlistTotalmenteLocal;
+  }
 
-        proximoIndice[media.id] = {
-          key: chave,
-          url: media.url,
-          filename: media.filename,
-          size_bytes: media.size_bytes || 0,
-          updated_at: media.updated_at || null,
-        };
-      }
+  const cachedPlaylist = carregarPlaylistSalva();
+  if (cachedPlaylist?.items?.length) {
+    return cachedPlaylist;
+  }
 
-      // Salva o novo índice atualizado
-      salvarIndice(proximoIndice);
-
-      // Gera a playlist final totalmente com as URLs locais e dispara o callback se fornecido
-      if (onSyncComplete) {
-        const playlistTotalmenteLocal = await aplicarUrlsLocais(playlist, proximoIndice);
-        onSyncComplete(playlistTotalmenteLocal);
-      }
-      console.log('[Player Cache] Sincronização em segundo plano concluída com sucesso!');
-    } catch (err) {
-      console.warn('[Player Cache] Falha na sincronização em segundo plano:', err.message);
-    }
-  })();
-
-  // 4. Retorna a playlist imediatamente com o que já estiver em cache (evita tela travada/atraso)
   return playlistComCacheExistente;
+}
+
+export async function sincronizarPlaylistEmSegundoPlano(playlist, onSyncComplete) {
+  if (!playlist?.manifest?.medias?.length || !cacheDisponivel()) {
+    return playlist;
+  }
+
+  salvarPlaylist(playlist);
+  const indiceAtual = carregarIndice();
+  const cache = await caches.open(CACHE_NAME);
+  const resultado = await sincronizarMidias(cache, playlist, indiceAtual, { preservarAntigos: true });
+
+  if (onSyncComplete) {
+    const playlistTotalmenteLocal = await aplicarUrlsLocais(playlist, resultado.indice);
+    onSyncComplete(playlistTotalmenteLocal);
+  }
+
+  return aplicarUrlsLocais(playlist, resultado.indice);
 }
 
 export function limparObjectUrlsDoPlayer() {

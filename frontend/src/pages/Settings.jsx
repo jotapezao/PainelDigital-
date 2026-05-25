@@ -13,7 +13,8 @@ const Settings = () => {
     whatsapp_number: '',
     support_text: '',
     primary_color: '#6366f1',
-    logo_url: ''
+    logo_url: '',
+    player_sync_interval_minutes: 2
   });
 
   useEffect(() => {
@@ -176,11 +177,11 @@ const Settings = () => {
 
       <div className="card" style={{ marginTop: '24px' }}>
         <h2 style={{ marginBottom: '24px' }}>Gerenciamento de Versão (APK/GitHub)</h2>
-        <div className="input-group" style={{ marginBottom: '24px' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Configure aqui a versão mais recente do aplicativo Android. Quando você alterar a versão aqui, todos os dispositivos conectados receberão uma notificação para baixar o novo arquivo.
-          </p>
-        </div>
+          <div className="input-group" style={{ marginBottom: '24px' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+              Configure aqui a versão mais recente do aplicativo Android. Quando você alterar a versão aqui, todos os dispositivos conectados receberão uma notificação para baixar o novo arquivo.
+            </p>
+          </div>
 
         <form onSubmit={handleSubmit}>
           <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
@@ -222,6 +223,18 @@ const Settings = () => {
               value={settings.app_update_message || ''} 
               onChange={e => setSettings({...settings, app_update_message: e.target.value})} 
               placeholder="Temos uma nova versão disponível com melhorias!"
+            />
+          </div>
+
+          <div className="input-group">
+            <label>Intervalo de Sincronização do Player (minutos) <span className="info-icon" title="Tempo para o APK consultar novamente o manifesto e detectar mudanças no plano">?</span></label>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={settings.player_sync_interval_minutes || 2}
+              onChange={e => setSettings({...settings, player_sync_interval_minutes: e.target.value})}
+              placeholder="2"
             />
           </div>
 

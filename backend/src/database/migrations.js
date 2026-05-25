@@ -43,6 +43,7 @@ async function runMigrations() {
         support_text TEXT DEFAULT 'Precisa de ajuda? Entre em contato conosco!',
         primary_color VARCHAR(20) DEFAULT '#6366f1',
         logo_url VARCHAR(500),
+        player_sync_interval_minutes INTEGER DEFAULT 2,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         CONSTRAINT one_row CHECK (id = 1)
@@ -669,6 +670,9 @@ async function runMigrations() {
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='system_settings' AND column_name='github_repo') THEN 
           ALTER TABLE system_settings ADD COLUMN github_repo VARCHAR(255); 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='system_settings' AND column_name='player_sync_interval_minutes') THEN
+          ALTER TABLE system_settings ADD COLUMN player_sync_interval_minutes INTEGER DEFAULT 2;
         END IF;
       END $$;
     `);

@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { io } from 'socket.io-client';
 import { getTickerVisualConfig, buildTickerText, getTickerSpeedDuration } from '../utils/tickerVisual';
 import { limparObjectUrlsDoPlayer, sincronizarPlaylistComCache, carregarPlaylistSalva } from '../services/playerCache';
 
@@ -23,6 +22,15 @@ const Player = () => {
   const [mediaNonce, setMediaNonce] = useState(0);
   const [isStarted, setIsStarted] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
+  const [playerSyncIntervalMinutes, setPlayerSyncIntervalMinutes] = useState(() => {
+    try {
+      const saved = localStorage.getItem('@DigitalSignage:playerSyncIntervalMinutes');
+      const parsed = Number.parseInt(saved, 10);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : 2;
+    } catch {
+      return 2;
+    }
+  });
   
   const videoRefA = useRef(null);
   const videoRefB = useRef(null);
@@ -50,6 +58,8 @@ const Player = () => {
   const weatherCacheRef = useRef(new Map());
   const deviceLocationRef = useRef(null);
   const mediaCacheRef = useRef(new Map());
+  const playlistRef = useRef(null);
+  const lastManifestVersionRef = useRef(null);
   const MAX_CACHED_VIDEO_BYTES = 45 * 1024 * 1024;
 
   const getMediaKey = (media) => media?.id || media?.filename || media?.url || media?.name || '';
@@ -87,26 +97,37 @@ const Player = () => {
   const getCacheEntry = (media) => mediaCacheRef.current.get(getMediaKey(media));
 
   useEffect(() => {
-    fetchPlaylist();
-    
-    // Connect Socket for real-time updates
-    const socketUrl = (import.meta.env.VITE_API_URL || 'https://midiamais.up.railway.app/api').replace('/api', '');
-    const token = localStorage.getItem('@DigitalSignage:token') || sessionStorage.getItem('@DigitalSignage:token');
-    const socket = io(socketUrl, {
-      auth: { token }
-    });
+    playlistRef.current = playlist;
+  }, [playlist]);
 
-    socket.on('connect', () => {
-      console.log('[WS] Connected to server');
-      if (user && user.id) {
-        socket.emit('device:register', { deviceId: user.id });
+  useEffect(() => {
+    let active = true;
+
+    const carregarIntervaloSincronizacao = async () => {
+      try {
+        const response = await api.get('/settings');
+        const intervaloServidor = Number.parseInt(response.data?.player_sync_interval_minutes, 10);
+        const intervaloValido = Number.isFinite(intervaloServidor) && intervaloServidor > 0 ? intervaloServidor : 2;
+
+        if (!active) return;
+        setPlayerSyncIntervalMinutes(intervaloValido);
+        localStorage.setItem('@DigitalSignage:playerSyncIntervalMinutes', String(intervaloValido));
+      } catch (err) {
+        const fallback = Number.parseInt(localStorage.getItem('@DigitalSignage:playerSyncIntervalMinutes') || '2', 10);
+        if (!active) return;
+        setPlayerSyncIntervalMinutes(Number.isFinite(fallback) && fallback > 0 ? fallback : 2);
       }
-    });
+    };
 
-    socket.on('playlist:updated', () => {
-      console.log('[WS] Playlist update received! Refreshing...');
-      fetchPlaylist();
-    });
+    carregarIntervaloSincronizacao();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    fetchPlaylist();
 
     // Skip heartbeat if in preview mode
     let heartbeat;
@@ -126,15 +147,23 @@ const Player = () => {
       heartbeat = setInterval(sendHeartbeat, 20000); 
     }
 
-    const interval = setInterval(fetchPlaylist, 2 * 60 * 1000);
+    const intervalMs = Math.max(1, Number(playerSyncIntervalMinutes) || 2) * 60 * 1000;
+    const interval = setInterval(fetchPlaylist, intervalMs);
+
+    const handleOnline = () => {
+      console.log('[Player] Conexão restabelecida. Revalidando manifesto...');
+      fetchPlaylist();
+    };
+
+    window.addEventListener('online', handleOnline);
     
     return () => {
       if (heartbeat) clearInterval(heartbeat);
       clearInterval(interval);
-      socket.disconnect();
+      window.removeEventListener('online', handleOnline);
       limparObjectUrlsDoPlayer();
     };
-  }, [previewId, isStarted, user]);
+  }, [previewId, isStarted, user, playerSyncIntervalMinutes]);
 
   // Inicialização da Playlist e Primeira Camada
   useEffect(() => {
@@ -556,6 +585,16 @@ const Player = () => {
       if (response.data && (response.data.items || response.data.media)) {
         let data = response.data;
         if (!data.items && data.media) data.items = data.media;
+        const manifestVersion = data.manifest?.version || null;
+        if (data.manifest?.version) {
+          lastManifestVersionRef.current = data.manifest.version;
+        }
+
+        if (!previewId && manifestVersion && playlistRef.current?.manifest?.version === manifestVersion) {
+          console.log('[Player] Manifesto sem alterações. Mantendo reprodução local atual.');
+          setLoading(false);
+          return;
+        }
         
         // Fetch RSS if provided
         if (data.rss_url) {
@@ -577,6 +616,9 @@ const Player = () => {
         if (!previewId) {
           data = await sincronizarPlaylistComCache(data, (playlistCompleta) => {
             console.log('[Player] Cache em segundo plano concluído. Atualizando fontes de mídia para locais.');
+            if (playlistCompleta?.manifest?.version) {
+              lastManifestVersionRef.current = playlistCompleta.manifest.version;
+            }
             setPlaylist(playlistCompleta);
           });
         }
@@ -588,11 +630,14 @@ const Player = () => {
       setLoading(false);
     } catch (error) {
       console.error('Erro ao buscar playlist:', error);
-      if (!playlist && !previewId) {
+      if (!playlistRef.current && !previewId) {
         const cached = carregarPlaylistSalva();
         if (cached && (cached.items || cached.media)) {
           console.log('[Player] Sem conexão. Carregando playlist armazenada no cache...');
           const playlistComUrls = await sincronizarPlaylistComCache(cached);
+          if (playlistComUrls?.manifest?.version) {
+            lastManifestVersionRef.current = playlistComUrls.manifest.version;
+          }
           setPlaylist(playlistComUrls);
         }
       }
@@ -1352,7 +1397,7 @@ const Player = () => {
       
       {/* Versão para controle de Build */}
       <div style={{ position: 'absolute', bottom: '10px', left: '10px', fontSize: '10px', color: 'rgba(255,255,255,0.2)', zIndex: 9999 }}>
-        BUILD v3.0.7
+        BUILD v3.0.5
       </div>
     </div>
   );

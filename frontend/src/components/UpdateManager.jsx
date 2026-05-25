@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 
-const APP_VERSION = '1.0.0'; // VERSÃO ATUAL DO APK
+const APP_VERSION = '3.0.5'; // VERSÃO ATUAL DO APK
 
 const UpdateManager = () => {
   const [updateInfo, setUpdateInfo] = useState(null);

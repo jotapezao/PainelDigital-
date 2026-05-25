@@ -21,8 +21,9 @@ async function updateSettings(req, res) {
   const { 
     system_name, whatsapp_number, support_text, primary_color, logo_url,
     latest_app_version, app_download_url, app_update_message, app_force_update,
-    github_repo
+    github_repo, player_sync_interval_minutes
   } = req.body;
+  const intervaloSincronizacao = Number.parseInt(player_sync_interval_minutes, 10);
   try {
     const { rows } = await pool.query(
       `UPDATE system_settings 
@@ -31,13 +32,17 @@ async function updateSettings(req, res) {
            latest_app_version = $6, app_download_url = $7, 
            app_update_message = $8, app_force_update = $9,
            github_repo = $10,
+           player_sync_interval_minutes = $11,
            updated_at = NOW()
        WHERE id = 1
        RETURNING *`,
       [
         system_name, whatsapp_number, support_text, primary_color, logo_url,
         latest_app_version, app_download_url, app_update_message, app_force_update,
-        github_repo
+        github_repo,
+        Number.isFinite(intervaloSincronizacao) && intervaloSincronizacao > 0
+          ? intervaloSincronizacao
+          : 2
       ]
     );
     res.json(rows[0]);
