@@ -79,6 +79,7 @@ const Player = () => {
   const [showSocialWidget, setShowSocialWidget] = useState(true);
   const [weatherData, setWeatherData] = useState({ temp: '--', icon: '⛅', city: '' });
   const [mediaLoadError, setMediaLoadError] = useState(null);
+  const [qrFallbackOffline, setQrFallbackOffline] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date()); // Relógio em tempo real
   const [quotesData, setQuotesData] = useState({}); // Cotações financeiras
 
@@ -700,8 +701,27 @@ const Player = () => {
     return () => clearInterval(interval);
   }, [playlist?.weather_city, playlist?.show_weather]);
 
+  useEffect(() => {
+    setQrFallbackOffline(false);
+  }, [playlist?.social_handle, playlist?.social_platform, playlist?.social_qrcode]);
+
   const fetchPlaylist = async () => {
     try {
+      if (!previewId && deviceCacheEnabled && !playlistRef.current) {
+        const cached = carregarPlaylistSalva();
+        if (cached?.items?.length) {
+          try {
+            const playlistComUrls = await carregarPlaylistLocalizadaDaCache(cached);
+            if (playlistComUrls?.manifest?.version) {
+              lastManifestVersionRef.current = playlistComUrls.manifest.version;
+            }
+            setPlaylist(playlistComUrls);
+          } catch (cacheError) {
+            console.warn('[Player] Falha ao restaurar cache antes da sincronização:', cacheError.message);
+          }
+        }
+      }
+
       let response;
       if (previewId) {
         response = await api.get(`/playlists/${previewId}`, { timeout: 8000 });
@@ -755,7 +775,7 @@ const Player = () => {
         }
 
         setPlaylist(data);
-      } else {
+      } else if (!playlistRef.current) {
         setPlaylist(null);
       }
       setLoading(false);
@@ -770,6 +790,8 @@ const Player = () => {
             lastManifestVersionRef.current = playlistComUrls.manifest.version;
           }
           setPlaylist(playlistComUrls);
+          setLoading(false);
+          return;
         }
       }
       setLoading(false);
@@ -1028,6 +1050,8 @@ const Player = () => {
       default: return `https://${playlist.social_handle}`;
     }
   };
+  const socialUrl = getSocialUrl();
+  const podeMostrarQrOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
 
   // Helper para estilos de Cards padronizados (6 ESTILOS PREMIUM)
   const getWidgetBaseStyle = (styleType, transparency = 0.5, themeColor = '#818cf8', widgetType = 'default') => {
@@ -1332,7 +1356,34 @@ const Player = () => {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   border: `3px solid ${playlist.theme_color || '#818cf8'}22`
                 }}>
-                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(getSocialUrl())}&margin=4`} alt="QR Code" style={{ width: '110px', height: '110px', display: 'block' }} />
+                  {podeMostrarQrOnline && !qrFallbackOffline ? (
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(socialUrl)}&margin=4`}
+                      alt="QR Code"
+                      style={{ width: '110px', height: '110px', display: 'block' }}
+                      onError={() => setQrFallbackOffline(true)}
+                    />
+                  ) : (
+                    <div style={{
+                      width: '110px',
+                      height: '110px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      color: '#111',
+                      textAlign: 'center',
+                      padding: '10px',
+                      borderRadius: '12px',
+                      background: 'linear-gradient(180deg, #fff, #f3f4f6)',
+                    }}>
+                      <div style={{ fontSize: '0.68rem', fontWeight: '900', lineHeight: 1.1 }}>QR offline</div>
+                      <div style={{ fontSize: '0.58rem', lineHeight: 1.2, wordBreak: 'break-word' }}>
+                        {socialUrl.replace(/^https?:\/\//i, '')}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

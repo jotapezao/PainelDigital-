@@ -462,7 +462,7 @@ const Login = () => {
             border: settings.logo_url ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(255,255,255,0.1)',
             padding: settings.logo_url ? '12px' : '0'
           }}>
-             <img src={settings.logo_url || "./logo.png"} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+             <img src={settings.logo_url || "/logo.png"} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <h1 className="login-title" style={{ 
             fontSize: '2rem',
