@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
@@ -29,6 +29,10 @@ const Login = () => {
   
   const { login } = useAuth();
   const navigate = useNavigate();
+  const userInputRef = useRef(null);
+  const passwordInputRef = useRef(null);
+  const submitButtonRef = useRef(null);
+  const updateButtonRef = useRef(null);
 
   // TV Mode: if a device_token is saved, auto-redirect to player
   useEffect(() => {
@@ -84,6 +88,15 @@ const Login = () => {
     }
   }, []);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      userInputRef.current?.focus?.();
+      userInputRef.current?.select?.();
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -118,6 +131,13 @@ const Login = () => {
     sessionStorage.setItem('pd_last_password', value);
     if (remember) {
       localStorage.setItem('pd_remember_password', value);
+    }
+  };
+
+  const focusNextField = (event, nextRef) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      nextRef?.current?.focus?.();
     }
   };
 
@@ -177,28 +197,31 @@ const Login = () => {
         <a
           href={downloadUrl}
           onClick={handleDownloadClick}
+          ref={updateButtonRef}
           style={{
             color: '#e4e4e7',
-            fontSize: '0.85rem',
+            fontSize: '0.95rem',
             textDecoration: 'none',
-            fontWeight: '700',
+            fontWeight: '800',
             cursor: 'pointer',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '8px',
-            padding: '11px 16px',
+            padding: '14px 20px',
             borderRadius: '999px',
             border: '1px solid rgba(99, 102, 241, 0.35)',
             background: 'rgba(99, 102, 241, 0.12)',
-            boxShadow: '0 8px 18px rgba(0, 0, 0, 0.18)'
+            boxShadow: '0 8px 18px rgba(0, 0, 0, 0.18)',
+            minWidth: '220px'
           }}
+          tabIndex={0}
         >
           <span>⬇️</span>
           <span>
             {isUpdateAvailable
-              ? `Nova versão ${latestVersion} disponível`
-              : 'Baixar APK'}
+              ? `Atualizar para v${latestVersion}`
+              : 'Atualizar sistema / APK'}
           </span>
         </a>
         {updateMessage && (
@@ -267,6 +290,9 @@ const Login = () => {
           transition: all 0.3s ease;
           scrollbar-width: none;
         }
+        .login-card:focus-within {
+          box-shadow: 0 0 0 2px rgba(99,102,241,0.35), 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        }
         .login-card::-webkit-scrollbar {
           display: none;
         }
@@ -295,14 +321,14 @@ const Login = () => {
         @media (max-width: 900px) and (orientation: landscape) {
           .login-card {
             flex-direction: row;
-            max-width: 850px;
+            max-width: 980px;
             height: 90vh;
-            padding: 20px;
-            gap: 20px;
+            padding: 24px;
+            gap: 28px;
             align-items: stretch;
           }
           .login-header {
-            flex: 0.4;
+            flex: 0.38;
             margin-bottom: 0 !important;
             display: flex;
             flex-direction: column;
@@ -314,16 +340,17 @@ const Login = () => {
             margin-bottom: 10px !important;
           }
           .login-title {
-            font-size: 1.4rem !important;
+            font-size: 1.5rem !important;
           }
           form {
-            flex: 0.6;
+            flex: 0.62;
             overflow-y: auto;
             padding-right: 10px;
           }
           .login-button {
-            margin-top: 15px !important;
-            padding: 12px !important;
+            margin-top: 16px !important;
+            padding: 15px !important;
+            min-height: 56px;
           }
           .tv-mode-banner {
             display: none;
@@ -348,13 +375,14 @@ const Login = () => {
             font-size: 1.9rem !important;
           }
           .login-input {
-            padding: 11px 14px !important;
-            font-size: 0.92rem !important;
+            padding: 14px 16px !important;
+            font-size: 1rem !important;
           }
           .login-button {
-            padding: 13px !important;
+            padding: 15px !important;
             margin-top: 18px !important;
-            font-size: 0.95rem !important;
+            font-size: 1rem !important;
+            min-height: 58px;
           }
         }
 
@@ -373,14 +401,15 @@ const Login = () => {
             font-size: 1.6rem !important;
           }
           .login-input {
-            padding: 11px 14px !important;
-            font-size: 0.92rem !important;
+            padding: 14px 16px !important;
+            font-size: 1rem !important;
             margin-top: 6px;
           }
           .login-button {
-            padding: 13px !important;
+            padding: 15px !important;
             margin-top: 20px !important;
-            font-size: 0.95rem !important;
+            font-size: 1rem !important;
+            min-height: 58px;
           }
         }
         .login-input {
@@ -399,6 +428,13 @@ const Login = () => {
           border-color: #6366f1;
           background: rgba(39, 39, 42, 0.9);
           box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+        }
+        .login-input, .login-button, a, button, input, label {
+          -webkit-tap-highlight-color: transparent;
+        }
+        .login-input:focus-visible, .login-button:focus-visible, a:focus-visible, button:focus-visible {
+          outline: 3px solid rgba(99,102,241,0.8);
+          outline-offset: 3px;
         }
         .login-button {
           width: 100%;
@@ -420,6 +456,7 @@ const Login = () => {
           box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
           text-transform: uppercase;
           letter-spacing: 0.5px;
+          min-height: 56px;
         }
         .login-button:hover {
           transform: translateY(-2px);
@@ -483,31 +520,43 @@ const Login = () => {
 
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: '18px' }}>
-              <label style={{ fontSize: '0.875rem', fontWeight: '700', color: '#e4e4e7', marginLeft: '4px' }}>Usuário ou E-mail</label>
+              <label style={{ fontSize: '1rem', fontWeight: '800', color: '#e4e4e7', marginLeft: '4px' }}>Usuário ou E-mail</label>
               <input 
+                ref={userInputRef}
                 className="login-input"
                 type="text" 
                 placeholder="seu_usuario ou seu@email.com" 
                 value={loginIdentifier}
                 onChange={(e) => setLoginIdentifier(e.target.value)}
+                onKeyDown={(e) => focusNextField(e, passwordInputRef)}
                 required
+                autoComplete="username"
+                inputMode="text"
               />
             </div>
 
             <div style={{ marginBottom: '18px' }}>
-              <label style={{ fontSize: '0.875rem', fontWeight: '700', color: '#e4e4e7', marginLeft: '4px' }}>Senha</label>
+              <label style={{ fontSize: '1rem', fontWeight: '800', color: '#e4e4e7', marginLeft: '4px' }}>Senha</label>
               <input 
+                ref={passwordInputRef}
                 className="login-input"
                 type="password" 
                 placeholder="••••••••" 
                 value={password}
                 onChange={(e) => handlePasswordChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    submitButtonRef.current?.focus?.();
+                  }
+                }}
                 required
+                autoComplete="current-password"
               />
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', gap: '12px', flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', minHeight: '44px' }}>
                 <input 
                   type="checkbox" 
                   checked={remember} 
@@ -520,7 +569,7 @@ const Login = () => {
                     borderRadius: '6px'
                   }}
                 />
-                <span style={{ fontSize: '0.9rem', color: '#a1a1aa', fontWeight: '600' }}>Lembrar de mim</span>
+                <span style={{ fontSize: '0.98rem', color: '#a1a1aa', fontWeight: '700' }}>Lembrar de mim</span>
               </label>
             </div>
 
@@ -543,9 +592,16 @@ const Login = () => {
             )}
 
             <button 
+              ref={submitButtonRef}
               type="submit" 
               className="login-button" 
               disabled={loading}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                  e.preventDefault();
+                  updateButtonRef.current?.focus?.();
+                }
+              }}
             >
               {loading ? (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -557,7 +613,9 @@ const Login = () => {
             </button>
           </form>
           
-          <UpdateBanner />
+          <div style={{ marginTop: '16px' }}>
+            <UpdateBanner />
+          </div>
         </div>
         
         <div style={{ marginTop: '18px', textAlign: 'center' }}>
