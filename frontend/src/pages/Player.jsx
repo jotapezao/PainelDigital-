@@ -81,6 +81,8 @@ const Player = () => {
   const [weatherData, setWeatherData] = useState({ temp: '--', icon: '⛅', city: '' });
   const [mediaLoadError, setMediaLoadError] = useState(null);
   const [qrFallbackOffline, setQrFallbackOffline] = useState(false);
+  const [qrRetryToken, setQrRetryToken] = useState(0);
+  const [qrCachedDataUrl, setQrCachedDataUrl] = useState('');
   const [currentTime, setCurrentTime] = useState(new Date()); // Relógio em tempo real
   const [quotesData, setQuotesData] = useState({}); // Cotações financeiras
 
@@ -92,6 +94,8 @@ const Player = () => {
   const mediaCacheRef = useRef(new Map());
   const playlistRef = useRef(null);
   const lastManifestVersionRef = useRef(null);
+  const qrRetryTimerRef = useRef(null);
+  const qrPrefetchAbortRef = useRef(null);
   const MAX_CACHED_VIDEO_BYTES = 45 * 1024 * 1024;
   const DEFAULT_MEDIA_DURATION_SECONDS = 15;
 
@@ -773,7 +777,96 @@ const Player = () => {
 
   useEffect(() => {
     setQrFallbackOffline(false);
+    setQrRetryToken((token) => token + 1);
+    if (qrRetryTimerRef.current) {
+      clearTimeout(qrRetryTimerRef.current);
+      qrRetryTimerRef.current = null;
+    }
   }, [playlist?.social_handle, playlist?.social_platform, playlist?.social_qrcode]);
+
+  useEffect(() => {
+    if (!qrCacheKey) {
+      setQrCachedDataUrl('');
+      return;
+    }
+
+    try {
+      const cached = localStorage.getItem(qrCacheKey);
+      if (cached) {
+        setQrCachedDataUrl(cached);
+      } else {
+        setQrCachedDataUrl('');
+      }
+    } catch {
+      setQrCachedDataUrl('');
+    }
+  }, [qrCacheKey]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setQrFallbackOffline(false);
+      setQrRetryToken((token) => token + 1);
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, []);
+
+  useEffect(() => {
+    if (!playlist?.social_qrcode || !qrFallbackOffline) return;
+
+    qrRetryTimerRef.current = setTimeout(() => {
+      setQrRetryToken((token) => token + 1);
+      setQrFallbackOffline(false);
+    }, 15000);
+
+    return () => {
+      if (qrRetryTimerRef.current) {
+        clearTimeout(qrRetryTimerRef.current);
+        qrRetryTimerRef.current = null;
+      }
+    };
+  }, [playlist?.social_qrcode, qrFallbackOffline]);
+
+  useEffect(() => {
+    if (!playlist?.social_qrcode || !socialUrl || !qrCacheKey) return;
+
+    let ativo = true;
+    const controller = new AbortController();
+    qrPrefetchAbortRef.current = controller;
+
+    const qrRemoteUrl = `https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(socialUrl)}&margin=4`;
+
+    const atualizarCacheQr = async () => {
+      try {
+        const response = await fetch(qrRemoteUrl, { signal: controller.signal, cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`qr_http_${response.status}`);
+        }
+
+        const blob = await response.blob();
+        const dataUrl = await blobToDataUrl(blob);
+        if (!ativo || !dataUrl) return;
+
+        setQrCachedDataUrl(dataUrl);
+        try {
+          localStorage.setItem(qrCacheKey, dataUrl);
+        } catch (storageErr) {
+          console.warn('[Player] Não foi possível persistir o QR social:', storageErr.message);
+        }
+      } catch (err) {
+        if (!ativo && err.name === 'AbortError') return;
+        console.warn('[Player] Não foi possível atualizar o QR social em segundo plano:', err.message);
+      }
+    };
+
+    atualizarCacheQr();
+
+    return () => {
+      ativo = false;
+      controller.abort();
+    };
+  }, [playlist?.social_qrcode, socialUrl, qrCacheKey, qrRetryToken]);
 
   const fetchPlaylist = async () => {
     try {
@@ -1158,7 +1251,14 @@ const Player = () => {
     }
   };
   const socialUrl = getSocialUrl();
-  const podeMostrarQrOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+  const qrCacheKey = socialUrl ? `@DigitalSignage:lastSocialQrDataUrl:${encodeURIComponent(socialUrl)}` : '';
+
+  const blobToDataUrl = (blob) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+    reader.onerror = () => reject(new Error('qr_blob_convert_error'));
+    reader.readAsDataURL(blob);
+  });
 
   // Helper para estilos de Cards padronizados (6 ESTILOS PREMIUM)
   const getWidgetBaseStyle = (styleType, transparency = 0.5, themeColor = '#818cf8', widgetType = 'default') => {
@@ -1463,11 +1563,13 @@ const Player = () => {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   border: `3px solid ${playlist.theme_color || '#818cf8'}22`
                 }}>
-                  {podeMostrarQrOnline && !qrFallbackOffline ? (
+                  {qrCachedDataUrl || !qrFallbackOffline ? (
                     <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(socialUrl)}&margin=4`}
+                      key={`${qrRetryToken}-${socialUrl}`}
+                      src={qrCachedDataUrl || `https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(socialUrl)}&margin=4`}
                       alt="QR Code"
                       style={{ width: '110px', height: '110px', display: 'block' }}
+                      onLoad={() => setQrFallbackOffline(false)}
                       onError={() => setQrFallbackOffline(true)}
                     />
                   ) : (
