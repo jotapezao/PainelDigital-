@@ -7,6 +7,8 @@ const {
   resumirRepeticao,
   formatarPeriodo,
   gerarChaveEscopo,
+  obterNomeEscopo,
+  obterTipoEscopo,
   compararEspecificidade,
   pesoPrioridade,
 } = require('../services/agendamentoService');
@@ -32,20 +34,21 @@ function normalizarRepeatConfig(valor) {
   return {};
 }
 
-function validarEscopo(device_id, group_id) {
+function validarEscopo(client_id, device_id, group_id) {
   if (device_id && group_id) {
-    return 'Selecione apenas uma opção: TV ou Grupo.';
+    return 'Selecione apenas uma opção: TV, Grupo ou Cliente.';
   }
-  if (!device_id && !group_id) {
-    return 'Informe uma TV ou um Grupo para o agendamento.';
+  if (!client_id && !device_id && !group_id) {
+    return 'Informe um Cliente, uma TV ou um Grupo para o agendamento.';
   }
   return null;
 }
 
 function montarCampoEscopo(agendamento) {
   return {
-    tipo_escopo: agendamento.device_id ? 'device' : (agendamento.group_id ? 'group' : 'global'),
+    tipo_escopo: obterTipoEscopo(agendamento),
     chave_escopo: gerarChaveEscopo(agendamento),
+    label: obterNomeEscopo(agendamento),
   };
 }
 
@@ -125,13 +128,14 @@ async function carregarAgendamentosBase(req, filtros = {}) {
     conditions.push(`s.group_id = $${idx++}`);
     params.push(filtros.group_id);
   }
+  if (filtros.client_id) {
+    conditions.push(`COALESCE(s.client_id, d.client_id, g.client_id, p.client_id) = $${idx++}`);
+    params.push(filtros.client_id);
+  }
 
   if (!isAdmin) {
-    conditions.push(`COALESCE(d.client_id, g.client_id, p.client_id) = $${idx++}`);
+    conditions.push(`COALESCE(s.client_id, d.client_id, g.client_id, p.client_id) = $${idx++}`);
     params.push(req.user.client_id);
-  } else if (filtros.client_id) {
-    conditions.push(`COALESCE(d.client_id, g.client_id, p.client_id) = $${idx++}`);
-    params.push(filtros.client_id);
   }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -141,11 +145,13 @@ async function carregarAgendamentosBase(req, filtros = {}) {
       d.name AS device_name,
       g.name AS group_name,
       p.name AS playlist_name,
-      COALESCE(d.client_id, g.client_id, p.client_id) AS client_id
+      c.name AS client_name,
+      COALESCE(s.client_id, d.client_id, g.client_id, p.client_id) AS client_id
      FROM schedules s
      LEFT JOIN devices d ON s.device_id = d.id
      LEFT JOIN device_groups g ON s.group_id = g.id
      LEFT JOIN playlists p ON s.playlist_id = p.id
+     LEFT JOIN clients c ON COALESCE(s.client_id, d.client_id, g.client_id, p.client_id) = c.id
      ${where}
      ORDER BY s.created_at DESC`,
     params
@@ -155,6 +161,9 @@ async function carregarAgendamentosBase(req, filtros = {}) {
 }
 
 async function resolverClienteDoPayload(payload) {
+  if (payload.client_id) {
+    return payload.client_id;
+  }
   if (payload.device_id) {
     const { rows } = await pool.query('SELECT client_id FROM devices WHERE id = $1', [payload.device_id]);
     return rows[0]?.client_id || null;
@@ -206,11 +215,13 @@ async function getById(req, res) {
         d.name AS device_name,
         g.name AS group_name,
         p.name AS playlist_name,
-        COALESCE(d.client_id, g.client_id, p.client_id) AS client_id
+        c.name AS client_name,
+        COALESCE(s.client_id, d.client_id, g.client_id, p.client_id) AS client_id
        FROM schedules s
        LEFT JOIN devices d ON s.device_id = d.id
        LEFT JOIN device_groups g ON s.group_id = g.id
        LEFT JOIN playlists p ON s.playlist_id = p.id
+       LEFT JOIN clients c ON COALESCE(s.client_id, d.client_id, g.client_id, p.client_id) = c.id
        WHERE s.id = $1`,
       [req.params.id]
     );
@@ -220,7 +231,7 @@ async function getById(req, res) {
     const agendamentosEscopo = await carregarAgendamentosBase(req, {
       device_id: agendamento.device_id || undefined,
       group_id: agendamento.group_id || undefined,
-      client_id: req.user.role === 'admin' ? agendamento.client_id : undefined,
+      client_id: agendamento.client_id || undefined,
     });
     const listaComStatus = aplicarStatusLista(agendamentosEscopo);
     const statusAtual = listaComStatus.find((item) => item.id === agendamento.id) || {};
@@ -261,8 +272,17 @@ async function validarEPrepararCorpo(req, modo = 'create') {
   } = req.body;
 
   console.log('--- [Schedule Debug] Corpo recebido no Backend ---');
+  console.log('client_id recebido:', req.body.client_id, 'tipo:', typeof req.body.client_id);
   console.log('device_id recebido:', req.body.device_id, 'tipo:', typeof req.body.device_id);
   console.log('group_id recebido:', req.body.group_id, 'tipo:', typeof req.body.group_id);
+
+  let client_id = req.body.client_id;
+  if (typeof client_id === 'string') {
+    client_id = client_id.trim();
+  }
+  if (!client_id || client_id === 'null' || client_id === 'undefined' || client_id === '') {
+    client_id = null;
+  }
 
   let device_id = req.body.device_id;
   if (typeof device_id === 'string') {
@@ -283,7 +303,7 @@ async function validarEPrepararCorpo(req, modo = 'create') {
   console.log('device_id pós-coerção:', device_id);
   console.log('group_id pós-coerção:', group_id);
 
-  const erroEscopo = validarEscopo(device_id, group_id);
+  const erroEscopo = validarEscopo(client_id, device_id, group_id);
   if (erroEscopo) {
     console.log('Erro de Escopo detectado:', erroEscopo);
     const err = new Error(erroEscopo);
@@ -298,6 +318,7 @@ async function validarEPrepararCorpo(req, modo = 'create') {
   }
 
   const payload = {
+    client_id,
     device_id,
     group_id,
     playlist_id,
@@ -320,8 +341,22 @@ async function validarEPrepararCorpo(req, modo = 'create') {
     payload.repeat_days = normalizarArrayNumerico(payload.repeat_config.days_of_week, []);
   }
 
+  if (!payload.client_id) {
+    payload.client_id = await resolverClienteDoPayload(payload);
+  }
+
   if ((payload.repeat_type === 'weekly' || payload.repeat_type === 'custom') && (!payload.repeat_days || payload.repeat_days.length === 0)) {
     payload.repeat_days = payload.days_of_week;
+  }
+
+  const clientIdDoPlano = await resolverClienteDoPayload({ playlist_id: payload.playlist_id });
+  if (clientIdDoPlano && payload.client_id && payload.client_id !== clientIdDoPlano) {
+    const err = new Error('O cliente selecionado não corresponde ao plano escolhido.');
+    err.statusCode = 400;
+    throw err;
+  }
+  if (!payload.client_id) {
+    payload.client_id = clientIdDoPlano;
   }
 
   if (modo === 'update' && !req.params.id) {
@@ -355,12 +390,13 @@ async function create(req, res) {
 
     const { rows } = await pool.query(
       `INSERT INTO schedules (
-        device_id, group_id, playlist_id, name, start_datetime, end_datetime,
+        client_id, device_id, group_id, playlist_id, name, start_datetime, end_datetime,
         days_of_week, start_time, end_time, priority, repeat_type, repeat_value,
         repeat_days, repeat_until, repeat_config, active, last_status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15::jsonb, $16, $17)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16::jsonb, $17, $18)
       RETURNING *`,
       [
+        payload.client_id,
         payload.device_id,
         payload.group_id,
         payload.playlist_id,
@@ -386,6 +422,7 @@ async function create(req, res) {
     const statusBase = verificarAgendamentoAtivo(agendamento);
 
     await registrarHistorico(agendamento.id, {
+      client_id: agendamento.client_id,
       device_id: agendamento.device_id,
       group_id: agendamento.group_id,
       playlist_id: agendamento.playlist_id,
@@ -421,12 +458,13 @@ async function update(req, res) {
 
     const { rows } = await pool.query(
       `UPDATE schedules SET
-        device_id=$1, group_id=$2, playlist_id=$3, name=$4, start_datetime=$5, end_datetime=$6,
-        days_of_week=$7, start_time=$8, end_time=$9, priority=$10, repeat_type=$11, repeat_value=$12,
-        repeat_days=$13, repeat_until=$14, repeat_config=$15::jsonb, active=$16,
-        last_status=$17, updated_at=NOW()
-       WHERE id=$18 RETURNING *`,
+        client_id=$1, device_id=$2, group_id=$3, playlist_id=$4, name=$5, start_datetime=$6, end_datetime=$7,
+        days_of_week=$8, start_time=$9, end_time=$10, priority=$11, repeat_type=$12, repeat_value=$13,
+        repeat_days=$14, repeat_until=$15, repeat_config=$16::jsonb, active=$17,
+        last_status=$18, updated_at=NOW()
+       WHERE id=$19 RETURNING *`,
       [
+        payload.client_id,
         payload.device_id,
         payload.group_id,
         payload.playlist_id,
@@ -454,6 +492,7 @@ async function update(req, res) {
     const statusBase = verificarAgendamentoAtivo(agendamento);
 
     await registrarHistorico(agendamento.id, {
+      client_id: agendamento.client_id,
       device_id: agendamento.device_id,
       group_id: agendamento.group_id,
       playlist_id: agendamento.playlist_id,
@@ -500,7 +539,7 @@ async function history(req, res) {
     }
 
     if (!isAdmin) {
-      conditions.push(`COALESCE(d.client_id, g.client_id, p.client_id) = $${idx++}`);
+      conditions.push(`COALESCE(s.client_id, d.client_id, g.client_id, p.client_id) = $${idx++}`);
       params.push(req.user.client_id);
     }
 
@@ -531,7 +570,7 @@ async function history(req, res) {
 async function remove(req, res) {
   try {
     const { rows } = await pool.query(
-      `SELECT COALESCE(d.client_id, g.client_id, p.client_id) AS client_id
+      `SELECT COALESCE(s.client_id, d.client_id, g.client_id, p.client_id) AS client_id
        FROM schedules s
        LEFT JOIN devices d ON s.device_id = d.id
        LEFT JOIN device_groups g ON s.group_id = g.id

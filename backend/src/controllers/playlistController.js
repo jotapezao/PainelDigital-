@@ -423,11 +423,12 @@ async function getActive(req, res) {
 
     const now = new Date();
     const { rows: schedules } = await pool.query(
-      `SELECT s.*, d.name AS device_name, g.name AS group_name, p.name AS playlist_name, p.client_id
+      `SELECT s.*, d.name AS device_name, g.name AS group_name, c.name AS client_name, p.name AS playlist_name, p.client_id
        FROM schedules s
        LEFT JOIN devices d ON s.device_id = d.id
        LEFT JOIN device_groups g ON s.group_id = g.id
        JOIN playlists p ON s.playlist_id = p.id
+       LEFT JOIN clients c ON COALESCE(s.client_id, p.client_id) = c.id
        WHERE p.client_id = $1
          AND p.active = true`,
       [clientId]
@@ -566,8 +567,9 @@ async function getActive(req, res) {
         scope: {
           device_id: agendamentoAtivo.device_id,
           group_id: agendamentoAtivo.group_id,
-          type: agendamentoAtivo.device_id ? 'device' : (agendamentoAtivo.group_id ? 'group' : 'global'),
-          label: agendamentoAtivo.device_name || agendamentoAtivo.group_name || 'Global',
+          client_id: agendamentoAtivo.client_id,
+          type: agendamentoAtivo.device_id ? 'device' : (agendamentoAtivo.group_id ? 'group' : (agendamentoAtivo.client_id ? 'client' : 'global')),
+          label: agendamentoAtivo.device_name || agendamentoAtivo.group_name || agendamentoAtivo.client_name || 'Global',
         },
       };
     }

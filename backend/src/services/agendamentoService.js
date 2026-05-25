@@ -74,18 +74,21 @@ function parseHorarioParaMinutos(valor) {
 function gerarChaveEscopo(agendamento) {
   if (agendamento.device_id) return `device:${agendamento.device_id}`;
   if (agendamento.group_id) return `group:${agendamento.group_id}`;
+  if (agendamento.client_id) return `client:${agendamento.client_id}`;
   return 'global';
 }
 
 function obterNomeEscopo(agendamento) {
   if (agendamento.device_name) return agendamento.device_name;
   if (agendamento.group_name) return agendamento.group_name;
-  return agendamento.device_id ? 'Dispositivo' : (agendamento.group_id ? 'Grupo' : 'Todos');
+  if (agendamento.client_name) return agendamento.client_name;
+  return agendamento.device_id ? 'Dispositivo' : (agendamento.group_id ? 'Grupo' : (agendamento.client_id ? 'Cliente' : 'Todos'));
 }
 
 function obterTipoEscopo(agendamento) {
   if (agendamento.device_id) return 'device';
   if (agendamento.group_id) return 'group';
+  if (agendamento.client_id) return 'client';
   return 'global';
 }
 
@@ -145,8 +148,8 @@ function horarioOverlap(inicioA, fimA, inicioB, fimB) {
 }
 
 function compararEspecificidade(a, b) {
-  const pesoA = a.device_id ? 2 : (a.group_id ? 1 : 0);
-  const pesoB = b.device_id ? 2 : (b.group_id ? 1 : 0);
+  const pesoA = a.device_id ? 3 : (a.group_id ? 2 : (a.client_id ? 1 : 0));
+  const pesoB = b.device_id ? 3 : (b.group_id ? 2 : (b.client_id ? 1 : 0));
   if (pesoA !== pesoB) return pesoB - pesoA;
 
   const prioridade = pesoPrioridade(b.priority) - pesoPrioridade(a.priority);
@@ -256,7 +259,8 @@ function agendamentosConflitam(a, b) {
   if (!a || !b || a.id === b.id) return false;
   if (a.device_id && b.device_id && a.device_id !== b.device_id) return false;
   if (a.group_id && b.group_id && a.group_id !== b.group_id) return false;
-  if (!a.device_id && !a.group_id && !b.device_id && !b.group_id) return false;
+  if (a.client_id && b.client_id && a.client_id !== b.client_id) return false;
+  if (!a.device_id && !a.group_id && !a.client_id && !b.device_id && !b.group_id && !b.client_id) return false;
 
   const diasA = obterDiasAtivos(a);
   const diasB = obterDiasAtivos(b);

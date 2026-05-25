@@ -218,9 +218,7 @@ export async function sincronizarPlaylistComCache(playlist, onSyncComplete, opco
   const resultado = await sincronizarMidias(cache, playlist, indiceAtual, opcoes);
   const playlistTotalmenteLocal = await aplicarUrlsLocais(playlist, resultado.indice);
 
-  if (resultado.completo) {
-    salvarPlaylist(playlistTotalmenteLocal);
-  }
+  salvarPlaylist(playlist);
 
   if (onSyncComplete && resultado.completo) {
     onSyncComplete(playlistTotalmenteLocal);
@@ -256,9 +254,37 @@ export async function sincronizarPlaylistEmSegundoPlano(playlist, onSyncComplete
   return aplicarUrlsLocais(playlist, resultado.indice);
 }
 
+export async function carregarPlaylistLocalizadaDaCache(playlist) {
+  if (!playlist?.manifest?.medias?.length || !cacheDisponivel()) {
+    return playlist;
+  }
+
+  const indice = carregarIndice();
+  return aplicarUrlsLocais(playlist, indice);
+}
+
 export function limparObjectUrlsDoPlayer() {
   for (const objectUrl of objectUrls.values()) {
     URL.revokeObjectURL(objectUrl);
   }
   objectUrls.clear();
+}
+
+export async function limparCacheLocalDoPlayer() {
+  try {
+    localStorage.removeItem(PLAYLIST_KEY);
+    localStorage.removeItem(INDEX_KEY);
+  } catch {
+    // Ignora falhas de armazenamento
+  }
+
+  if (!cacheDisponivel()) return;
+
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    const requests = await cache.keys();
+    await Promise.all(requests.map((request) => cache.delete(request)));
+  } catch (err) {
+    console.warn('[Player Cache] Falha ao limpar cache local:', err.message);
+  }
 }

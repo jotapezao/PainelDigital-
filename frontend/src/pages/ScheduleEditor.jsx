@@ -112,7 +112,7 @@ const ScheduleEditor = () => {
 
   const handleSave = async () => {
     if (!form.name.trim() || (!form.client_id && !form.group_id) || !form.playlist_id) {
-      addToast('warning', 'Atenção', 'Preencha o nome, o destino e o plano.');
+      addToast('warning', 'Atenção', 'Preencha o nome, o cliente ou grupo e o plano.');
       return;
     }
 
@@ -120,30 +120,14 @@ const ScheduleEditor = () => {
     try {
       const payload = {
         ...form,
+        client_id: form.client_id || null,
         device_id: null,
+        group_id: form.group_id || null,
         repeat_config: {
           ...(form.repeat_config || {}),
           duration_minutes: Number(form.repeat_config?.duration_minutes || 60),
         },
       };
-      // Se veio client_id, busca o device do cliente para enviar ao backend
-      if (form.client_id && !form.group_id) {
-        try {
-          const devRes = await api.get('/devices', { params: { client_id: form.client_id } });
-          const devs = devRes.data || [];
-          if (devs.length > 0) {
-            payload.device_id = devs[0].id;
-          } else {
-            addToast('warning', 'Atenção', 'Este cliente não possui nenhum dispositivo cadastrado.');
-            setSaving(false);
-            return;
-          }
-        } catch {
-          addToast('error', 'Erro', 'Não foi possível buscar o dispositivo do cliente.');
-          setSaving(false);
-          return;
-        }
-      }
 
       if (id && id !== 'new') {
         const res = await api.put(`/schedules/${id}`, payload);
@@ -198,7 +182,7 @@ const ScheduleEditor = () => {
             ← Voltar para Agendamentos
           </Link>
           <h2 style={{ fontSize: '1.9rem', fontWeight: '800', marginBottom: '6px' }}>{id === 'new' ? 'Novo Agendamento' : 'Editar Agendamento'}</h2>
-          <p style={{ color: 'var(--text-muted)' }}>Organize prioridade, recorrência e destino com mais clareza.</p>
+          <p style={{ color: 'var(--text-muted)' }}>Organize prioridade, recorrência e destino com mais clareza. O agendamento pode ser feito por cliente mesmo sem dispositivos cadastrados.</p>
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <button className="btn btn-outline" onClick={() => navigate('/schedules')}>Cancelar</button>
@@ -218,7 +202,7 @@ const ScheduleEditor = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '18px' }}>
               <div className="input-group">
-                <label>Cliente (Usuário) *</label>
+                <label>Cliente *</label>
                 <select value={form.client_id || ''} onChange={e => setForm(p => ({ ...p, client_id: e.target.value, group_id: '' }))}>
                   <option value="">— Selecione o cliente —</option>
                   {clients.map(c => <option key={c.id} value={c.id}>{c.name}{c.company ? ` — ${c.company}` : ''}</option>)}
@@ -228,8 +212,13 @@ const ScheduleEditor = () => {
                 <label>Ou Grupo de Clientes</label>
                 <select value={form.group_id || ''} onChange={e => setForm(p => ({ ...p, group_id: e.target.value, client_id: '' }))}>
                   <option value="">— Selecione o grupo —</option>
-                  {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                  {groups.map(g => <option key={g.id} value={g.id}>{g.name}{g.description ? ` — ${g.description}` : ''}</option>)}
                 </select>
+                {groups.length === 0 && (
+                  <div style={{ marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                    Nenhum grupo cadastrado para este cliente.
+                  </div>
+                )}
               </div>
             </div>
 

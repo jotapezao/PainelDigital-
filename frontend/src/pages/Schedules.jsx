@@ -72,7 +72,7 @@ const Schedules = () => {
 
   const filteredSchedules = useMemo(() => {
     return schedules.filter((schedule) => {
-      const busca = `${schedule.name || ''} ${schedule.device_name || ''} ${schedule.group_name || ''} ${schedule.playlist_name || ''}`.toLowerCase();
+      const busca = `${schedule.name || ''} ${schedule.device_name || ''} ${schedule.group_name || ''} ${schedule.client_name || ''} ${schedule.playlist_name || ''}`.toLowerCase();
       const prioridade = (schedule.priority || 'normal').toLowerCase();
       const status = (schedule.status || 'aguardando').toLowerCase();
 
@@ -266,7 +266,7 @@ const Schedules = () => {
                       <div style={{ minWidth: 0 }}>
                         <strong style={{ display: 'block', marginBottom: '4px' }}>{schedule.name}</strong>
                         <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                          {schedule.scope?.label || schedule.device_name || schedule.group_name || 'Escopo geral'} • {schedule.playlist_name}
+                          {schedule.scope?.label || schedule.device_name || schedule.group_name || schedule.client_name || 'Escopo geral'} • {schedule.playlist_name}
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>

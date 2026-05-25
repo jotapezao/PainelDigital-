@@ -3,7 +3,20 @@ import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { getTickerVisualConfig, buildTickerText, getTickerSpeedDuration } from '../utils/tickerVisual';
-import { limparObjectUrlsDoPlayer, sincronizarPlaylistComCache, carregarPlaylistSalva } from '../services/playerCache';
+import { limparObjectUrlsDoPlayer, limparCacheLocalDoPlayer, sincronizarPlaylistComCache, carregarPlaylistSalva, carregarPlaylistLocalizadaDaCache } from '../services/playerCache';
+
+function decodificarJwtPayload(token) {
+  try {
+    if (!token || typeof token !== 'string' || !token.includes('.')) return null;
+    const payload = token.split('.')[1];
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+    const json = typeof atob === 'function' ? atob(padded) : window.atob(padded);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
 
 
 const Player = () => {
@@ -22,6 +35,16 @@ const Player = () => {
   const [mediaNonce, setMediaNonce] = useState(0);
   const [isStarted, setIsStarted] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
+  const [deviceCacheEnabled, setDeviceCacheEnabled] = useState(() => {
+    try {
+      const saved = localStorage.getItem('@DigitalSignage:deviceCacheEnabled');
+      if (saved === 'true') return true;
+      if (saved === 'false') return false;
+    } catch {
+      // Mantém o padrão
+    }
+    return true;
+  });
   const [playerSyncIntervalMinutes, setPlayerSyncIntervalMinutes] = useState(() => {
     try {
       const saved = localStorage.getItem('@DigitalSignage:playerSyncIntervalMinutes');
@@ -105,7 +128,7 @@ const Player = () => {
 
     const carregarIntervaloSincronizacao = async () => {
       try {
-        const response = await api.get('/settings');
+        const response = await api.get('/settings', { timeout: 8000 });
         const intervaloServidor = Number.parseInt(response.data?.player_sync_interval_minutes, 10);
         const intervaloValido = Number.isFinite(intervaloServidor) && intervaloServidor > 0 ? intervaloServidor : 2;
 
@@ -125,6 +148,67 @@ const Player = () => {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (previewId) return;
+
+    let active = true;
+
+    const carregarConfiguracaoDoDispositivo = async () => {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const deviceIdDaUrl = urlParams.get('device_id') || urlParams.get('deviceId');
+        const tokenDispositivo = localStorage.getItem('pd_device_token');
+        const deviceIdArmazenado = localStorage.getItem('pd_device_id');
+        const payloadToken = decodificarJwtPayload(tokenDispositivo || '');
+        const deviceId = deviceIdDaUrl || deviceIdArmazenado || payloadToken?.id || null;
+
+        if (!deviceId) {
+          return;
+        }
+
+        if (!deviceIdArmazenado) {
+          localStorage.setItem('pd_device_id', deviceId);
+        }
+
+        const resposta = await api.get(`/devices/${deviceId}`, { timeout: 8000 });
+        if (!active) return;
+        const cacheAtivo = resposta.data?.cache_enabled !== false;
+        setDeviceCacheEnabled(cacheAtivo);
+        localStorage.setItem('@DigitalSignage:deviceCacheEnabled', String(cacheAtivo));
+      } catch (err) {
+        if (!active) return;
+        console.warn('[Player] Não foi possível carregar a configuração do dispositivo:', err.message);
+      }
+    };
+
+    carregarConfiguracaoDoDispositivo();
+
+    return () => {
+      active = false;
+    };
+  }, [previewId]);
+
+  useEffect(() => {
+    if (previewId || deviceCacheEnabled) return;
+
+    let active = true;
+    const limpar = async () => {
+      try {
+        await limparCacheLocalDoPlayer();
+        if (!active) return;
+        limparObjectUrlsDoPlayer();
+      } catch (err) {
+        console.warn('[Player] Não foi possível limpar o cache local:', err.message);
+      }
+    };
+
+    limpar();
+
+    return () => {
+      active = false;
+    };
+  }, [previewId, deviceCacheEnabled]);
 
   useEffect(() => {
     fetchPlaylist();
@@ -163,7 +247,33 @@ const Player = () => {
       window.removeEventListener('online', handleOnline);
       limparObjectUrlsDoPlayer();
     };
-  }, [previewId, isStarted, user, playerSyncIntervalMinutes]);
+  }, [previewId, isStarted, user, playerSyncIntervalMinutes, deviceCacheEnabled]);
+
+  useEffect(() => {
+    let ativo = true;
+
+    const carregarCacheInicial = async () => {
+      if (previewId || !deviceCacheEnabled) return;
+
+      const cached = carregarPlaylistSalva();
+      if (!cached?.manifest?.medias?.length) return;
+
+      try {
+        const playlistLocal = await carregarPlaylistLocalizadaDaCache(cached);
+        if (!ativo) return;
+        setPlaylist(playlistLocal);
+        setLoading(false);
+      } catch (erro) {
+        console.warn('[Player] Falha ao carregar cache inicial:', erro.message);
+      }
+    };
+
+    carregarCacheInicial();
+
+    return () => {
+      ativo = false;
+    };
+  }, [previewId, deviceCacheEnabled]);
 
   // Inicialização da Playlist e Primeira Camada
   useEffect(() => {
@@ -298,7 +408,7 @@ const Player = () => {
   }, [playlist?.show_quotes, playlist?.quotes_currencies]);
 
   useEffect(() => {
-    if (!playlist) return;
+    if (!playlist || !deviceCacheEnabled) return;
     let cancelled = false;
 
     const ensureVideoCached = async (media, readyForPlayback = true) => {
@@ -411,7 +521,7 @@ const Player = () => {
     return () => {
       cancelled = true;
     };
-  }, [playlist, currentIndex, activeLayer]);
+  }, [playlist, currentIndex, activeLayer, deviceCacheEnabled]);
 
   useEffect(() => {
     if (!playlist || (playlist.ticker_interval === 0 && playlist.ticker_duration === 0)) {
@@ -484,6 +594,13 @@ const Player = () => {
     const fetchWeather = async () => {
       if (!playlist || !playlist.show_weather) return;
       try {
+        const fallbackCity = (playlist.weather_city || 'Cuiabá - MT').trim();
+        setWeatherData((atual) => ({
+          temp: atual?.temp && atual.temp !== '--' ? atual.temp : '--',
+          icon: atual?.icon || '⛅',
+          city: atual?.city || fallbackCity,
+        }));
+
         const getDevicePosition = () => new Promise((resolve, reject) => {
           if (!navigator.geolocation) return reject(new Error('geolocation_unavailable'));
           navigator.geolocation.getCurrentPosition(
@@ -497,7 +614,6 @@ const Player = () => {
           );
         });
 
-        const fallbackCity = (playlist.weather_city || 'Cuiabá - MT').trim();
         let cacheKey = `city:${fallbackCity.toLowerCase()}`;
         const agora = Date.now();
         const cache = weatherCacheRef.current.get(cacheKey);
@@ -536,7 +652,10 @@ const Player = () => {
           const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(fallbackCity)}&count=5&language=pt&format=json`);
           const geoData = await geoRes.json();
           const bestMatch = geoData.results?.[0];
-          if (!bestMatch) return;
+          if (!bestMatch) {
+            setWeatherData({ temp: '--', icon: '⛅', city: fallbackCity });
+            return;
+          }
           latitude = bestMatch.latitude;
           longitude = bestMatch.longitude;
           cityLabel = [bestMatch.name, bestMatch.admin1 || bestMatch.country].filter(Boolean).join(' - ');
@@ -562,9 +681,13 @@ const Player = () => {
 
           weatherCacheRef.current.set(cacheKey, { timestamp: agora, data: dadosClima });
           setWeatherData(dadosClima);
+        } else {
+          setWeatherData({ temp: '--', icon: '⛅', city: cityLabel || fallbackCity });
         }
       } catch (e) {
         console.error('Weather fetch error:', e);
+        const fallbackCity = (playlist?.weather_city || 'Cuiabá - MT').trim();
+        setWeatherData({ temp: '--', icon: '⛅', city: fallbackCity });
       }
     };
 
@@ -577,9 +700,9 @@ const Player = () => {
     try {
       let response;
       if (previewId) {
-        response = await api.get(`/playlists/${previewId}`);
+        response = await api.get(`/playlists/${previewId}`, { timeout: 8000 });
       } else {
-        response = await api.get('/playlists/active/manifest');
+        response = await api.get('/playlists/active/manifest', { timeout: 10000 });
       }
       
       if (response.data && (response.data.items || response.data.media)) {
@@ -613,7 +736,7 @@ const Player = () => {
           }
         }
         
-        if (!previewId) {
+        if (!previewId && deviceCacheEnabled) {
           data = await sincronizarPlaylistComCache(data, (playlistCompleta) => {
             console.log('[Player] Cache em segundo plano concluído. Atualizando fontes de mídia para locais.');
             if (playlistCompleta?.manifest?.version) {
@@ -630,7 +753,7 @@ const Player = () => {
       setLoading(false);
     } catch (error) {
       console.error('Erro ao buscar playlist:', error);
-      if (!playlistRef.current && !previewId) {
+      if (!playlistRef.current && !previewId && deviceCacheEnabled) {
         const cached = carregarPlaylistSalva();
         if (cached && (cached.items || cached.media)) {
           console.log('[Player] Sem conexão. Carregando playlist armazenada no cache...');

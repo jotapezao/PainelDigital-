@@ -75,6 +75,7 @@ async function runMigrations() {
         location VARCHAR(255),
         pairing_code VARCHAR(10) UNIQUE,
         paired BOOLEAN DEFAULT false,
+        cache_enabled BOOLEAN DEFAULT true,
         status VARCHAR(20) DEFAULT 'offline' CHECK (status IN ('online', 'offline', 'error')),
         last_seen TIMESTAMPTZ,
         orientation VARCHAR(20) DEFAULT 'landscape' CHECK (orientation IN ('landscape', 'portrait')),
@@ -142,6 +143,7 @@ async function runMigrations() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS schedules (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
         device_id UUID REFERENCES devices(id) ON DELETE CASCADE,
         playlist_id UUID REFERENCES playlists(id) ON DELETE CASCADE,
         name VARCHAR(255),
@@ -361,6 +363,9 @@ async function runMigrations() {
         END IF;
 
         -- Add group_id to schedules
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schedules' AND column_name='client_id') THEN 
+          ALTER TABLE schedules ADD COLUMN client_id UUID REFERENCES clients(id) ON DELETE CASCADE; 
+        END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schedules' AND column_name='group_id') THEN 
           ALTER TABLE schedules ADD COLUMN group_id UUID REFERENCES device_groups(id) ON DELETE CASCADE; 
         END IF;
@@ -521,6 +526,9 @@ async function runMigrations() {
       BEGIN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='devices' AND column_name='player_status') THEN
           ALTER TABLE devices ADD COLUMN player_status VARCHAR(50) DEFAULT 'idle';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='devices' AND column_name='cache_enabled') THEN
+          ALTER TABLE devices ADD COLUMN cache_enabled BOOLEAN DEFAULT true;
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='devices' AND column_name='ip_address') THEN
           ALTER TABLE devices ADD COLUMN ip_address VARCHAR(45);

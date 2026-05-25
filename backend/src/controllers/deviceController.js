@@ -4,6 +4,13 @@ function generatePairingCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+function normalizarBooleano(valor, padrao = true) {
+  if (valor === undefined || valor === null || valor === '') return padrao;
+  if (valor === true || valor === 'true' || valor === 1 || valor === '1') return true;
+  if (valor === false || valor === 'false' || valor === 0 || valor === '0') return false;
+  return padrao;
+}
+
 // GET /api/devices
 async function list(req, res) {
   try {
@@ -59,7 +66,7 @@ async function getById(req, res) {
 
 // POST /api/devices
 async function create(req, res) {
-  const { name, location, client_id, orientation, resolution, notes } = req.body;
+  const { name, location, client_id, orientation, resolution, notes, cache_enabled } = req.body;
   if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
   const effectiveClientId = req.user.role === 'admin' ? (client_id || req.user.client_id) : req.user.client_id;
   try {
@@ -71,9 +78,9 @@ async function create(req, res) {
       if (exists.rows.length === 0) unique = true;
     }
     const { rows } = await pool.query(
-      `INSERT INTO devices (client_id, name, location, pairing_code, orientation, resolution, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [effectiveClientId, name, location || null, code, orientation || 'landscape', resolution || null, notes || null]
+      `INSERT INTO devices (client_id, name, location, pairing_code, orientation, resolution, notes, cache_enabled)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [effectiveClientId, name, location || null, code, orientation || 'landscape', resolution || null, notes || null, normalizarBooleano(cache_enabled, true)]
     );
     const device = rows[0];
 
@@ -93,12 +100,12 @@ async function create(req, res) {
 
 // PUT /api/devices/:id
 async function update(req, res) {
-  const { name, location, orientation, resolution, notes, client_id, playlist_id } = req.body;
+  const { name, location, orientation, resolution, notes, client_id, playlist_id, cache_enabled } = req.body;
   try {
     const { rows } = await pool.query(
-      `UPDATE devices SET name=$1, location=$2, orientation=$3, resolution=$4, notes=$5, client_id=$6, updated_at=NOW()
-       WHERE id=$7 RETURNING *`,
-      [name, location || null, orientation || 'landscape', resolution || null, notes || null, client_id || null, req.params.id]
+      `UPDATE devices SET name=$1, location=$2, orientation=$3, resolution=$4, notes=$5, client_id=$6, cache_enabled=$7, updated_at=NOW()
+       WHERE id=$8 RETURNING *`,
+      [name, location || null, orientation || 'landscape', resolution || null, notes || null, client_id || null, normalizarBooleano(cache_enabled, true), req.params.id]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Dispositivo não encontrado' });
     const device = rows[0];

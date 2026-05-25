@@ -14,7 +14,12 @@ router.get('/', authMiddleware, async (req, res) => {
       pool.query(`SELECT COUNT(*) AS total, SUM(CASE WHEN status='online' THEN 1 ELSE 0 END) AS online FROM devices ${clientFilter}`, clientParam),
       pool.query(`SELECT COUNT(*) AS total FROM medias ${clientFilter}`, clientParam),
       pool.query(`SELECT COUNT(*) AS total FROM playlists ${clientFilter}`, clientParam),
-      pool.query(`SELECT COUNT(*) AS total FROM schedules WHERE active = true ${!isAdmin ? 'AND device_id IN (SELECT id FROM devices WHERE client_id = $1)' : ''}`, clientParam),
+      pool.query(
+        `SELECT COUNT(*) AS total FROM schedules
+         WHERE active = true
+         ${!isAdmin ? 'AND (client_id = $1 OR device_id IN (SELECT id FROM devices WHERE client_id = $1) OR group_id IN (SELECT id FROM device_groups WHERE client_id = $1))' : ''}`,
+        clientParam
+      ),
     ];
 
     if (isAdmin) {
