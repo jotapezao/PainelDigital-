@@ -96,11 +96,19 @@ const Player = () => {
   const DEFAULT_MEDIA_DURATION_SECONDS = 15;
 
   const getMediaKey = (media) => media?.id || media?.filename || media?.url || media?.name || '';
+  const isReusableLocalUrl = (url) => typeof url === 'string' && (
+    url.startsWith('blob:') ||
+    url.startsWith('data:') ||
+    url.startsWith('file:') ||
+    url.startsWith('capacitor://') ||
+    url.startsWith('content:') ||
+    url.startsWith('/')
+  );
   const resolveMediaSource = (media) => {
     if (!media) return '';
     const raw = media.url || media.filename || '';
     if (!raw) return '';
-    if (/^https?:\/\//i.test(raw) || raw.startsWith('/')) return raw;
+    if (/^https?:\/\//i.test(raw) || isReusableLocalUrl(raw)) return raw;
     return `/uploads/${raw.replace(/^\/+/, '')}`;
   };
 
@@ -164,6 +172,35 @@ const Player = () => {
   useEffect(() => {
     playlistRef.current = playlist;
   }, [playlist]);
+
+  useEffect(() => {
+    let ativo = true;
+
+    const solicitarArmazenamentoPersistente = async () => {
+      try {
+        if (!navigator?.storage?.persist) return;
+        const jaPersistente = typeof navigator.storage.persisted === 'function'
+          ? await navigator.storage.persisted()
+          : false;
+        if (jaPersistente) return;
+
+        const concedido = await navigator.storage.persist();
+        if (ativo) {
+          console.log(`[Player] Armazenamento persistente ${concedido ? 'ativado' : 'não concedido'}.`);
+        }
+      } catch (err) {
+        if (ativo) {
+          console.warn('[Player] Não foi possível ativar armazenamento persistente:', err.message);
+        }
+      }
+    };
+
+    solicitarArmazenamentoPersistente();
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
