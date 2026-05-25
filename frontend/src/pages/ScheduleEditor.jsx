@@ -48,21 +48,10 @@ const ScheduleEditor = () => {
   });
 
   const [clients, setClients] = useState([]);
-  const [groups, setGroups] = useState([]);
+  const [allGroups, setAllGroups] = useState([]);
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
-  const carregarGrupos = async (clientId = '') => {
-    try {
-      const params = clientId ? { client_id: clientId } : undefined;
-      const res = await api.get('/device-groups', { params });
-      setGroups(Array.isArray(res.data) ? res.data : (res.data?.groups || []));
-    } catch (err) {
-      console.error('Falha ao carregar grupos:', err);
-      setGroups([]);
-    }
-  };
 
   const prioridadeSelecionada = useMemo(
     () => PRIORIDADES.find((item) => item.value === form.priority) || PRIORIDADES[1],
@@ -78,7 +67,7 @@ const ScheduleEditor = () => {
           api.get('/playlists')
         ]);
         setClients(clientsRes.data || []);
-        setGroups(Array.isArray(groupsRes.data) ? groupsRes.data : (groupsRes.data?.groups || []));
+        setAllGroups(Array.isArray(groupsRes.data) ? groupsRes.data : (groupsRes.data?.groups || []));
         setPlaylists(playlistsRes.data);
 
         if (id && id !== 'new') {
@@ -107,12 +96,6 @@ const ScheduleEditor = () => {
     };
     fetchData();
   }, [id, addToast]);
-
-  useEffect(() => {
-    if (form.client_id) {
-      carregarGrupos(form.client_id);
-    }
-  }, [form.client_id]);
 
   const toggleDay = (idx) => {
     setForm(prev => {
@@ -183,9 +166,19 @@ const ScheduleEditor = () => {
     inativo: 'Inativo',
   }[form.status] || 'Aguardando';
 
-  const resumoEscopo = form.client_id
-    ? (clients.find((c) => c.id === form.client_id)?.name || 'Cliente selecionado')
-    : (groups.find((group) => group.id === form.group_id)?.name || 'Grupo selecionado');
+  const gruposVisiveis = useMemo(() => {
+    if (!form.client_id) {
+      return allGroups;
+    }
+    return allGroups.filter((group) => group.client_id === form.client_id);
+  }, [allGroups, form.client_id]);
+
+  const grupoSelecionado = gruposVisiveis.find((group) => group.id === form.group_id)
+    || allGroups.find((group) => group.id === form.group_id);
+
+  const resumoEscopo = form.group_id
+    ? (grupoSelecionado?.name || 'Grupo selecionado')
+    : (clients.find((c) => c.id === form.client_id)?.name || 'Cliente selecionado');
 
   const resumoPlaylist = playlists.find((playlist) => playlist.id === form.playlist_id)?.name || 'Plano de exibição';
 
@@ -228,7 +221,7 @@ const ScheduleEditor = () => {
               <div className="input-group">
                 <label>Ou Grupo de Clientes</label>
                 <select value={form.group_id || ''} onChange={e => {
-                  const group = groups.find((item) => item.id === e.target.value);
+                  const group = allGroups.find((item) => item.id === e.target.value);
                   setForm(p => ({
                     ...p,
                     group_id: e.target.value,
@@ -236,11 +229,16 @@ const ScheduleEditor = () => {
                   }));
                 }}>
                   <option value="">— Selecione o grupo —</option>
-                  {groups.map(g => <option key={g.id} value={g.id}>{g.name}{g.description ? ` — ${g.description}` : ''}</option>)}
+                  {gruposVisiveis.map(g => <option key={g.id} value={g.id}>{g.name}{g.description ? ` — ${g.description}` : ''}</option>)}
                 </select>
-                {groups.length === 0 && (
+                {form.client_id && gruposVisiveis.length === 0 && (
                   <div style={{ marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                    Selecione um cliente para carregar os grupos vinculados.
+                    Nenhum grupo encontrado para a empresa selecionada.
+                  </div>
+                )}
+                {!form.client_id && allGroups.length === 0 && (
+                  <div style={{ marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                    Nenhum grupo cadastrado até o momento.
                   </div>
                 )}
               </div>
