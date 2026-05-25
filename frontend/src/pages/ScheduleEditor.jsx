@@ -53,6 +53,17 @@ const ScheduleEditor = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const carregarGrupos = async (clientId = '') => {
+    try {
+      const params = clientId ? { client_id: clientId } : undefined;
+      const res = await api.get('/device-groups', { params });
+      setGroups(Array.isArray(res.data) ? res.data : (res.data?.groups || []));
+    } catch (err) {
+      console.error('Falha ao carregar grupos:', err);
+      setGroups([]);
+    }
+  };
+
   const prioridadeSelecionada = useMemo(
     () => PRIORIDADES.find((item) => item.value === form.priority) || PRIORIDADES[1],
     [form.priority]
@@ -96,6 +107,12 @@ const ScheduleEditor = () => {
     };
     fetchData();
   }, [id, addToast]);
+
+  useEffect(() => {
+    if (form.client_id) {
+      carregarGrupos(form.client_id);
+    }
+  }, [form.client_id]);
 
   const toggleDay = (idx) => {
     setForm(prev => {
@@ -210,13 +227,20 @@ const ScheduleEditor = () => {
               </div>
               <div className="input-group">
                 <label>Ou Grupo de Clientes</label>
-                <select value={form.group_id || ''} onChange={e => setForm(p => ({ ...p, group_id: e.target.value, client_id: '' }))}>
+                <select value={form.group_id || ''} onChange={e => {
+                  const group = groups.find((item) => item.id === e.target.value);
+                  setForm(p => ({
+                    ...p,
+                    group_id: e.target.value,
+                    client_id: group?.client_id || p.client_id || '',
+                  }));
+                }}>
                   <option value="">— Selecione o grupo —</option>
                   {groups.map(g => <option key={g.id} value={g.id}>{g.name}{g.description ? ` — ${g.description}` : ''}</option>)}
                 </select>
                 {groups.length === 0 && (
                   <div style={{ marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                    Nenhum grupo cadastrado para este cliente.
+                    Selecione um cliente para carregar os grupos vinculados.
                   </div>
                 )}
               </div>

@@ -45,6 +45,13 @@ const Player = () => {
     }
     return true;
   });
+  const [appVersionLabel, setAppVersionLabel] = useState(() => {
+    try {
+      return localStorage.getItem('@DigitalSignage:appVersionLabel') || '';
+    } catch {
+      return '';
+    }
+  });
   const [playerSyncIntervalMinutes, setPlayerSyncIntervalMinutes] = useState(() => {
     try {
       const saved = localStorage.getItem('@DigitalSignage:playerSyncIntervalMinutes');
@@ -130,15 +137,21 @@ const Player = () => {
       try {
         const response = await api.get('/settings', { timeout: 8000 });
         const intervaloServidor = Number.parseInt(response.data?.player_sync_interval_minutes, 10);
+        const versionLabel = `${response.data?.latest_app_version || ''}`.trim();
         const intervaloValido = Number.isFinite(intervaloServidor) && intervaloServidor > 0 ? intervaloServidor : 2;
 
         if (!active) return;
         setPlayerSyncIntervalMinutes(intervaloValido);
+        setAppVersionLabel(versionLabel);
         localStorage.setItem('@DigitalSignage:playerSyncIntervalMinutes', String(intervaloValido));
+        if (versionLabel) {
+          localStorage.setItem('@DigitalSignage:appVersionLabel', versionLabel);
+        }
       } catch (err) {
         const fallback = Number.parseInt(localStorage.getItem('@DigitalSignage:playerSyncIntervalMinutes') || '2', 10);
         if (!active) return;
         setPlayerSyncIntervalMinutes(Number.isFinite(fallback) && fallback > 0 ? fallback : 2);
+        setAppVersionLabel(localStorage.getItem('@DigitalSignage:appVersionLabel') || '');
       }
     };
 
@@ -154,40 +167,31 @@ const Player = () => {
 
     let active = true;
 
-    const carregarConfiguracaoDoDispositivo = async () => {
+    const carregarConfiguracaoDaEmpresa = async () => {
       try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const deviceIdDaUrl = urlParams.get('device_id') || urlParams.get('deviceId');
-        const tokenDispositivo = localStorage.getItem('pd_device_token');
-        const deviceIdArmazenado = localStorage.getItem('pd_device_id');
-        const payloadToken = decodificarJwtPayload(tokenDispositivo || '');
-        const deviceId = deviceIdDaUrl || deviceIdArmazenado || payloadToken?.id || null;
-
-        if (!deviceId) {
+        const clienteId = user?.client_id || decodificarJwtPayload(localStorage.getItem('pd_device_token') || '')?.client_id || null;
+        if (!clienteId) {
           return;
         }
 
-        if (!deviceIdArmazenado) {
-          localStorage.setItem('pd_device_id', deviceId);
-        }
-
-        const resposta = await api.get(`/devices/${deviceId}`, { timeout: 8000 });
+        localStorage.setItem('pd_player_client_id', clienteId);
+        const resposta = await api.get(`/clients/${clienteId}`, { timeout: 8000 });
         if (!active) return;
         const cacheAtivo = resposta.data?.cache_enabled !== false;
         setDeviceCacheEnabled(cacheAtivo);
-        localStorage.setItem('@DigitalSignage:deviceCacheEnabled', String(cacheAtivo));
+        localStorage.setItem(`@DigitalSignage:clientCacheEnabled:${clienteId}`, String(cacheAtivo));
       } catch (err) {
         if (!active) return;
-        console.warn('[Player] Não foi possível carregar a configuração do dispositivo:', err.message);
+        console.warn('[Player] Não foi possível carregar a configuração da empresa:', err.message);
       }
     };
 
-    carregarConfiguracaoDoDispositivo();
+    carregarConfiguracaoDaEmpresa();
 
     return () => {
       active = false;
     };
-  }, [previewId]);
+  }, [previewId, user?.client_id]);
 
   useEffect(() => {
     if (previewId || deviceCacheEnabled) return;
@@ -737,12 +741,16 @@ const Player = () => {
         }
         
         if (!previewId && deviceCacheEnabled) {
-          data = await sincronizarPlaylistComCache(data, (playlistCompleta) => {
+          const playlistInicial = await carregarPlaylistLocalizadaDaCache(data);
+          data = playlistInicial;
+          sincronizarPlaylistComCache(data, (playlistCompleta) => {
             console.log('[Player] Cache em segundo plano concluído. Atualizando fontes de mídia para locais.');
             if (playlistCompleta?.manifest?.version) {
               lastManifestVersionRef.current = playlistCompleta.manifest.version;
             }
             setPlaylist(playlistCompleta);
+          }).catch((syncError) => {
+            console.warn('[Player] Falha ao sincronizar cache em segundo plano:', syncError.message);
           });
         }
 
@@ -757,7 +765,7 @@ const Player = () => {
         const cached = carregarPlaylistSalva();
         if (cached && (cached.items || cached.media)) {
           console.log('[Player] Sem conexão. Carregando playlist armazenada no cache...');
-          const playlistComUrls = await sincronizarPlaylistComCache(cached);
+          const playlistComUrls = await carregarPlaylistLocalizadaDaCache(cached);
           if (playlistComUrls?.manifest?.version) {
             lastManifestVersionRef.current = playlistComUrls.manifest.version;
           }
@@ -1520,7 +1528,7 @@ const Player = () => {
       
       {/* Versão para controle de Build */}
       <div style={{ position: 'absolute', bottom: '10px', left: '10px', fontSize: '10px', color: 'rgba(255,255,255,0.2)', zIndex: 9999 }}>
-        BUILD v3.0.5
+        BUILD {appVersionLabel || 'offline'}
       </div>
     </div>
   );

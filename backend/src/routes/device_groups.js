@@ -6,8 +6,13 @@ const { authMiddleware, requireAdmin } = require('../middleware/auth');
 // List device groups
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const clientFilter = req.user.role === 'admin' ? '' : 'WHERE client_id = $1';
-    const clientParam = req.user.role === 'admin' ? [] : [req.user.client_id];
+    const queryClientId = req.query.client_id || null;
+    const clientFilter = req.user.role === 'admin'
+      ? (queryClientId ? 'WHERE client_id = $1' : '')
+      : 'WHERE client_id = $1';
+    const clientParam = req.user.role === 'admin'
+      ? (queryClientId ? [queryClientId] : [])
+      : [req.user.client_id];
 
     const result = await pool.query(`SELECT * FROM device_groups ${clientFilter} ORDER BY created_at DESC`, clientParam);
     res.json(result.rows);

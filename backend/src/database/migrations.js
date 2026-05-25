@@ -14,6 +14,7 @@ async function runMigrations() {
         phone VARCHAR(50),
         plan VARCHAR(50) DEFAULT 'basic',
         active BOOLEAN DEFAULT true,
+        cache_enabled BOOLEAN DEFAULT true,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
@@ -63,6 +64,9 @@ async function runMigrations() {
       BEGIN 
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='avatar_url') THEN 
           ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500); 
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='cache_enabled') THEN 
+          ALTER TABLE clients ADD COLUMN cache_enabled BOOLEAN DEFAULT true; 
         END IF;
       END $$;
     `);

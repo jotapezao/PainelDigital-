@@ -17,7 +17,6 @@ const DeviceEditor = () => {
     client_id: '',
     notes: '',
     orientation: 'landscape',
-    cache_enabled: true,
   });
   
   const [playlists, setPlaylists] = useState([]);
@@ -45,7 +44,6 @@ const DeviceEditor = () => {
             client_id: d.client_id || '',
             notes: d.notes || '',
             orientation: d.orientation || 'landscape',
-            cache_enabled: d.cache_enabled !== false,
           });
         }
       } catch (err) {
@@ -142,20 +140,10 @@ const DeviceEditor = () => {
         </div>
 
         <div className="card" style={{ padding: '18px', marginTop: '18px', border: '1px solid var(--border)' }}>
-          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={form.cache_enabled}
-              onChange={e => setForm(p => ({ ...p, cache_enabled: e.target.checked }))}
-              style={{ width: '18px', height: '18px', marginTop: '4px', accentColor: 'var(--primary)' }}
-            />
-            <span>
-              <strong>Usar cache local neste dispositivo</strong>
-              <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
-                Desative em TVs com pouco armazenamento. Quando ligado, o player baixa e mantém o plano localmente para continuar reproduzindo mesmo sem internet.
-              </span>
-            </span>
-          </label>
+          <strong style={{ display: 'block', marginBottom: '6px' }}>Cache local da empresa</strong>
+          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+            O cache do player agora é controlado na tela de Empresas. Ajuste a opção por empresa para habilitar ou desabilitar o armazenamento local do plano.
+          </p>
         </div>
       </div>
     </div>

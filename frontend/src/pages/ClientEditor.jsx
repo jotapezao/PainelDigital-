@@ -24,6 +24,7 @@ const ClientEditor = () => {
     theme_color: '#6366f1',
     notes: '',
     active: true,
+    cache_enabled: true,
   });
 
   const [userForm, setUserForm] = useState({
@@ -51,7 +52,12 @@ const ClientEditor = () => {
             api.get(`/clients/${id}`),
             api.get(`/clients/${id}/users`),
           ]);
-          if (clientRes.status === 'fulfilled') setForm(clientRes.value.data);
+          if (clientRes.status === 'fulfilled') {
+            setForm({
+              ...clientRes.value.data,
+              cache_enabled: clientRes.value.data?.cache_enabled !== false,
+            });
+          }
           if (usersRes.status === 'fulfilled') setLinkedUsers(usersRes.value.data);
         }
       } catch (err) {
@@ -81,6 +87,7 @@ const ClientEditor = () => {
         // Padronização: plano e cota não são mais configuráveis por empresa
         plan: 'basic',
         storage_quota_gb: 10,
+        cache_enabled: form.cache_enabled !== false,
         ...(isNew && userForm.create ? {
           user_name: userForm.name,
           user_email: userForm.email,
@@ -94,7 +101,7 @@ const ClientEditor = () => {
           ? 'Empresa e usuário criados com sucesso!'
           : 'Empresa criada com sucesso!');
       } else {
-        await api.put(`/clients/${id}`, form);
+        await api.put(`/clients/${id}`, payload);
         addToast('success', 'Sucesso', 'Empresa atualizada com sucesso!');
       }
       navigate('/clients');
@@ -218,6 +225,24 @@ const ClientEditor = () => {
                   <span style={{ fontSize: '0.875rem' }}>Empresa Ativa</span>
                 </label>
               </div>
+            </div>
+
+            <div className="input-group" style={{ marginTop: '16px' }}>
+              <label>Cache local do player</label>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', padding: '12px 14px', background: 'var(--bg-input)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                <input
+                  type="checkbox"
+                  checked={form.cache_enabled !== false}
+                  onChange={e => set('cache_enabled', e.target.checked)}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--primary)', marginTop: '3px' }}
+                />
+                <span style={{ fontSize: '0.875rem', lineHeight: 1.45 }}>
+                  <strong>Habilitar cache para todos os dispositivos desta empresa</strong>
+                  <span style={{ display: 'block', color: 'var(--text-dim)', marginTop: '4px' }}>
+                    Use essa opção para liberar ou bloquear o armazenamento local do plano nos players desta empresa.
+                  </span>
+                </span>
+              </label>
             </div>
 
             <div className="input-group" style={{ marginBottom: 0 }}>

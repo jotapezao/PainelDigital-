@@ -1,6 +1,13 @@
 const { pool } = require('../database/db');
 const bcrypt = require('bcryptjs');
 
+function normalizarBooleano(valor, padrao = true) {
+  if (valor === undefined || valor === null || valor === '') return padrao;
+  if (valor === true || valor === 'true' || valor === 1 || valor === '1') return true;
+  if (valor === false || valor === 'false' || valor === 0 || valor === '0') return false;
+  return padrao;
+}
+
 // GET /api/clients
 async function list(req, res) {
   try {
@@ -69,7 +76,7 @@ async function getUsers(req, res) {
 // POST /api/clients
 // Accepts optional user fields: user_name, user_email, user_password, user_role
 async function create(req, res) {
-  const { name, email, company, phone, group_id, theme_color, notes,
+  const { name, email, company, phone, group_id, theme_color, notes, cache_enabled,
           user_name, user_email, user_password, user_role } = req.body;
 
   if (!name || !email) return res.status(400).json({ error: 'Nome e email são obrigatórios' });
@@ -79,8 +86,8 @@ async function create(req, res) {
     await db.query('BEGIN');
 
     const clientResult = await db.query(
-      `INSERT INTO clients (name, email, company, phone, plan, group_id, theme_color, notes, storage_quota_gb)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      `INSERT INTO clients (name, email, company, phone, plan, group_id, theme_color, notes, storage_quota_gb, cache_enabled)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
       [
         name,
         email,
@@ -90,7 +97,8 @@ async function create(req, res) {
         group_id || null,
         theme_color || '#6366f1',
         notes || null,
-        10
+        10,
+        normalizarBooleano(cache_enabled, true),
       ]
     );
     const newClient = clientResult.rows[0];
@@ -119,12 +127,12 @@ async function create(req, res) {
 
 // PUT /api/clients/:id
 async function update(req, res) {
-  const { name, email, company, phone, group_id, active, theme_color, notes } = req.body;
+  const { name, email, company, phone, group_id, active, theme_color, notes, cache_enabled } = req.body;
   try {
     const { rows } = await pool.query(
       `UPDATE clients SET name=$1, email=$2, company=$3, phone=$4, plan=$5, group_id=$6,
-       active=$7, theme_color=$8, notes=$9, storage_quota_gb=$10, updated_at=NOW()
-       WHERE id=$11 RETURNING *`,
+       active=$7, theme_color=$8, notes=$9, storage_quota_gb=$10, cache_enabled=$11, updated_at=NOW()
+       WHERE id=$12 RETURNING *`,
       [
         name,
         email,
@@ -136,6 +144,7 @@ async function update(req, res) {
         theme_color || '#6366f1',
         notes || null,
         10,
+        normalizarBooleano(cache_enabled, true),
         req.params.id
       ]
     );

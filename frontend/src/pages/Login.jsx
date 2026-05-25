@@ -6,7 +6,7 @@ import { Browser } from '@capacitor/browser';
 
 const Login = () => {
   const [loginIdentifier, setLoginIdentifier] = useState(() => localStorage.getItem('pd_remember_email') || '');
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState(() => localStorage.getItem('pd_remember_password') || sessionStorage.getItem('pd_last_password') || '');
   const [remember, setRemember] = useState(() => !!localStorage.getItem('pd_remember_email'));
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -77,6 +77,13 @@ const Login = () => {
     document.title = settings.system_name || 'Painel Digital';
   }, [settings.system_name]);
 
+  useEffect(() => {
+    const savedPassword = localStorage.getItem('pd_remember_password') || sessionStorage.getItem('pd_last_password') || '';
+    if (savedPassword) {
+      setPassword(savedPassword);
+    }
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -87,9 +94,12 @@ const Login = () => {
     if (result.success) {
       if (remember) {
         localStorage.setItem('pd_remember_email', loginIdentifier);
+        localStorage.setItem('pd_remember_password', password);
       } else {
         localStorage.removeItem('pd_remember_email');
+        localStorage.removeItem('pd_remember_password');
       }
+      sessionStorage.setItem('pd_last_password', password);
       if (result.user?.role === 'client') {
         localStorage.setItem('pd_device_company', result.user?.client_name || '');
         navigate('/player?autoStart=true');
@@ -101,6 +111,14 @@ const Login = () => {
     }
     
     setLoading(false);
+  };
+
+  const handlePasswordChange = (value) => {
+    setPassword(value);
+    sessionStorage.setItem('pd_last_password', value);
+    if (remember) {
+      localStorage.setItem('pd_remember_password', value);
+    }
   };
 
   const deviceCompany = localStorage.getItem('pd_device_company');
@@ -483,7 +501,7 @@ const Login = () => {
                 type="password" 
                 placeholder="••••••••" 
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => handlePasswordChange(e.target.value)}
                 required
               />
             </div>
@@ -543,7 +561,7 @@ const Login = () => {
         </div>
         
         <div style={{ marginTop: '18px', textAlign: 'center' }}>
-          <p style={{ fontSize: '0.64rem', color: '#3f3f46', fontWeight: '700', letterSpacing: '1.2px', margin: 0 }}>VERSION {CURRENT_APP_VERSION} • {settings.system_name.toUpperCase()}</p>
+          <p style={{ fontSize: '0.64rem', color: '#3f3f46', fontWeight: '700', letterSpacing: '1.2px', margin: 0 }}>VERSION {settings.latest_app_version || CURRENT_APP_VERSION} • {settings.system_name.toUpperCase()}</p>
         </div>
       </div>
     </div>
