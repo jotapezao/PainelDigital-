@@ -141,6 +141,32 @@ const Player = () => {
   const getOriginalUrl = (media) => media?.original_url || resolveMediaSource(media);
   const getCacheEntry = (media) => mediaCacheRef.current.get(getMediaKey(media));
 
+  const getSocialUrl = () => {
+    if (!playlist?.social_handle) return 'https://seusite.com.br';
+    if (playlist.social_handle.startsWith('http')) return playlist.social_handle;
+    
+    let handle = playlist.social_handle?.replace('@', '');
+    switch(playlist.social_platform) {
+      case 'instagram': return `https://instagram.com/${handle}`;
+      case 'twitter': return `https://twitter.com/${handle}`;
+      case 'facebook': return `https://facebook.com/${handle}`;
+      case 'tiktok': return `https://tiktok.com/@${handle}`;
+      case 'youtube': return `https://youtube.com/${handle}`;
+      case 'website': return playlist.social_handle.includes('.') ? `https://${playlist.social_handle}` : `https://google.com/search?q=${playlist.social_handle}`;
+      default: return `https://${playlist.social_handle}`;
+    }
+  };
+
+  const socialUrl = getSocialUrl();
+  const qrCacheKey = socialUrl ? `@DigitalSignage:lastSocialQrDataUrl:${encodeURIComponent(socialUrl)}` : '';
+
+  const blobToDataUrl = (blob) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+    reader.onerror = () => reject(new Error('qr_blob_convert_error'));
+    reader.readAsDataURL(blob);
+  });
+
   const limparFalhaDeMidiaPendente = () => {
     if (mediaFailureTimerRef.current) {
       clearTimeout(mediaFailureTimerRef.current);
@@ -1234,31 +1260,6 @@ const Player = () => {
     
     return styles;
   };
-
-  const getSocialUrl = () => {
-    if (!playlist?.social_handle) return 'https://seusite.com.br';
-    if (playlist.social_handle.startsWith('http')) return playlist.social_handle;
-    
-    let handle = playlist.social_handle?.replace('@', '');
-    switch(playlist.social_platform) {
-      case 'instagram': return `https://instagram.com/${handle}`;
-      case 'twitter': return `https://twitter.com/${handle}`;
-      case 'facebook': return `https://facebook.com/${handle}`;
-      case 'tiktok': return `https://tiktok.com/@${handle}`;
-      case 'youtube': return `https://youtube.com/${handle}`;
-      case 'website': return playlist.social_handle.includes('.') ? `https://${playlist.social_handle}` : `https://google.com/search?q=${playlist.social_handle}`;
-      default: return `https://${playlist.social_handle}`;
-    }
-  };
-  const socialUrl = getSocialUrl();
-  const qrCacheKey = socialUrl ? `@DigitalSignage:lastSocialQrDataUrl:${encodeURIComponent(socialUrl)}` : '';
-
-  const blobToDataUrl = (blob) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(typeof reader.result === 'string' ? reader.result : '');
-    reader.onerror = () => reject(new Error('qr_blob_convert_error'));
-    reader.readAsDataURL(blob);
-  });
 
   // Helper para estilos de Cards padronizados (6 ESTILOS PREMIUM)
   const getWidgetBaseStyle = (styleType, transparency = 0.5, themeColor = '#818cf8', widgetType = 'default') => {
