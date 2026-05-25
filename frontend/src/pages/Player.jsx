@@ -73,6 +73,7 @@ const Player = () => {
   const clickTimerRef = useRef(null);
   const [showTicker, setShowTicker] = useState(true);
   const tickerTimerRef = useRef(null);
+  const mediaFailureTimerRef = useRef(null);
 
   const [showClockWidget, setShowClockWidget] = useState(true);
   const [showWeatherWidget, setShowWeatherWidget] = useState(true);
@@ -92,6 +93,7 @@ const Player = () => {
   const playlistRef = useRef(null);
   const lastManifestVersionRef = useRef(null);
   const MAX_CACHED_VIDEO_BYTES = 45 * 1024 * 1024;
+  const DEFAULT_MEDIA_DURATION_SECONDS = 15;
 
   const getMediaKey = (media) => media?.id || media?.filename || media?.url || media?.name || '';
   const resolveMediaSource = (media) => {
@@ -126,6 +128,38 @@ const Player = () => {
 
   const getOriginalUrl = (media) => media?.original_url || resolveMediaSource(media);
   const getCacheEntry = (media) => mediaCacheRef.current.get(getMediaKey(media));
+
+  const limparFalhaDeMidiaPendente = () => {
+    if (mediaFailureTimerRef.current) {
+      clearTimeout(mediaFailureTimerRef.current);
+      mediaFailureTimerRef.current = null;
+    }
+  };
+
+  const limparCacheDeMidiaLocal = () => {
+    for (const entry of mediaCacheRef.current.values()) {
+      if (entry?.objectUrl) {
+        URL.revokeObjectURL(entry.objectUrl);
+      }
+    }
+    mediaCacheRef.current.clear();
+  };
+
+  const agendarAvancoPorFalha = (layerId, item, motivo) => {
+    const mediaId = item?.media?.id || item?.media_id || item?.id || item?.filename || `layer:${layerId}`;
+    if (mediaId && mediaLoadError === mediaId) {
+      return;
+    }
+
+    setMediaLoadError(mediaId);
+    limparFalhaDeMidiaPendente();
+    mediaFailureTimerRef.current = setTimeout(() => {
+      if (activeLayer === layerId) {
+        console.warn('[Player] Avanço automático após falha de mídia:', motivo || mediaId);
+        nextMedia();
+      }
+    }, 1200);
+  };
 
   useEffect(() => {
     playlistRef.current = playlist;
@@ -202,6 +236,7 @@ const Player = () => {
       try {
         await limparCacheLocalDoPlayer();
         if (!active) return;
+        limparCacheDeMidiaLocal();
         limparObjectUrlsDoPlayer();
       } catch (err) {
         console.warn('[Player] Não foi possível limpar o cache local:', err.message);
@@ -250,6 +285,8 @@ const Player = () => {
       if (heartbeat) clearInterval(heartbeat);
       clearInterval(interval);
       window.removeEventListener('online', handleOnline);
+      limparFalhaDeMidiaPendente();
+      limparCacheDeMidiaLocal();
       limparObjectUrlsDoPlayer();
     };
   }, [previewId, isStarted, user, playerSyncIntervalMinutes, deviceCacheEnabled]);
@@ -261,7 +298,7 @@ const Player = () => {
       if (previewId || !deviceCacheEnabled) return;
 
       const cached = carregarPlaylistSalva();
-      if (!cached?.manifest?.medias?.length) return;
+      if (!cached?.items?.length) return;
 
       try {
         const playlistLocal = await carregarPlaylistLocalizadaDaCache(cached);
@@ -303,25 +340,21 @@ const Player = () => {
     const type = normalizeMediaType(itemMedia);
     
     currentMediaRef.current = itemMedia.name || currentItem.name || 'Mídia Desconhecida';
+    setMediaLoadError(null);
     
     // Configura o timer para a próxima mídia
-    // Para vídeos: se duration_seconds for 0 ou nulo, espera o evento onEnded.
-    // Se for > 0, o timer corta o vídeo no tempo definido.
+    // Mesmo quando a mídia é um vídeo sem duração explícita,
+    // sempre deixamos um guard rail para evitar travar a reprodução na primeira peça.
+    const durationConfigured = Number.parseFloat(currentItem.duration_seconds);
     const isVideo = type === 'video';
-    const forceDuration = currentItem.duration_seconds > 0;
+    const fallbackDuration = Number.isFinite(durationConfigured) && durationConfigured > 0
+      ? durationConfigured
+      : (isVideo ? DEFAULT_MEDIA_DURATION_SECONDS : 10);
 
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = null;
 
-    if (!isVideo) {
-      const duration = (currentItem.duration_seconds || 10) * 1000;
-      timerRef.current = setTimeout(nextMedia, duration);
-    } else if (forceDuration) {
-      // Para vídeos com duração forçada: avança no tempo definido,
-      // mas também deixa o onEnded avançar antes caso o vídeo termine primeiro.
-      const duration = (currentItem.duration_seconds || 10) * 1000;
-      timerRef.current = setTimeout(nextMedia, duration);
-    }
+    timerRef.current = setTimeout(nextMedia, fallbackDuration * 1000);
      
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -776,7 +809,17 @@ const Player = () => {
 
         setPlaylist(data);
       } else if (!playlistRef.current) {
-        setPlaylist(null);
+        if (deviceCacheEnabled) {
+          const cached = carregarPlaylistSalva();
+          if (cached?.items?.length) {
+            const playlistComUrls = await carregarPlaylistLocalizadaDaCache(cached);
+            setPlaylist(playlistComUrls);
+          } else {
+            setPlaylist(null);
+          }
+        } else {
+          setPlaylist(null);
+        }
       }
       setLoading(false);
     } catch (error) {
@@ -972,7 +1015,7 @@ const Player = () => {
           type === 'image' ? (
             <img src={source} style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
           ) : (
-            <video src={source} muted autoPlay={isVisible} preload="auto" playsInline loop style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
+            <video src={source} muted autoPlay={isVisible} preload="auto" playsInline style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(40px) brightness(0.6)', transform: 'scale(1.15)', zIndex: 0 }} />
           )
         )}
         
@@ -981,7 +1024,18 @@ const Player = () => {
             src={source} 
             alt="" 
             style={{ ...mediaStyle, zIndex: 1 }} 
-            onError={() => setMediaLoadError(item.id || currentIndex)}
+            onLoad={() => {
+              if (mediaLoadError === (item.id || currentIndex)) {
+                setMediaLoadError(null);
+              }
+            }}
+            onError={() => {
+              if (layerId === activeLayer) {
+                agendarAvancoPorFalha(layerId, item, 'image_error');
+              } else {
+                setMediaLoadError(item.id || currentIndex);
+              }
+            }}
           />
         ) : (
           <video
@@ -993,7 +1047,23 @@ const Player = () => {
             playsInline
             onEnded={() => handleVideoEnd(layerId)}
             style={{ ...mediaStyle, zIndex: 1 }}
-            onError={() => setMediaLoadError(item.id || currentIndex)}
+            onPlaying={() => {
+              if (mediaLoadError === (item.id || currentIndex)) {
+                setMediaLoadError(null);
+              }
+            }}
+            onLoadedData={() => {
+              if (mediaLoadError === (item.id || currentIndex)) {
+                setMediaLoadError(null);
+              }
+            }}
+            onError={() => {
+              if (layerId === activeLayer) {
+                agendarAvancoPorFalha(layerId, item, 'video_error');
+              } else {
+                setMediaLoadError(item.id || currentIndex);
+              }
+            }}
           />
         )}
       </div>

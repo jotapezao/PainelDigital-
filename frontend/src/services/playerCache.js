@@ -45,6 +45,24 @@ function clonarPlaylist(playlist) {
   return JSON.parse(JSON.stringify(playlist));
 }
 
+function extrairMediasDaPlaylist(playlist) {
+  const mediasDoManifesto = Array.isArray(playlist?.manifest?.medias) ? playlist.manifest.medias : [];
+  if (mediasDoManifesto.length > 0) {
+    return mediasDoManifesto.filter((media) => media?.url && media?.type !== 'widget');
+  }
+
+  return (playlist?.items || [])
+    .map((item) => ({
+      id: item.media_id || item.id,
+      url: item.original_url || item.url || item.cached_url || '',
+      filename: item.media_filename || item.filename || '',
+      type: item.media_type || item.type || '',
+      size_bytes: item.size_bytes || 0,
+      updated_at: item.media_updated_at || item.updated_at || null,
+    }))
+    .filter((media) => media?.url && media?.type !== 'widget');
+}
+
 async function baixarMidia(cache, media) {
   const url = resolverUrlMidia(media);
   if (!url) {
@@ -134,7 +152,7 @@ async function limparMidiasRemovidas(cache, indiceAtual, mediasAtuais) {
 }
 
 async function sincronizarMidias(cache, playlist, indiceAtual, { preservarAntigos = true } = {}) {
-  const medias = (playlist.manifest?.medias || []).filter((media) => media.url && media.type !== 'widget');
+  const medias = extrairMediasDaPlaylist(playlist);
   const indiceBase = preservarAntigos ? await limparMidiasRemovidas(cache, indiceAtual, medias) : { ...indiceAtual };
   const falhas = [];
 
@@ -203,7 +221,7 @@ async function sincronizarMidias(cache, playlist, indiceAtual, { preservarAntigo
 }
 
 export async function sincronizarPlaylistComCache(playlist, onSyncComplete, opcoes = {}) {
-  if (!playlist?.manifest?.medias?.length || !cacheDisponivel()) {
+  if (!playlist?.items?.length || !cacheDisponivel()) {
     if (playlist) salvarPlaylist(playlist);
     return playlist;
   }
@@ -237,7 +255,7 @@ export async function sincronizarPlaylistComCache(playlist, onSyncComplete, opco
 }
 
 export async function sincronizarPlaylistEmSegundoPlano(playlist, onSyncComplete) {
-  if (!playlist?.manifest?.medias?.length || !cacheDisponivel()) {
+  if (!playlist?.items?.length || !cacheDisponivel()) {
     return playlist;
   }
 
@@ -255,7 +273,7 @@ export async function sincronizarPlaylistEmSegundoPlano(playlist, onSyncComplete
 }
 
 export async function carregarPlaylistLocalizadaDaCache(playlist) {
-  if (!playlist?.manifest?.medias?.length || !cacheDisponivel()) {
+  if (!playlist?.items?.length || !cacheDisponivel()) {
     return playlist;
   }
 
