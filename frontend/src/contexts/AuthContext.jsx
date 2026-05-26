@@ -8,23 +8,22 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storagedUser = localStorage.getItem('@DigitalSignage:user') || sessionStorage.getItem('@DigitalSignage:user');
-    const storagedToken = localStorage.getItem('@DigitalSignage:token') || sessionStorage.getItem('@DigitalSignage:token');
+    // Sempre lê do localStorage — sessionStorage é destruído ao fechar o APK/WebView
+    const storagedUser = localStorage.getItem('@DigitalSignage:user');
+    const storagedToken = localStorage.getItem('@DigitalSignage:token');
 
     if (storagedUser && storagedToken) {
       try {
-        // Anti-crash: If storagedUser is "undefined" or invalid, JSON.parse will throw
         const parsedUser = JSON.parse(storagedUser);
         if (parsedUser) {
           setUser(parsedUser);
           api.defaults.headers.Authorization = `Bearer ${storagedToken}`;
         } else {
-          // If parsed is null/empty, clear it
           logout();
         }
       } catch (e) {
         console.error('Falha ao restaurar sessão:', e);
-        logout(); // Clear corrupted data
+        logout();
       }
     }
     
@@ -41,10 +40,9 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Dados de autenticação inválidos recebidos do servidor');
       }
 
-      const storage = remember ? localStorage : sessionStorage;
-
-      storage.setItem('@DigitalSignage:user', JSON.stringify(user));
-      storage.setItem('@DigitalSignage:token', token);
+      // Sempre persiste no localStorage para sobreviver a reinicializações do APK/WebView
+      localStorage.setItem('@DigitalSignage:user', JSON.stringify(user));
+      localStorage.setItem('@DigitalSignage:token', token);
 
       api.defaults.headers.Authorization = `Bearer ${token}`;
       setUser(user);
@@ -61,6 +59,7 @@ export const AuthProvider = ({ children }) => {
   function logout() {
     localStorage.removeItem('@DigitalSignage:user');
     localStorage.removeItem('@DigitalSignage:token');
+    // Limpa sessionStorage também por legado
     sessionStorage.removeItem('@DigitalSignage:user');
     sessionStorage.removeItem('@DigitalSignage:token');
     api.defaults.headers.Authorization = undefined;
