@@ -39,9 +39,36 @@ const UserMonitorCard = ({ user }) => {
   const isOnline = true;
   const displayTime = user.session_start ? timeSince(user.session_start).replace(' atrás', '') : 'Iniciando...';
   
+  const [geoData, setGeoData] = useState(null);
+
+  useEffect(() => {
+    // Evita requests para IPs locais
+    if (!user.last_ip || user.last_ip === '127.0.0.1' || user.last_ip === '::1' || user.last_ip.startsWith('192.168.')) return;
+    
+    const cacheKey = `geo_${user.last_ip}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      setGeoData(JSON.parse(cached));
+      return;
+    }
+
+    fetch(`https://ipapi.co/${user.last_ip}/json/`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.city) {
+           const info = { city: data.city, region: data.region, country: data.country_name };
+           sessionStorage.setItem(cacheKey, JSON.stringify(info));
+           setGeoData(info);
+        }
+      })
+      .catch(() => {}); // silent fail
+  }, [user.last_ip]);
+
   // Lógica de localização aprimorada
   let location = 'Localização não disponível';
-  if (user.location_city && user.location_city !== 'Cidade não identificada') {
+  if (geoData && geoData.city) {
+    location = `${geoData.city}, ${geoData.region} - ${geoData.country}`;
+  } else if (user.location_city && user.location_city !== 'Cidade não identificada') {
     location = user.location_district && user.location_district !== 'Bairro não identificado'
       ? `${user.location_district}, ${user.location_city}`
       : user.location_city;
