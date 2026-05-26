@@ -52,11 +52,11 @@ const UserMonitorCard = ({ user }) => {
       return;
     }
 
-    fetch(`https://ipapi.co/${user.last_ip}/json/`)
+    fetch(`https://ipinfo.io/${user.last_ip}/json`)
       .then(r => r.json())
       .then(data => {
         if (data.city) {
-           const info = { city: data.city, region: data.region, country: data.country_name };
+           const info = { city: data.city, region: data.region, country: data.country };
            sessionStorage.setItem(cacheKey, JSON.stringify(info));
            setGeoData(info);
         }
