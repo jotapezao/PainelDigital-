@@ -45,6 +45,23 @@ const Settings = () => {
     }
   };
 
+  const handleBackup = async () => {
+    try {
+      addToast('Gerando backup, aguarde...', 'info');
+      const res = await api.get('/settings/backup', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `painel_digital_backup_${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      addToast('Backup concluído com sucesso!', 'success');
+    } catch (err) {
+      addToast('Erro ao baixar backup', 'error');
+    }
+  };
+
   if (loading) return <div className="loading">Carregando...</div>;
 
   const updateData = JSON.parse(localStorage.getItem('app_update_available') || 'null');
@@ -255,6 +272,16 @@ const Settings = () => {
             </button>
           </div>
         </form>
+      </div>
+
+      <div className="card" style={{ marginTop: '24px' }}>
+        <h2 style={{ marginBottom: '16px' }}>Backup do Sistema</h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '20px' }}>
+          Gere um arquivo JSON com todas as configurações, clientes, telas, playlists e informações de mídias cadastradas. Recomenda-se fazer este backup periodicamente.
+        </p>
+        <button type="button" onClick={handleBackup} className="btn btn-primary" style={{ padding: '12px 24px' }}>
+          📥 Gerar e Baixar Backup
+        </button>
       </div>
     </div>
   );

@@ -170,17 +170,17 @@ const ScheduleEditor = () => {
     if (!form.client_id) {
       return allGroups;
     }
-    return allGroups.filter((group) => group.client_id === form.client_id);
+    return allGroups.filter((group) => String(group.client_id) === String(form.client_id));
   }, [allGroups, form.client_id]);
 
-  const grupoSelecionado = gruposVisiveis.find((group) => group.id === form.group_id)
-    || allGroups.find((group) => group.id === form.group_id);
+  const grupoSelecionado = gruposVisiveis.find((group) => String(group.id) === String(form.group_id))
+    || allGroups.find((group) => String(group.id) === String(form.group_id));
 
   const resumoEscopo = form.group_id
     ? (grupoSelecionado?.name || 'Grupo selecionado')
-    : (clients.find((c) => c.id === form.client_id)?.name || 'Cliente selecionado');
+    : (clients.find((c) => String(c.id) === String(form.client_id))?.name || 'Cliente selecionado');
 
-  const resumoPlaylist = playlists.find((playlist) => playlist.id === form.playlist_id)?.name || 'Plano de exibição';
+  const resumoPlaylist = playlists.find((playlist) => String(playlist.id) === String(form.playlist_id))?.name || 'Plano de exibição';
 
   if (loading) return <div className="loading-screen">Carregando editor...</div>;
 
@@ -221,11 +221,11 @@ const ScheduleEditor = () => {
               <div className="input-group">
                 <label>Ou Grupo de Clientes</label>
                 <select value={form.group_id || ''} onChange={e => {
-                  const group = allGroups.find((item) => item.id === e.target.value);
+                  const group = allGroups.find((item) => String(item.id) === String(e.target.value));
                   setForm(p => ({
                     ...p,
                     group_id: e.target.value,
-                    client_id: group?.client_id || p.client_id || '',
+                    client_id: group?.client_id ? String(group.client_id) : (p.client_id || ''),
                   }));
                 }}>
                   <option value="">— Selecione o grupo —</option>

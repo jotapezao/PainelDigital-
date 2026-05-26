@@ -64,4 +64,24 @@ async function uploadLogo(req, res) {
   }
 }
 
-module.exports = { getSettings, updateSettings, uploadLogo };
+// GET /api/settings/backup
+async function generateBackup(req, res) {
+  try {
+    const backupData = {};
+    const tables = ['system_settings', 'users', 'clients', 'devices', 'device_groups', 'media', 'playlists', 'schedules'];
+    
+    for (const table of tables) {
+      const { rows } = await pool.query(`SELECT * FROM ${table}`);
+      backupData[table] = rows;
+    }
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="painel_digital_backup_${new Date().toISOString().split('T')[0]}.json"`);
+    res.send(JSON.stringify(backupData, null, 2));
+  } catch (err) {
+    console.error('[Backup Error]', err);
+    res.status(500).json({ error: 'Erro ao gerar backup do sistema' });
+  }
+}
+
+module.exports = { getSettings, updateSettings, uploadLogo, generateBackup };

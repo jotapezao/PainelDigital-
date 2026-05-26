@@ -125,6 +125,10 @@ const FAQ_DATA = [
         q: 'O que é o indicador "Este dispositivo está vinculado a"?',
         a: 'Após fazer login como cliente em uma TV, o sistema salva localmente o nome da empresa vinculada. Na próxima vez que abrir a tela de login, esse banner aparece informando qual empresa está configurada nesta TV, evitando logins incorretos em ambientes com várias telas.'
       },
+      {
+        q: 'Como posso fazer o backup dos dados do sistema?',
+        a: 'Se você for Administrador, acesse a página "Configurações" e vá até a seção "Backup do Sistema". Clique no botão para "Gerar e Baixar Backup". O sistema fará o download de um arquivo contendo todas as configurações, empresas, telas, clientes e agendamentos.'
+      },
     ]
   },
   {

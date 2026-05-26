@@ -1414,6 +1414,9 @@ const Player = () => {
       }}
     >
       <style>{`
+        video::-webkit-media-controls { display: none !important; }
+        video::-webkit-media-controls-start-playback-button { display: none !important; -webkit-appearance: none; }
+        
         @media (max-width: 768px) {
           .player-widget-clock {
             padding: 16px 24px !important;

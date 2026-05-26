@@ -350,7 +350,7 @@ async function validarEPrepararCorpo(req, modo = 'create') {
   }
 
   const clientIdDoPlano = await resolverClienteDoPayload({ playlist_id: payload.playlist_id });
-  if (clientIdDoPlano && payload.client_id && payload.client_id !== clientIdDoPlano) {
+  if (clientIdDoPlano && payload.client_id && String(payload.client_id) !== String(clientIdDoPlano)) {
     const err = new Error('O cliente selecionado não corresponde ao plano escolhido.');
     err.statusCode = 400;
     throw err;

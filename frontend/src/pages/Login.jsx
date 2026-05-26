@@ -7,7 +7,7 @@ import { Browser } from '@capacitor/browser';
 const Login = () => {
   const [loginIdentifier, setLoginIdentifier] = useState(() => localStorage.getItem('pd_remember_email') || '');
   const [password, setPassword] = useState(() => localStorage.getItem('pd_remember_password') || sessionStorage.getItem('pd_last_password') || '');
-  const [remember, setRemember] = useState(() => !!localStorage.getItem('pd_remember_email'));
+  const [remember, setRemember] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [tvModeChecked, setTvModeChecked] = useState(false);
@@ -278,10 +278,10 @@ const Login = () => {
           backdrop-filter: blur(24px);
           -webkit-backdrop-filter: blur(24px);
           border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 32px;
-          padding: 40px;
+          border-radius: 28px;
+          padding: 32px;
           width: 90%;
-          max-width: 460px;
+          max-width: 380px;
           max-height: 95vh;
           overflow-y: auto;
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
@@ -321,11 +321,11 @@ const Login = () => {
         @media (max-width: 900px) and (orientation: landscape) {
           .login-card {
             flex-direction: row;
-            max-width: 980px;
-            height: 90vh;
+            max-width: 800px;
+            height: 85vh;
             padding: 24px;
-            gap: 28px;
-            align-items: stretch;
+            gap: 24px;
+            align-items: center;
           }
           .login-header {
             flex: 0.38;
