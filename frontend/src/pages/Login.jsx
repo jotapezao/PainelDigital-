@@ -3,44 +3,40 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { Browser } from '@capacitor/browser';
+import { Preferences } from '@capacitor/preferences';
 
 const Login = () => {
-  const [loginIdentifier, setLoginIdentifier] = useState(() => localStorage.getItem('pd_remember_email') || '');
-  const [password, setPassword] = useState(() => localStorage.getItem('pd_remember_password') || sessionStorage.getItem('pd_last_password') || '');
-  const [remember, setRemember] = useState(true);
+  const [loginIdentifier, setLoginIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [tvModeChecked, setTvModeChecked] = useState(false);
-  const [settings, setSettings] = useState({
-    system_name: 'Painel Digital',
-    logo_url: null,
-    latest_app_version: null,
-    app_download_url: null,
-    app_update_message: null
-  });
-  const [updateInfo, setUpdateInfo] = useState({
-    latestVersion: null,
-    url: null,
-    force: false,
-    message: ''
-  });
-  
+  const [settings, setSettings] = useState({ system_name: 'Painel Digital', logo_url: null });
+  const [updateInfo, setUpdateInfo] = useState({ latestVersion: null, url: null, force: false, message: '' });
+
   const CURRENT_APP_VERSION = '3.0.5';
-  
+
   const { login } = useAuth();
   const navigate = useNavigate();
   const userInputRef = useRef(null);
   const passwordInputRef = useRef(null);
+  const rememberRef = useRef(null);
   const submitButtonRef = useRef(null);
   const updateButtonRef = useRef(null);
 
-  // TV Mode: if a device_token is saved, auto-redirect to player
   useEffect(() => {
-    const deviceToken = localStorage.getItem('pd_device_token');
-    const deviceCompany = localStorage.getItem('pd_device_company');
-    if (deviceToken) {
-      setTvModeChecked(true);
-    }
+    const loadRemembered = async () => {
+      try {
+        const { value: email } = await Preferences.get({ key: 'pd_remember_email' });
+        const { value: pass } = await Preferences.get({ key: 'pd_remember_password' });
+        if (email) setLoginIdentifier(email);
+        if (pass) setPassword(pass);
+      } catch {
+        setLoginIdentifier(localStorage.getItem('pd_remember_email') || '');
+        setPassword(localStorage.getItem('pd_remember_password') || '');
+      }
+    };
+    loadRemembered();
   }, []);
 
   useEffect(() => {
@@ -50,29 +46,15 @@ const Login = () => {
           api.get('/settings'),
           api.get('/app-version')
         ]);
-
         if (settingsResult.status === 'fulfilled' && settingsResult.value?.data) {
-          const res = settingsResult.value;
-          setSettings({
-            system_name: res.data.system_name || 'Painel Digital',
-            logo_url: res.data.logo_url || null,
-            latest_app_version: res.data.latest_app_version,
-            app_download_url: res.data.app_download_url,
-            app_update_message: res.data.app_update_message
-          });
+          const d = settingsResult.value.data;
+          setSettings({ system_name: d.system_name || 'Painel Digital', logo_url: d.logo_url || null });
         }
-
         if (versionResult.status === 'fulfilled' && versionResult.value?.data) {
-          setUpdateInfo({
-            latestVersion: versionResult.value.data.latestVersion || null,
-            url: versionResult.value.data.url || null,
-            force: !!versionResult.value.data.force,
-            message: versionResult.value.data.message || ''
-          });
+          const d = versionResult.value.data;
+          setUpdateInfo({ latestVersion: d.latestVersion || null, url: d.url || null, force: !!d.force, message: d.message || '' });
         }
-      } catch (err) {
-        console.error('Erro ao carregar configurações do sistema:', err);
-      }
+      } catch {}
     };
     fetchSettings();
   }, []);
@@ -82,18 +64,7 @@ const Login = () => {
   }, [settings.system_name]);
 
   useEffect(() => {
-    const savedPassword = localStorage.getItem('pd_remember_password') || sessionStorage.getItem('pd_last_password') || '';
-    if (savedPassword) {
-      setPassword(savedPassword);
-    }
-  }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      userInputRef.current?.focus?.();
-      userInputRef.current?.select?.();
-    }, 200);
-
+    const timer = setTimeout(() => { userInputRef.current?.focus?.(); }, 300);
     return () => clearTimeout(timer);
   }, []);
 
@@ -102,17 +73,26 @@ const Login = () => {
     setError('');
     setLoading(true);
     
-    const result = await login(loginIdentifier, password, remember);
-    
+    const result = await login(loginIdentifier, password, rememberMe);
     if (result.success) {
-      if (remember) {
+      if (rememberMe) {
+        try {
+          await Preferences.set({ key: 'pd_remember_email', value: loginIdentifier });
+          await Preferences.set({ key: 'pd_remember_password', value: password });
+        } catch (e) {
+          console.error('Falha ao salvar remember nativo:', e);
+        }
         localStorage.setItem('pd_remember_email', loginIdentifier);
         localStorage.setItem('pd_remember_password', password);
       } else {
+        try {
+          await Preferences.remove({ key: 'pd_remember_email' });
+          await Preferences.remove({ key: 'pd_remember_password' });
+        } catch {}
         localStorage.removeItem('pd_remember_email');
         localStorage.removeItem('pd_remember_password');
       }
-      sessionStorage.setItem('pd_last_password', password);
+
       if (result.user?.role === 'client') {
         localStorage.setItem('pd_device_company', result.user?.client_name || '');
         navigate('/player?autoStart=true');
@@ -122,506 +102,627 @@ const Login = () => {
     } else {
       setError(result.message);
     }
-    
     setLoading(false);
   };
 
-  const handlePasswordChange = (value) => {
-    setPassword(value);
-    sessionStorage.setItem('pd_last_password', value);
-    if (remember) {
-      localStorage.setItem('pd_remember_password', value);
-    }
-  };
-
   const focusNextField = (event, nextRef) => {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      nextRef?.current?.focus?.();
-    }
+    if (event.key === 'Enter') { event.preventDefault(); nextRef?.current?.focus?.(); }
   };
 
   const deviceCompany = localStorage.getItem('pd_device_company');
-
-  // TV Mode banner — show above the form if this device was previously linked
-  const TvModeBanner = () => deviceCompany ? (
-    <div style={{
-      background: 'rgba(99, 102, 241, 0.12)',
-      border: '1px solid rgba(99,102,241,0.3)',
-      borderRadius: 'var(--radius-md)',
-      padding: '12px 16px',
-      marginBottom: '24px',
-      fontSize: '0.8125rem',
-      color: 'var(--text-muted)',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '10px',
-    }}>
-      <span style={{ fontSize: '1.2rem' }}>📺</span>
-      <span>Este dispositivo está vinculado a: <strong style={{ color: 'var(--primary)' }}>{deviceCompany}</strong></span>
-    </div>
-  ) : null;
 
   const compareVersions = (v1, v2) => {
     if (!v1 || !v2) return 0;
     const p1 = v1.replace(/[^0-9.]/g, '').split('.').map(Number);
     const p2 = v2.replace(/[^0-9.]/g, '').split('.').map(Number);
     for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
-      const n1 = p1[i] || 0;
-      const n2 = p2[i] || 0;
-      if (n1 > n2) return 1;
-      if (n1 < n2) return -1;
+      if ((p1[i] || 0) > (p2[i] || 0)) return 1;
+      if ((p1[i] || 0) < (p2[i] || 0)) return -1;
     }
     return 0;
   };
 
-  const UpdateBanner = () => {
-    const downloadUrl = updateInfo.url || settings.app_download_url;
-    if (!downloadUrl) return null;
-    
-    const latestVersion = updateInfo.latestVersion || settings.latest_app_version;
-    const updateMessage = updateInfo.message || settings.app_update_message || '';
-    const isUpdateAvailable = latestVersion && compareVersions(latestVersion, CURRENT_APP_VERSION) > 0;
-    
-    const handleDownloadClick = async (e) => {
-      e.preventDefault();
-      try {
-        await Browser.open({ url: downloadUrl });
-      } catch (err) {
-        window.open(downloadUrl, '_blank');
-      }
-    };
+  const downloadUrl = updateInfo.url;
+  const latestVersion = updateInfo.latestVersion;
+  const isUpdateAvailable = latestVersion && compareVersions(latestVersion, CURRENT_APP_VERSION) > 0;
 
-    return (
-      <div style={{ textAlign: 'center', marginTop: '14px' }}>
-        <a
-          href={downloadUrl}
-          onClick={handleDownloadClick}
-          ref={updateButtonRef}
-          style={{
-            color: '#e4e4e7',
-            fontSize: '0.95rem',
-            textDecoration: 'none',
-            fontWeight: '800',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            padding: '14px 20px',
-            borderRadius: '999px',
-            border: '1px solid rgba(99, 102, 241, 0.35)',
-            background: 'rgba(99, 102, 241, 0.12)',
-            boxShadow: '0 8px 18px rgba(0, 0, 0, 0.18)',
-            minWidth: '220px'
-          }}
-          tabIndex={0}
-        >
-          <span>⬇️</span>
-          <span>
-            {isUpdateAvailable
-              ? `Atualizar para v${latestVersion}`
-              : 'Atualizar sistema / APK'}
-          </span>
-        </a>
-        {updateMessage && (
-          <div style={{ marginTop: '8px', color: '#a1a1aa', fontSize: '0.72rem', lineHeight: '1.35' }}>
-            {updateMessage}
-          </div>
-        )}
-      </div>
-    );
+  const handleDownloadClick = async (e) => {
+    e.preventDefault();
+    try { await Browser.open({ url: downloadUrl }); } catch { window.open(downloadUrl, '_blank'); }
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      background: '#09090b',
-      position: 'relative',
-      overflow: 'hidden',
-      fontFamily: 'Inter, sans-serif'
-    }}>
-      {/* Background Animated Blobs */}
-      <div style={{
-        position: 'absolute',
-        top: '-10%',
-        left: '-10%',
-        width: '40%',
-        height: '40%',
-        background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)',
-        filter: 'blur(80px)',
-        borderRadius: '50%',
-        animation: 'pulse 10s infinite alternate'
-      }}></div>
-      <div style={{
-        position: 'absolute',
-        bottom: '-10%',
-        right: '-10%',
-        width: '40%',
-        height: '40%',
-        background: 'radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, transparent 70%)',
-        filter: 'blur(80px)',
-        borderRadius: '50%',
-        animation: 'pulse 12s infinite alternate-reverse'
-      }}></div>
+    <div className="login-page-container">
+      {/* Background glow effects */}
+      <div className="bg-glow bg-glow-left" />
+      <div className="bg-glow bg-glow-right" />
+      
+      <div className="login-layout-wrapper">
+        {/* Lado Esquerdo - Branding (TV / Desktop) */}
+        <div className="login-branding-col">
+          <div className="login-logo-container">
+            <img
+              src={settings.logo_url || '/logo.png'}
+              alt="Logo"
+              className="login-logo-img"
+            />
+          </div>
+          <h1 className="login-branding-title">{settings.system_name}</h1>
+          <p className="login-branding-subtitle">Gestão de telas profissional</p>
+          
+          <div className="login-status-badge">
+            v{latestVersion || CURRENT_APP_VERSION}
+          </div>
+        </div>
+
+        {/* Lado Direito - Formulário */}
+        <div className="login-form-col">
+          <div className="login-card-container">
+            {/* Lado Esquerdo duplicado de forma simplificada em Mobile */}
+            <div className="mobile-branding-header">
+              <div className="login-logo-container small">
+                <img src={settings.logo_url || '/logo.png'} alt="Logo" className="login-logo-img" />
+              </div>
+              <h1 className="login-branding-title small">{settings.system_name}</h1>
+            </div>
+
+            {deviceCompany && (
+              <div className="linked-device-banner">
+                <span className="banner-icon">📺</span>
+                <span className="banner-text">
+                  Vinculado a: <strong className="highlight">{deviceCompany}</strong>
+                </span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} autoComplete="on">
+              <div className="input-field-group">
+                <label className="input-field-label">Usuário ou E-mail</label>
+                <input
+                  ref={userInputRef}
+                  className="tv-login-input"
+                  type="text"
+                  placeholder="Digite seu usuário ou email"
+                  value={loginIdentifier}
+                  onChange={(e) => setLoginIdentifier(e.target.value)}
+                  onKeyDown={(e) => focusNextField(e, passwordInputRef)}
+                  required
+                  autoComplete="username"
+                  inputMode="email"
+                />
+              </div>
+
+              <div className="input-field-group">
+                <label className="input-field-label">Senha</label>
+                <input
+                  ref={passwordInputRef}
+                  className="tv-login-input"
+                  type="password"
+                  placeholder="Digite sua senha"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); rememberRef.current?.focus?.(); } }}
+                  required
+                  autoComplete="current-password"
+                />
+              </div>
+
+              {/* Mantenha-me Conectado (Checkbox) */}
+              <div 
+                className="remember-me-container"
+                onClick={() => setRememberMe(prev => !prev)}
+              >
+                <button
+                  type="button"
+                  ref={rememberRef}
+                  className={`remember-me-checkbox ${rememberMe ? 'checked' : ''}`}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setRememberMe(prev => !prev);
+                    } else if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      submitButtonRef.current?.focus();
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      passwordInputRef.current?.focus();
+                    }
+                  }}
+                >
+                  {rememberMe && <span className="check-mark">✓</span>}
+                </button>
+                <span className="remember-me-text">Mantenha-me conectado</span>
+              </div>
+
+              {error && (
+                <div className="login-error-alert">
+                  <span className="alert-icon">⚠️</span>
+                  <span className="alert-text">{error}</span>
+                </div>
+              )}
+
+              <button
+                ref={submitButtonRef}
+                type="submit"
+                className="tv-login-btn"
+                disabled={loading}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    rememberRef.current?.focus();
+                  } else if (e.key === 'ArrowDown' && updateButtonRef.current) {
+                    e.preventDefault();
+                    updateButtonRef.current.focus();
+                  }
+                }}
+              >
+                {loading ? (
+                  <>
+                    <span className="tv-spinner" />
+                    <span>Autenticando...</span>
+                  </>
+                ) : (
+                  <span>Entrar</span>
+                )}
+              </button>
+            </form>
+
+            {downloadUrl && (
+              <a
+                href={downloadUrl}
+                ref={updateButtonRef}
+                className="tv-update-btn"
+                onClick={handleDownloadClick}
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    submitButtonRef.current?.focus();
+                  }
+                }}
+              >
+                <span className="btn-icon">⬇️</span>
+                <span>{isUpdateAvailable ? `Atualizar para v${latestVersion}` : 'Baixar APK'}</span>
+              </a>
+            )}
+            
+            <p className="tv-footer-version">
+              Versão {latestVersion || CURRENT_APP_VERSION}
+            </p>
+          </div>
+        </div>
+      </div>
 
       <style>{`
-        @keyframes pulse {
-          0% { transform: translate(0, 0) scale(1); }
-          100% { transform: translate(5%, 5%) scale(1.1); }
-        }
-        .login-card {
-          background: rgba(24, 24, 27, 0.75);
-          backdrop-filter: blur(24px);
-          -webkit-backdrop-filter: blur(24px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 28px;
-          padding: 32px;
-          width: 90%;
-          max-width: 380px;
-          max-height: 95vh;
-          overflow-y: auto;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
+
+        .login-page-container {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 100vh;
+          background-color: #060608;
+          font-family: 'Inter', sans-serif;
           position: relative;
-          z-index: 10;
-          transition: all 0.3s ease;
-          scrollbar-width: none;
-        }
-        .login-card:focus-within {
-          box-shadow: 0 0 0 2px rgba(99,102,241,0.35), 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-        }
-        .login-card::-webkit-scrollbar {
-          display: none;
-        }
-        
-        /* Landscape Optimization for Mobile */
-        @media (max-height: 500px) and (orientation: landscape) {
-          .login-card {
-            padding: 18px 28px;
-            max-width: 560px;
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            gap: 28px;
-            border-radius: 24px;
-          }
-          .login-header {
-            margin-bottom: 0 !important;
-            flex: 0.4;
-            text-align: left !important;
-          }
-          .login-header p {
-            display: none;
-          }
-        }
-
-        @media (max-width: 900px) and (orientation: landscape) {
-          .login-card {
-            flex-direction: row;
-            max-width: 800px;
-            height: 85vh;
-            padding: 24px;
-            gap: 24px;
-            align-items: center;
-          }
-          .login-header {
-            flex: 0.38;
-            margin-bottom: 0 !important;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-          }
-          .login-logo {
-            width: 80px !important;
-            height: 80px !important;
-            margin-bottom: 10px !important;
-          }
-          .login-title {
-            font-size: 1.5rem !important;
-          }
-          form {
-            flex: 0.62;
-            overflow-y: auto;
-            padding-right: 10px;
-          }
-          .login-button {
-            margin-top: 16px !important;
-            padding: 15px !important;
-            min-height: 56px;
-          }
-          .tv-mode-banner {
-            display: none;
-          }
-        }
-
-        @media (max-height: 820px) {
-          .login-card {
-            padding: 26px 22px;
-            max-width: 430px;
-            border-radius: 26px;
-          }
-          .login-header {
-            margin-bottom: 22px !important;
-          }
-          .login-logo {
-            width: 90px !important;
-            height: 90px !important;
-            margin-bottom: 14px !important;
-          }
-          .login-title {
-            font-size: 1.9rem !important;
-          }
-          .login-input {
-            padding: 14px 16px !important;
-            font-size: 1rem !important;
-          }
-          .login-button {
-            padding: 15px !important;
-            margin-top: 18px !important;
-            font-size: 1rem !important;
-            min-height: 58px;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .login-card {
-            padding: 28px 20px;
-            border-radius: 28px;
-            width: 90%;
-            margin: auto;
-          }
-          .login-logo {
-            width: 84px !important;
-            height: 84px !important;
-          }
-          .login-title {
-            font-size: 1.6rem !important;
-          }
-          .login-input {
-            padding: 14px 16px !important;
-            font-size: 1rem !important;
-            margin-top: 6px;
-          }
-          .login-button {
-            padding: 15px !important;
-            margin-top: 20px !important;
-            font-size: 1rem !important;
-            min-height: 58px;
-          }
-        }
-        .login-input {
+          overflow: hidden;
           width: 100%;
-          padding: 14px 16px;
-          background: rgba(39, 39, 42, 0.6);
-          border: 1px solid rgba(63, 63, 70, 0.4);
+        }
+
+        /* Background Glowing Blobs */
+        .bg-glow {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(120px);
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .bg-glow-left {
+          top: 10%;
+          left: 5%;
+          width: 500px;
+          height: 500px;
+          background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+        }
+
+        .bg-glow-right {
+          bottom: 10%;
+          right: 5%;
+          width: 450px;
+          height: 450px;
+          background: radial-gradient(circle, rgba(168, 85, 247, 0.12) 0%, transparent 70%);
+        }
+
+        /* Layout Split-Screen Wrapper */
+        .login-layout-wrapper {
+          display: flex;
+          width: 100%;
+          max-width: 1300px;
+          min-height: 85vh;
+          z-index: 10;
+          padding: 20px;
+          gap: 40px;
+        }
+
+        .login-branding-col {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          text-align: center;
+          padding: 40px;
+          border-right: 1px solid rgba(255, 255, 255, 0.05);
+          animation: fadeIn 0.8s ease both;
+        }
+
+        .login-form-col {
+          flex: 1.2;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 20px;
+          animation: fadeIn 0.8s ease 0.2s both;
+        }
+
+        /* Logo & Branding */
+        .login-logo-container {
+          width: 130px;
+          height: 130px;
+          margin-bottom: 24px;
+          border-radius: 32px;
+          overflow: hidden;
+          background: linear-gradient(135deg, #6366f1, #8b5cf6);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 0 16px 40px rgba(99, 102, 241, 0.35);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 4px;
+          animation: pulse 3s infinite ease-in-out;
+        }
+
+        .login-logo-img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+
+        .login-branding-title {
+          font-family: 'Outfit', sans-serif;
+          font-size: 3rem;
+          font-weight: 900;
+          background: linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          margin-bottom: 12px;
+          letter-spacing: -1.5px;
+        }
+
+        .login-branding-subtitle {
+          color: rgba(255, 255, 255, 0.4);
+          font-size: 1.1rem;
+          font-weight: 500;
+          margin-bottom: 30px;
+        }
+
+        .login-status-badge {
+          padding: 8px 16px;
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 30px;
+          color: rgba(255, 255, 255, 0.5);
+          font-size: 0.85rem;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+        }
+
+        /* Form Card */
+        .login-card-container {
+          width: 100%;
+          max-width: 480px;
+          background: rgba(15, 15, 22, 0.65);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          border-radius: 32px;
+          padding: 48px;
+          box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+          backdrop-filter: blur(25px);
+          -webkit-backdrop-filter: blur(25px);
+        }
+
+        .mobile-branding-header {
+          display: none;
+          text-align: center;
+          margin-bottom: 32px;
+        }
+
+        /* Inputs */
+        .input-field-group {
+          margin-bottom: 24px;
+        }
+
+        .input-field-label {
+          display: block;
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: rgba(255, 255, 255, 0.45);
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin-bottom: 8px;
+        }
+
+        .tv-login-input {
+          width: 100%;
+          box-sizing: border-box;
+          padding: 16px 20px;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1.5px solid rgba(255, 255, 255, 0.08);
           border-radius: 16px;
           color: #fff;
-          font-size: 1rem;
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-          margin-top: 8px;
+          font-size: 1.05rem;
+          font-weight: 500;
+          font-family: 'Outfit', sans-serif;
+          transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
-        .login-input:focus {
+
+        .tv-login-input::placeholder {
+          color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Focus and D-Pad styling */
+        .tv-login-input:focus {
           outline: none;
-          border-color: #6366f1;
-          background: rgba(39, 39, 42, 0.9);
-          box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+          border-color: #818cf8;
+          background: rgba(99, 102, 241, 0.08);
+          box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.25), 0 8px 24px rgba(99, 102, 241, 0.15);
+          transform: scale(1.02);
         }
-        .login-input, .login-button, a, button, input, label {
-          -webkit-tap-highlight-color: transparent;
+
+        /* Remember Me Checkbox */
+        .remember-me-container {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 30px;
+          cursor: pointer;
+          user-select: none;
+          width: fit-content;
         }
-        .login-input:focus-visible, .login-button:focus-visible, a:focus-visible, button:focus-visible {
-          outline: 3px solid rgba(99,102,241,0.8);
-          outline-offset: 3px;
+
+        .remember-me-checkbox {
+          width: 24px;
+          height: 24px;
+          border-radius: 8px;
+          border: 1.5px solid rgba(255, 255, 255, 0.2);
+          background: rgba(255, 255, 255, 0.03);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          transition: all 0.2s;
         }
-        .login-button {
+
+        .remember-me-checkbox:focus {
+          outline: none;
+          border-color: #818cf8;
+          background: rgba(99, 102, 241, 0.1);
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+          transform: scale(1.1);
+        }
+
+        .remember-me-checkbox.checked {
+          background: linear-gradient(135deg, #6366f1, #8b5cf6);
+          border-color: transparent;
+          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .check-mark {
+          color: #fff;
+          font-size: 0.85rem;
+          font-weight: bold;
+        }
+
+        .remember-me-text {
+          color: rgba(255, 255, 255, 0.6);
+          font-size: 0.95rem;
+          font-weight: 500;
+          transition: color 0.2s;
+        }
+
+        .remember-me-container:hover .remember-me-text {
+          color: #fff;
+        }
+
+        /* Linked Device Banner */
+        .linked-device-banner {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 20px;
+          margin-bottom: 28px;
+          background: rgba(99, 102, 241, 0.08);
+          border: 1px solid rgba(99, 102, 241, 0.2);
+          border-radius: 16px;
+          font-size: 0.9rem;
+          color: rgba(255, 255, 255, 0.7);
+          animation: pulseBorder 2.5s infinite;
+        }
+
+        .linked-device-banner .highlight {
+          color: #a5b4fc;
+        }
+
+        /* Errors */
+        .login-error-alert {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 18px;
+          margin-bottom: 24px;
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid rgba(239, 68, 68, 0.2);
+          border-radius: 16px;
+          color: #f87171;
+          font-size: 0.9rem;
+          font-weight: 600;
+        }
+
+        /* Buttons */
+        .tv-login-btn {
           width: 100%;
-          padding: 16px;
-          background-color: #6366f1;
-          background-image: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+          padding: 18px;
+          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
           border: none;
           border-radius: 16px;
-          color: #ffffff;
-          font-size: 1.05rem;
+          color: #fff;
+          font-size: 1.1rem;
           font-weight: 800;
+          font-family: 'Outfit', sans-serif;
           cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          margin-top: 28px;
+          letter-spacing: 0.5px;
+          margin-top: 10px;
+          box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+          transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+        }
+
+        .tv-login-btn:hover {
+          filter: brightness(1.1);
+          box-shadow: 0 12px 30px rgba(99, 102, 241, 0.45);
+        }
+
+        .tv-login-btn:focus {
+          outline: none;
+          transform: scale(1.03);
+          box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.35), 0 0 25px rgba(99, 102, 241, 0.7);
+        }
+
+        .tv-login-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
+        }
+
+        /* Update Button */
+        .tv-update-btn {
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 10px;
-          box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
-          text-transform: uppercase;
+          width: 100%;
+          margin-top: 16px;
+          padding: 14px;
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 16px;
+          color: rgba(255, 255, 255, 0.6);
+          font-size: 0.95rem;
+          font-weight: 700;
+          text-decoration: none;
+          font-family: 'Outfit', sans-serif;
+          transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .tv-update-btn:hover {
+          background: rgba(255, 255, 255, 0.05);
+          color: #fff;
+          border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .tv-update-btn:focus {
+          outline: none;
+          transform: scale(1.02);
+          border-color: #818cf8;
+          color: #fff;
+          background: rgba(99, 102, 241, 0.06);
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+        }
+
+        .tv-footer-version {
+          text-align: center;
+          margin-top: 24px;
+          font-size: 0.75rem;
+          color: rgba(255, 255, 255, 0.2);
+          font-weight: 600;
           letter-spacing: 0.5px;
-          min-height: 56px;
         }
-        .login-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 12px 28px -8px rgba(99, 102, 241, 0.5);
-          filter: brightness(1.1);
+
+        /* Animations */
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-        .login-button:active {
-          transform: translateY(0);
+
+        @keyframes pulse {
+          0% { transform: scale(1); box-shadow: 0 16px 40px rgba(99, 102, 241, 0.35); }
+          50% { transform: scale(1.03); box-shadow: 0 20px 50px rgba(99, 102, 241, 0.5); }
+          100% { transform: scale(1); box-shadow: 0 16px 40px rgba(99, 102, 241, 0.35); }
         }
-        .login-button:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
+
+        @keyframes pulseBorder {
+          0% { border-color: rgba(99, 102, 241, 0.2); }
+          50% { border-color: rgba(99, 102, 241, 0.5); }
+          100% { border-color: rgba(99, 102, 241, 0.2); }
         }
-        .spinner {
-          width: 20px;
-          height: 20px;
-          border: 3px solid rgba(255,255,255,0.2);
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
+        .tv-spinner {
+          width: 22px;
+          height: 22px;
+          border: 3px solid rgba(255, 255, 255, 0.2);
           border-top-color: #fff;
           border-radius: 50%;
           animation: spin 0.8s linear infinite;
         }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
+
+        /* Responsive queries */
+        @media (max-width: 991px) {
+          .login-layout-wrapper {
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            max-width: 540px;
+          }
+          
+          .login-branding-col {
+            display: none;
+          }
+          
+          .mobile-branding-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          
+          .login-logo-container.small {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 16px;
+            border-radius: 24px;
+          }
+          
+          .login-branding-title.small {
+            font-size: 2.2rem;
+          }
+          
+          .login-card-container {
+            padding: 36px 28px;
+            border-radius: 24px;
+          }
+          
+          .login-form-col {
+            width: 100%;
+          }
         }
       `}</style>
-
-      <div className="login-card animate-fade-in">
-        <div className="login-header" style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div className="login-logo" style={{ 
-            width: '108px',
-            height: '108px',
-            background: settings.logo_url ? 'rgba(255, 255, 255, 0.02)' : 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', 
-            borderRadius: '24px', 
-            margin: '0 auto 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: settings.logo_url ? '0 8px 32px rgba(0, 0, 0, 0.4)' : '0 12px 24px -8px rgba(99, 102, 241, 0.5)',
-            overflow: 'hidden',
-            border: settings.logo_url ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(255,255,255,0.1)',
-            padding: settings.logo_url ? '12px' : '0'
-          }}>
-             <img src={settings.logo_url || "/logo.png"} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-          </div>
-          <h1 className="login-title" style={{ 
-            fontSize: '2rem',
-            fontWeight: '900', 
-            letterSpacing: '-0.04em',
-            marginBottom: '8px', 
-            background: 'linear-gradient(to right, #fff, #a1a1aa)', 
-            WebkitBackgroundClip: 'text', 
-            WebkitTextFillColor: 'transparent' 
-          }}>
-            {settings.system_name}
-          </h1>
-          <p style={{ color: '#a1a1aa', fontWeight: '500', fontSize: '0.84rem', lineHeight: '1.45', margin: 0 }}>Controle suas telas de qualquer lugar com inteligência</p>
-        </div>
-
-        <div style={{ flex: 1 }}>
-          <TvModeBanner />
-
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '18px' }}>
-              <label style={{ fontSize: '1rem', fontWeight: '800', color: '#e4e4e7', marginLeft: '4px' }}>Usuário ou E-mail</label>
-              <input 
-                ref={userInputRef}
-                className="login-input"
-                type="text" 
-                placeholder="seu_usuario ou seu@email.com" 
-                value={loginIdentifier}
-                onChange={(e) => setLoginIdentifier(e.target.value)}
-                onKeyDown={(e) => focusNextField(e, passwordInputRef)}
-                required
-                autoComplete="username"
-                inputMode="text"
-              />
-            </div>
-
-            <div style={{ marginBottom: '18px' }}>
-              <label style={{ fontSize: '1rem', fontWeight: '800', color: '#e4e4e7', marginLeft: '4px' }}>Senha</label>
-              <input 
-                ref={passwordInputRef}
-                className="login-input"
-                type="password" 
-                placeholder="••••••••" 
-                value={password}
-                onChange={(e) => handlePasswordChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    submitButtonRef.current?.focus?.();
-                  }
-                }}
-                required
-                autoComplete="current-password"
-              />
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', gap: '12px', flexWrap: 'wrap' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', minHeight: '44px' }}>
-                <input 
-                  type="checkbox" 
-                  checked={remember} 
-                  onChange={(e) => setRemember(e.target.checked)}
-                  style={{ 
-                    width: '20px', 
-                    height: '20px', 
-                    accentColor: '#6366f1',
-                    cursor: 'pointer',
-                    borderRadius: '6px'
-                  }}
-                />
-                <span style={{ fontSize: '0.98rem', color: '#a1a1aa', fontWeight: '700' }}>Lembrar de mim</span>
-              </label>
-            </div>
-
-            {error && (
-              <div style={{ 
-                backgroundColor: 'rgba(239, 68, 68, 0.12)', 
-                color: '#f87171', 
-                padding: '14px 18px', 
-                borderRadius: '16px', 
-                marginTop: '20px',
-                fontSize: '0.875rem',
-                fontWeight: '600',
-                border: '1px solid rgba(239, 68, 68, 0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px'
-              }}>
-                <span>⚠️</span> {error}
-              </div>
-            )}
-
-            <button 
-              ref={submitButtonRef}
-              type="submit" 
-              className="login-button" 
-              disabled={loading}
-              onKeyDown={(e) => {
-                if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
-                  e.preventDefault();
-                  updateButtonRef.current?.focus?.();
-                }
-              }}
-            >
-              {loading ? (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="spinner"></span> Autenticando...
-                </span>
-              ) : (
-                <>🚀 Acessar Sistema</>
-              )}
-            </button>
-          </form>
-          
-          <div style={{ marginTop: '16px' }}>
-            <UpdateBanner />
-          </div>
-        </div>
-        
-        <div style={{ marginTop: '18px', textAlign: 'center' }}>
-          <p style={{ fontSize: '0.64rem', color: '#3f3f46', fontWeight: '700', letterSpacing: '1.2px', margin: 0 }}>VERSION {settings.latest_app_version || CURRENT_APP_VERSION} • {settings.system_name.toUpperCase()}</p>
-        </div>
-      </div>
     </div>
   );
 };

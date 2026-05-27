@@ -951,7 +951,8 @@ const Player = () => {
         
         if (!previewId && deviceCacheEnabled) {
           const playlistInicial = await carregarPlaylistLocalizadaDaCache(data);
-          data = playlistInicial;
+          setPlaylist(playlistInicial);
+          
           sincronizarPlaylistComCache(data, (playlistCompleta) => {
             console.log('[Player] Cache em segundo plano concluído. Atualizando fontes de mídia para locais.');
             if (playlistCompleta?.manifest?.version) {
@@ -961,9 +962,9 @@ const Player = () => {
           }).catch((syncError) => {
             console.warn('[Player] Falha ao sincronizar cache em segundo plano:', syncError.message);
           });
+        } else {
+          setPlaylist(data);
         }
-
-        setPlaylist(data);
       } else if (!playlistRef.current) {
         if (deviceCacheEnabled) {
           const cached = carregarPlaylistSalva();

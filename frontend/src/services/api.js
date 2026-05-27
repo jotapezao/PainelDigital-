@@ -11,7 +11,18 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('@DigitalSignage:token');
       localStorage.removeItem('@DigitalSignage:user');
-      window.location.href = '/login';
+      
+      // Tenta remover as credenciais das Preferences nativas e depois redireciona
+      import('@capacitor/preferences').then(({ Preferences }) => {
+        Promise.all([
+          Preferences.remove({ key: '@DigitalSignage:user' }),
+          Preferences.remove({ key: '@DigitalSignage:token' })
+        ]).finally(() => {
+          window.location.href = '/login';
+        });
+      }).catch(() => {
+        window.location.href = '/login';
+      });
     }
     return Promise.reject(error);
   }
