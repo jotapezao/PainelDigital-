@@ -88,12 +88,16 @@ export const AuthProvider = ({ children }) => {
     try {
       await Preferences.remove({ key: '@DigitalSignage:user' });
       await Preferences.remove({ key: '@DigitalSignage:token' });
+      await Preferences.remove({ key: 'pd_remember_email' });
+      await Preferences.remove({ key: 'pd_remember_password' });
     } catch (e) {
       console.error('Falha ao remover do Preferences nativo:', e);
     }
 
     localStorage.removeItem('@DigitalSignage:user');
     localStorage.removeItem('@DigitalSignage:token');
+    localStorage.removeItem('pd_remember_email');
+    localStorage.removeItem('pd_remember_password');
     // Limpa sessionStorage também por legado
     sessionStorage.removeItem('@DigitalSignage:user');
     sessionStorage.removeItem('@DigitalSignage:token');

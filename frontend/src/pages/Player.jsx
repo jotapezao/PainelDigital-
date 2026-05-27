@@ -18,6 +18,60 @@ function decodificarJwtPayload(token) {
   }
 }
 
+const WeatherIcon = ({ icon, size = 44, color = '#38bdf8' }) => {
+  const svgStyle = { display: 'block', flexShrink: 0 };
+  const normalizedIcon = `${icon || ''}`.trim();
+  
+  switch (normalizedIcon) {
+    case '☀️': // Sol / Limpo
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={svgStyle}>
+          <circle cx="12" cy="12" r="4" fill="rgba(253, 224, 71, 0.2)" stroke="#fde047"></circle>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" stroke="#fde047"></path>
+        </svg>
+      );
+    case '⛅': // Parcialmente nublado
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#e4e4e7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={svgStyle}>
+          <path d="M12 2v2M4.93 4.93l1.41 1.41M2 12h2M19.07 4.93l-1.41 1.41" stroke="#fde047"></path>
+          <path d="M17.5 19A3.5 3.5 0 0 0 13 15.7a5 5 0 0 0-8.9 2.3 3.5 3.5 0 0 0 .4 6.9h13a3.5 3.5 0 0 0 0-7z" fill="rgba(255, 255, 255, 0.15)"></path>
+        </svg>
+      );
+    case '☁️': // Nublado / Encoberto
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={svgStyle}>
+          <path d="M17.5 19A3.5 3.5 0 0 0 13 15.7a5 5 0 0 0-8.9 2.3 3.5 3.5 0 0 0 .4 6.9h13a3.5 3.5 0 0 0 0-7z" fill="rgba(255, 255, 255, 0.1)"></path>
+        </svg>
+      );
+    case '🌧️': // Chuva / Garoa
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={svgStyle}>
+          <path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25" fill="rgba(255, 255, 255, 0.1)" stroke="#cbd5e1"></path>
+          <path d="M8 20v2M12 20v2M16 20v2" stroke={color}></path>
+        </svg>
+      );
+    case '❄️': // Neve
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#93c5fd" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={svgStyle}>
+          <path d="m8 2 8 16M20 6H4M4 18l16-12M12 2v20M2 12h20"></path>
+        </svg>
+      );
+    case '⛈️': // Tempestade
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={svgStyle}>
+          <path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 8.58" fill="rgba(255, 255, 255, 0.1)"></path>
+          <path d="m13 16-4 6h3v4l4-6h-3v-4z" fill="#fde047" stroke="#fde047"></path>
+        </svg>
+      );
+    default:
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={svgStyle}>
+          <circle cx="12" cy="12" r="10" fill="rgba(56, 189, 248, 0.1)"></circle>
+          <path d="M12 8v4M12 16h.01"></path>
+        </svg>
+      );
+  }
+};
 
 const Player = () => {
   const [searchParams] = useSearchParams();
@@ -113,7 +167,11 @@ const Player = () => {
     const raw = media.url || media.filename || '';
     if (!raw) return '';
     if (/^https?:\/\//i.test(raw) || isReusableLocalUrl(raw)) return raw;
-    return `/uploads/${raw.replace(/^\/+/, '')}`;
+    
+    // Em dispositivos nativos (Android/TV), caminhos relativos como /uploads/ tentam carregar do localhost
+    // Resolvemos isso de forma absoluta usando a URL base da nossa API
+    const backendHost = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/api$/, '') : 'https://midiamais.up.railway.app';
+    return `${backendHost}/uploads/${raw.replace(/^\/+/, '')}`;
   };
 
   const normalizeMediaType = (media) => {
@@ -132,9 +190,25 @@ const Player = () => {
 
   const getPlayableMediaSource = (media) => {
     if (!media) return '';
+    const isVideo = normalizeMediaType(media) === 'video';
+    
+    if (isVideo && navigator.onLine) {
+      // For videos, blob: URLs are extremely unstable on Android TV WebViews.
+      // If we are online, we ALWAYS bypass the blob URL and stream directly from the network/server.
+      let networkUrl = media.original_url || media.media?.original_url || (media.filename ? `/uploads/${media.filename}` : '');
+      if (networkUrl && !networkUrl.startsWith('blob:')) {
+        if (!/^https?:\/\//i.test(networkUrl) && !networkUrl.startsWith('data:')) {
+          const backendHost = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/api$/, '') : 'https://midiamais.up.railway.app';
+          const cleanPath = networkUrl.replace(/^\/+/, '');
+          networkUrl = `${backendHost}/${cleanPath}`;
+        }
+        return networkUrl;
+      }
+    }
+
     const key = getMediaKey(media);
     const entry = mediaCacheRef.current.get(key);
-    if (normalizeMediaType(media) === 'video' && entry?.objectUrl) return entry.objectUrl;
+    if (isVideo && entry?.objectUrl) return entry.objectUrl;
     return resolveMediaSource(media);
   };
 
@@ -397,7 +471,8 @@ const Player = () => {
   }, [playlist?.id, playlist?.manifest?.version]);
 
   useEffect(() => {
-    if (!playlist || playlist.items.length === 0) return;
+    const currentPlaylist = playlistRef.current;
+    if (!currentPlaylist || currentPlaylist.items.length === 0) return;
     if (isTransitioning) return;
 
     const currentItem = activeLayer === 'A' ? layerA.item : layerB.item;
@@ -426,7 +501,7 @@ const Player = () => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [currentIndex, mediaNonce, playlist, activeLayer, isTransitioning]);
+  }, [currentIndex, mediaNonce, activeLayer, isTransitioning]);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -951,13 +1026,19 @@ const Player = () => {
         
         if (!previewId && deviceCacheEnabled) {
           const playlistInicial = await carregarPlaylistLocalizadaDaCache(data);
+          // Preserva a versão do manifesto na playlist inicial
+          if (!playlistInicial.manifest) playlistInicial.manifest = {};
+          playlistInicial.manifest.version = data.manifest?.version || playlistInicial.manifest.version;
+          playlistInicial.id = data.id || playlistInicial.id;
           setPlaylist(playlistInicial);
           
           sincronizarPlaylistComCache(data, (playlistCompleta) => {
             console.log('[Player] Cache em segundo plano concluído. Atualizando fontes de mídia para locais.');
-            if (playlistCompleta?.manifest?.version) {
-              lastManifestVersionRef.current = playlistCompleta.manifest.version;
-            }
+            // Preserva a mesma versão do manifesto para não reiniciar a playlist
+            if (!playlistCompleta.manifest) playlistCompleta.manifest = {};
+            playlistCompleta.manifest.version = data.manifest?.version || playlistCompleta.manifest.version;
+            playlistCompleta.id = data.id || playlistCompleta.id;
+            lastManifestVersionRef.current = playlistCompleta.manifest.version;
             setPlaylist(playlistCompleta);
           }).catch((syncError) => {
             console.warn('[Player] Falha ao sincronizar cache em segundo plano:', syncError.message);
@@ -1528,7 +1609,7 @@ const Player = () => {
               alignItems: 'center',
               gap: '12px'
             }}>
-              <span style={{ fontSize: '2.8rem' }}>{weatherData.icon}</span>
+              <WeatherIcon icon={weatherData.icon} size={isMobile ? 32 : 48} color={playlist.weather_accent_color || playlist.theme_color || '#38bdf8'} />
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '2.8rem', fontWeight: '800', fontFamily: 'Outfit', lineHeight: 1 }}>{weatherData.temp}°C</span>
                 <span style={{ fontSize: '1rem', opacity: 0.8, fontWeight: '600' }}>{weatherData.city || playlist.weather_city || 'Cuiabá - MT'}</span>

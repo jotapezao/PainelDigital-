@@ -24,19 +24,49 @@ const Login = () => {
   const submitButtonRef = useRef(null);
   const updateButtonRef = useRef(null);
 
+  const [autoLoggingIn, setAutoLoggingIn] = useState(false);
+
   useEffect(() => {
-    const loadRemembered = async () => {
+    const loadRememberedAndAutoLogin = async () => {
+      let email = '';
+      let pass = '';
+
       try {
-        const { value: email } = await Preferences.get({ key: 'pd_remember_email' });
-        const { value: pass } = await Preferences.get({ key: 'pd_remember_password' });
-        if (email) setLoginIdentifier(email);
-        if (pass) setPassword(pass);
+        const { value: prefEmail } = await Preferences.get({ key: 'pd_remember_email' });
+        const { value: prefPass } = await Preferences.get({ key: 'pd_remember_password' });
+        email = prefEmail || '';
+        pass = prefPass || '';
       } catch {
-        setLoginIdentifier(localStorage.getItem('pd_remember_email') || '');
-        setPassword(localStorage.getItem('pd_remember_password') || '');
+        email = localStorage.getItem('pd_remember_email') || '';
+        pass = localStorage.getItem('pd_remember_password') || '';
+      }
+
+      if (email) setLoginIdentifier(email);
+      if (pass) setPassword(pass);
+
+      // Auto-login: se ambos os campos estão preenchidos, faz login silencioso
+      if (email && pass) {
+        setAutoLoggingIn(true);
+        setLoading(true);
+        try {
+          const result = await login(email, pass, true);
+          if (result.success) {
+            if (result.user?.role === 'client') {
+              localStorage.setItem('pd_device_company', result.user?.client_name || '');
+              navigate('/player?autoStart=true');
+            } else {
+              navigate('/');
+            }
+            return; // Evita mostrar a tela de login
+          }
+        } catch (e) {
+          console.warn('[Login] Auto-login falhou:', e);
+        }
+        setAutoLoggingIn(false);
+        setLoading(false);
       }
     };
-    loadRemembered();
+    loadRememberedAndAutoLogin();
   }, []);
 
   useEffect(() => {
@@ -130,6 +160,33 @@ const Login = () => {
     e.preventDefault();
     try { await Browser.open({ url: downloadUrl }); } catch { window.open(downloadUrl, '_blank'); }
   };
+  // Mostra tela de carregamento durante auto-login
+  if (autoLoggingIn) {
+    return (
+      <div className="login-page-container">
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', gap: '20px', zIndex: 10
+        }}>
+          <div style={{
+            width: '60px', height: '60px', border: '4px solid rgba(255,255,255,0.1)',
+            borderTopColor: '#818cf8', borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite'
+          }} />
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '1rem', fontFamily: 'Outfit, sans-serif' }}>
+            Conectando automaticamente...
+          </p>
+        </div>
+        <style>{`
+          .login-page-container {
+            display: flex; align-items: center; justify-content: center;
+            min-height: 100vh; background-color: #060608; font-family: 'Inter', sans-serif;
+          }
+          @keyframes spin { to { transform: rotate(360deg); } }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="login-page-container">
@@ -298,13 +355,12 @@ const Login = () => {
 
         .login-page-container {
           display: flex;
-          align-items: center;
-          justify-content: center;
           min-height: 100vh;
           background-color: #060608;
           font-family: 'Inter', sans-serif;
           position: relative;
-          overflow: hidden;
+          overflow-y: auto;
+          overflow-x: hidden;
           width: 100%;
         }
 
@@ -338,7 +394,7 @@ const Login = () => {
           display: flex;
           width: 100%;
           max-width: 1300px;
-          min-height: 85vh;
+          margin: auto;
           z-index: 10;
           padding: 20px;
           gap: 40px;
@@ -684,12 +740,13 @@ const Login = () => {
         }
 
         /* Responsive queries */
-        @media (max-width: 991px) {
+        @media (max-width: 991px) and (orientation: portrait), (max-width: 600px) {
           .login-layout-wrapper {
             flex-direction: column;
             justify-content: center;
             align-items: center;
             max-width: 540px;
+            padding: 20px;
           }
           
           .login-branding-col {
@@ -703,24 +760,148 @@ const Login = () => {
           }
           
           .login-logo-container.small {
-            width: 100px;
-            height: 100px;
-            margin-bottom: 16px;
-            border-radius: 24px;
+            width: 80px;
+            height: 80px;
+            margin-bottom: 12px;
+            border-radius: 20px;
           }
           
           .login-branding-title.small {
-            font-size: 2.2rem;
+            font-size: 1.8rem;
           }
           
           .login-card-container {
-            padding: 36px 28px;
-            border-radius: 24px;
+            padding: 28px 24px;
+            border-radius: 20px;
+            width: 100%;
           }
           
           .login-form-col {
             width: 100%;
           }
+        }
+
+        /* Android TV / telas landscape compactas */
+        @media (max-height: 800px) and (orientation: landscape) {
+          .login-layout-wrapper {
+            padding: 10px;
+            gap: 20px;
+          }
+
+          .login-branding-col {
+            padding: 10px;
+          }
+
+          .login-logo-container {
+            width: 90px;
+            height: 90px;
+            margin-bottom: 16px;
+            border-radius: 20px;
+          }
+
+          .login-branding-title {
+            font-size: 2.2rem;
+            margin-bottom: 6px;
+          }
+
+          .login-branding-subtitle {
+            font-size: 1rem;
+            margin-bottom: 20px;
+          }
+
+          .login-card-container {
+            padding: 24px 30px;
+            border-radius: 20px;
+            max-width: 440px;
+          }
+
+          .input-field-group {
+            margin-bottom: 16px;
+          }
+
+          .input-field-label {
+            font-size: 0.75rem;
+            margin-bottom: 6px;
+          }
+
+          .tv-login-input {
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            border-radius: 12px;
+          }
+
+          .remember-me-container {
+            margin-bottom: 16px;
+          }
+
+          .remember-me-checkbox {
+            width: 20px;
+            height: 20px;
+          }
+
+          .remember-me-text {
+            font-size: 0.85rem;
+          }
+
+          .tv-login-btn {
+            padding: 14px;
+            font-size: 1rem;
+            border-radius: 12px;
+            margin-top: 5px;
+          }
+
+          .tv-update-btn {
+            padding: 12px;
+            font-size: 0.85rem;
+            border-radius: 12px;
+            margin-top: 12px;
+          }
+
+          .tv-footer-version {
+            margin-top: 16px;
+            font-size: 0.75rem;
+          }
+          
+          .linked-device-banner {
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+          }
+          
+          .login-error-alert {
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+          }
+        }
+        
+        /* Ultra compact TV (e.g. 540px height) */
+        @media (max-height: 550px) and (orientation: landscape) {
+           .login-card-container {
+             padding: 16px 20px;
+           }
+           .login-logo-container {
+             width: 70px;
+             height: 70px;
+             margin-bottom: 10px;
+           }
+           .login-branding-title {
+             font-size: 1.8rem;
+           }
+           .input-field-group {
+             margin-bottom: 12px;
+           }
+           .tv-login-input {
+             padding: 10px 14px;
+           }
+           .tv-login-btn {
+             padding: 12px;
+             margin-top: 0px;
+           }
+           .tv-update-btn {
+             padding: 10px;
+             margin-top: 10px;
+           }
         }
       `}</style>
     </div>

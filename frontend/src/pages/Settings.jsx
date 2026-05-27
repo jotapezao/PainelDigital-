@@ -62,6 +62,37 @@ const Settings = () => {
     }
   };
 
+  const [importing, setImporting] = useState(false);
+
+  const handleImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!window.confirm('Atenção: A importação de backup irá inserir ou atualizar os cadastros de empresas e usuários. Deseja prosseguir?')) {
+      e.target.value = '';
+      return;
+    }
+
+    setImporting(true);
+    addToast('Importando backup, aguarde...', 'info');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await api.post('/settings/import', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      addToast(res.data.message || 'Backup importado com sucesso!', 'success');
+    } catch (err) {
+      const errMsg = err.response?.data?.error || 'Erro ao importar backup';
+      addToast(errMsg, 'error');
+    } finally {
+      setImporting(false);
+      e.target.value = ''; // limpa o input
+    }
+  };
+
   if (loading) return <div className="loading">Carregando...</div>;
 
   const updateData = JSON.parse(localStorage.getItem('app_update_available') || 'null');
@@ -279,9 +310,24 @@ const Settings = () => {
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '20px' }}>
           Gere um arquivo JSON com todas as configurações, clientes, telas, playlists e informações de mídias cadastradas. Recomenda-se fazer este backup periodicamente.
         </p>
-        <button type="button" onClick={handleBackup} className="btn btn-primary" style={{ padding: '12px 24px' }}>
-          📥 Gerar e Baixar Backup
-        </button>
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <button type="button" onClick={handleBackup} className="btn btn-primary" style={{ padding: '12px 24px' }}>
+            📥 Gerar e Baixar Backup
+          </button>
+          <label className="btn btn-secondary" style={{ padding: '12px 24px', margin: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+            📤 Importar Backup
+            <input 
+              type="file" 
+              accept=".json" 
+              onChange={handleImport} 
+              disabled={importing}
+              style={{ display: 'none' }} 
+            />
+          </label>
+        </div>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '12px', marginBottom: 0 }}>
+          * A importação de backup mesclará ou atualizará o cadastro de empresas e usuários do painel. Mídias e planos de exibição (playlists) não são alterados.
+        </p>
       </div>
     </div>
   );

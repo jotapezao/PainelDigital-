@@ -84,4 +84,74 @@ async function generateBackup(req, res) {
   }
 }
 
-module.exports = { getSettings, updateSettings, uploadLogo, generateBackup };
+// POST /api/settings/import
+async function importBackup(req, res) {
+  if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo de backup enviado' });
+
+  const client = await pool.connect();
+  try {
+    const backupData = JSON.parse(req.file.buffer.toString('utf-8'));
+
+    const clients = backupData.clients || [];
+    const users = backupData.users || [];
+
+    if (clients.length === 0 && users.length === 0) {
+      return res.status(400).json({ error: 'O backup enviado não possui dados válidos de empresas ou usuários.' });
+    }
+
+    await client.query('BEGIN');
+
+    // Import clients (companies)
+    for (const cl of clients) {
+      await client.query(`
+        INSERT INTO clients (id, name, email, company, phone, plan, active, cache_enabled, theme_color, notes, storage_quota_gb, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, COALESCE($12, NOW()), COALESCE($13, NOW()))
+        ON CONFLICT (id) DO UPDATE SET
+          name = EXCLUDED.name,
+          email = EXCLUDED.email,
+          company = EXCLUDED.company,
+          phone = EXCLUDED.phone,
+          plan = EXCLUDED.plan,
+          active = EXCLUDED.active,
+          cache_enabled = EXCLUDED.cache_enabled,
+          theme_color = EXCLUDED.theme_color,
+          notes = EXCLUDED.notes,
+          storage_quota_gb = EXCLUDED.storage_quota_gb,
+          updated_at = NOW()
+      `, [cl.id, cl.name, cl.email, cl.company, cl.phone, cl.plan, cl.active, cl.cache_enabled, cl.theme_color, cl.notes, cl.storage_quota_gb, cl.created_at, cl.updated_at]);
+    }
+
+    // Import users (dashboard users)
+    for (const u of users) {
+      await client.query(`
+        INSERT INTO users (id, client_id, name, email, password_hash, role, active, avatar_url, username, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10, NOW()), COALESCE($11, NOW()))
+        ON CONFLICT (id) DO UPDATE SET
+          client_id = EXCLUDED.client_id,
+          name = EXCLUDED.name,
+          email = EXCLUDED.email,
+          password_hash = EXCLUDED.password_hash,
+          role = EXCLUDED.role,
+          active = EXCLUDED.active,
+          avatar_url = EXCLUDED.avatar_url,
+          username = EXCLUDED.username,
+          updated_at = NOW()
+      `, [u.id, u.client_id, u.name, u.email, u.password_hash, u.role, u.active, u.avatar_url, u.username, u.created_at, u.updated_at]);
+    }
+
+    await client.query('COMMIT');
+
+    res.json({
+      success: true,
+      message: `Backup importado com sucesso! ${clients.length} empresas e ${users.length} usuários foram importados/atualizados.`
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[Import Backup Error]', err);
+    res.status(500).json({ error: 'Erro ao importar backup do sistema. Verifique se o arquivo JSON está no formato correto.' });
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { getSettings, updateSettings, uploadLogo, generateBackup, importBackup };
