@@ -7,7 +7,7 @@ const formatSize = (bytes) => {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 };
 
-const MediaCard = ({ media, onDelete, onRename, onMove }) => {
+const MediaCard = ({ media, onDelete, onRename }) => {
   const isVideo = media.type === 'video';
   const [imgError, setImgError] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -78,19 +78,6 @@ const MediaCard = ({ media, onDelete, onRename, onMove }) => {
             }}
             title="Abrir original"
           >👁️ Ver</button>
-          {onMove && (
-            <button
-              onClick={() => onMove(media)}
-              style={{
-                background: 'rgba(255,255,255,0.18)',
-                border: '1px solid rgba(255,255,255,0.3)',
-                color: '#fff', borderRadius: '8px',
-                padding: '6px 10px', cursor: 'pointer',
-                fontSize: '0.75rem', backdropFilter: 'blur(8px)',
-              }}
-              title="Mover para pasta"
-            >📁 Mover</button>
-          )}
           <button
             onClick={() => onRename(media)}
             style={{

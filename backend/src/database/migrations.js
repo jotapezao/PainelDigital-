@@ -738,25 +738,6 @@ async function runMigrations() {
       END $$;
     `);
 
-    // V3.2 — Sistema de Pastas de Mídias
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS media_folders (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
-        name VARCHAR(255) NOT NULL,
-        color VARCHAR(50) DEFAULT '#4f46e5',
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW()
-      );
-
-      DO $$
-      BEGIN
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='medias' AND column_name='folder_id') THEN
-          ALTER TABLE medias ADD COLUMN folder_id UUID REFERENCES media_folders(id) ON DELETE CASCADE;
-        END IF;
-      END $$;
-    `);
-
     console.log('✅ Migrations completed successfully');
   } catch (err) {
     console.error('❌ Migration error:', err);
