@@ -76,16 +76,31 @@ async function list(req, res) {
     let params = [];
     let idx = 1;
     if (isRestricted) { 
-      conditions.push(`p.client_id = $${idx++}`); 
-      params.push(req.user.client_id); 
+      // Buscar o grupo de clientes ao qual este cliente restrito pertence
+      const { rows: clientRows } = await pool.query(
+        'SELECT group_id FROM clients WHERE id = $1',
+        [req.user.client_id]
+      );
+      const clientGroupId = clientRows[0]?.group_id || null;
+
+      if (clientGroupId) {
+        conditions.push(`(p.client_id = $${idx} OR (p.group_id IS NOT NULL AND p.group_id = $${idx + 1}))`);
+        params.push(req.user.client_id, clientGroupId);
+        idx += 2;
+      } else {
+        conditions.push(`p.client_id = $${idx++}`); 
+        params.push(req.user.client_id); 
+      }
     }
-    else if (client_id) { 
-      conditions.push(`p.client_id = $${idx++}`); 
-      params.push(client_id); 
-    }
-    if (group_id) {
-      conditions.push(`p.group_id = $${idx++}`);
-      params.push(group_id);
+    else {
+      if (client_id) { 
+        conditions.push(`p.client_id = $${idx++}`); 
+        params.push(client_id); 
+      }
+      if (group_id) {
+        conditions.push(`p.group_id = $${idx++}`);
+        params.push(group_id);
+      }
     }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const { rows } = await pool.query(
@@ -422,17 +437,64 @@ async function getActive(req, res) {
     }
 
     const now = new Date();
-    const { rows: schedules } = await pool.query(
-      `SELECT s.*, d.name AS device_name, g.name AS group_name, c.name AS client_name, p.name AS playlist_name, p.client_id
-       FROM schedules s
-       LEFT JOIN devices d ON s.device_id = d.id
-       LEFT JOIN device_groups g ON s.group_id = g.id
-       JOIN playlists p ON s.playlist_id = p.id
-       LEFT JOIN clients c ON COALESCE(s.client_id, p.client_id) = c.id
-       WHERE p.client_id = $1
-         AND p.active = true`,
+
+    // Obter o grupo de clientes (client_groups) do cliente
+    const { rows: clientRows } = await pool.query(
+      'SELECT group_id FROM clients WHERE id = $1',
       [clientId]
     );
+    const clientGroupId = clientRows[0]?.group_id || null;
+
+    // Se o player for um dispositivo pareado, extraímos o device_id e seus device_groups
+    const deviceId = req.user.role === 'viewer' ? req.user.id : null;
+    let deviceGroupIds = [];
+    if (deviceId) {
+      const { rows: memberRows } = await pool.query(
+        'SELECT group_id FROM device_group_members WHERE device_id = $1',
+        [deviceId]
+      );
+      deviceGroupIds = memberRows.map(r => r.group_id);
+    }
+
+    // Preparar busca de agendamentos dependendo se temos deviceId ou apenas clientId
+    let schedulesQuery;
+    let schedulesParams;
+
+    if (deviceId) {
+      schedulesQuery = `
+        SELECT s.*, d.name AS device_name, g.name AS group_name, c.name AS client_name, p.name AS playlist_name, p.client_id
+        FROM schedules s
+        LEFT JOIN devices d ON s.device_id = d.id
+        LEFT JOIN device_groups g ON s.group_id = g.id
+        JOIN playlists p ON s.playlist_id = p.id
+        LEFT JOIN clients c ON COALESCE(s.client_id, p.client_id) = c.id
+        WHERE p.active = true
+          AND (
+            s.device_id = $1
+            OR (s.group_id IS NOT NULL AND s.group_id = ANY($2::uuid[]))
+            OR s.client_id = $3
+            OR (s.client_group_id IS NOT NULL AND s.client_group_id = $4)
+          )
+      `;
+      schedulesParams = [deviceId, deviceGroupIds, clientId, clientGroupId];
+    } else {
+      schedulesQuery = `
+        SELECT s.*, d.name AS device_name, g.name AS group_name, c.name AS client_name, p.name AS playlist_name, p.client_id
+        FROM schedules s
+        LEFT JOIN devices d ON s.device_id = d.id
+        LEFT JOIN device_groups g ON s.group_id = g.id
+        JOIN playlists p ON s.playlist_id = p.id
+        LEFT JOIN clients c ON COALESCE(s.client_id, p.client_id) = c.id
+        WHERE p.active = true
+          AND (
+            s.client_id = $1
+            OR (s.client_group_id IS NOT NULL AND s.client_group_id = $2)
+          )
+      `;
+      schedulesParams = [clientId, clientGroupId];
+    }
+
+    const { rows: schedules } = await pool.query(schedulesQuery, schedulesParams);
 
     let playlist;
     let agendamentoAtivo = null;
@@ -520,14 +582,49 @@ async function getActive(req, res) {
         estadoExecucaoAgendamentos.delete(clientId);
       }
 
-      const { rows: fallbacks } = await pool.query(
-        `SELECT p.* 
-         FROM playlists p 
-         WHERE p.client_id = $1 AND p.active = true 
-         AND (SELECT COUNT(*) FROM playlist_items WHERE playlist_id = p.id) > 0
-         ORDER BY p.updated_at DESC LIMIT 1`,
-        [clientId]
-      );
+      // Preparar busca da playlist de fallback (base) hierárquica
+      let fallbackQuery;
+      let fallbackParams;
+
+      if (deviceId) {
+        fallbackQuery = `
+          SELECT p.*,
+            (CASE 
+              WHEN p.id IN (SELECT playlist_id FROM device_playlists WHERE device_id = $1 AND active = true) THEN 1
+              WHEN p.client_id = $2 THEN 2
+              ELSE 3
+             END) as fallback_priority
+          FROM playlists p 
+          WHERE p.active = true 
+            AND (SELECT COUNT(*) FROM playlist_items WHERE playlist_id = p.id) > 0
+            AND (
+              p.id IN (SELECT playlist_id FROM device_playlists WHERE device_id = $1 AND active = true)
+              OR p.client_id = $2
+              OR (p.group_id IS NOT NULL AND p.group_id = $3)
+            )
+          ORDER BY fallback_priority ASC, p.updated_at DESC LIMIT 1
+        `;
+        fallbackParams = [deviceId, clientId, clientGroupId];
+      } else {
+        fallbackQuery = `
+          SELECT p.*,
+            (CASE 
+              WHEN p.client_id = $1 THEN 1
+              ELSE 2
+             END) as fallback_priority
+          FROM playlists p 
+          WHERE p.active = true 
+            AND (SELECT COUNT(*) FROM playlist_items WHERE playlist_id = p.id) > 0
+            AND (
+              p.client_id = $1
+              OR (p.group_id IS NOT NULL AND p.group_id = $2)
+            )
+          ORDER BY fallback_priority ASC, p.updated_at DESC LIMIT 1
+        `;
+        fallbackParams = [clientId, clientGroupId];
+      }
+
+      const { rows: fallbacks } = await pool.query(fallbackQuery, fallbackParams);
       
       if (fallbacks.length === 0) {
         return res.status(404).json({ error: 'Nenhuma mídia programada para este cliente.' });

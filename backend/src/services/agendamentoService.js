@@ -75,6 +75,7 @@ function gerarChaveEscopo(agendamento) {
   if (agendamento.device_id) return `device:${agendamento.device_id}`;
   if (agendamento.group_id) return `group:${agendamento.group_id}`;
   if (agendamento.client_id) return `client:${agendamento.client_id}`;
+  if (agendamento.client_group_id) return `client_group:${agendamento.client_group_id}`;
   return 'global';
 }
 
@@ -82,13 +83,15 @@ function obterNomeEscopo(agendamento) {
   if (agendamento.device_name) return agendamento.device_name;
   if (agendamento.group_name) return agendamento.group_name;
   if (agendamento.client_name) return agendamento.client_name;
-  return agendamento.device_id ? 'Dispositivo' : (agendamento.group_id ? 'Grupo' : (agendamento.client_id ? 'Cliente' : 'Todos'));
+  if (agendamento.client_group_name) return agendamento.client_group_name;
+  return agendamento.device_id ? 'Dispositivo' : (agendamento.group_id ? 'Grupo' : (agendamento.client_id ? 'Cliente' : (agendamento.client_group_id ? 'Grupo de Clientes' : 'Todos')));
 }
 
 function obterTipoEscopo(agendamento) {
   if (agendamento.device_id) return 'device';
   if (agendamento.group_id) return 'group';
   if (agendamento.client_id) return 'client';
+  if (agendamento.client_group_id) return 'client_group';
   return 'global';
 }
 
@@ -148,8 +151,8 @@ function horarioOverlap(inicioA, fimA, inicioB, fimB) {
 }
 
 function compararEspecificidade(a, b) {
-  const pesoA = a.device_id ? 3 : (a.group_id ? 2 : (a.client_id ? 1 : 0));
-  const pesoB = b.device_id ? 3 : (b.group_id ? 2 : (b.client_id ? 1 : 0));
+  const pesoA = a.device_id ? 4 : (a.group_id ? 3 : (a.client_id ? 2 : (a.client_group_id ? 1 : 0)));
+  const pesoB = b.device_id ? 4 : (b.group_id ? 3 : (b.client_id ? 2 : (b.client_group_id ? 1 : 0)));
   if (pesoA !== pesoB) return pesoB - pesoA;
 
   const prioridade = pesoPrioridade(b.priority) - pesoPrioridade(a.priority);

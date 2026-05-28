@@ -29,6 +29,7 @@ const ScheduleEditor = () => {
     name: '',
     device_id: '',
     group_id: '',
+    client_group_id: '',
     playlist_id: '',
     start_datetime: '',
     end_datetime: '',
@@ -49,7 +50,9 @@ const ScheduleEditor = () => {
 
   const [clients, setClients] = useState([]);
   const [allGroups, setAllGroups] = useState([]);
+  const [clientGroups, setClientGroups] = useState([]);
   const [playlists, setPlaylists] = useState([]);
+  const [targetType, setTargetType] = useState('client');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -61,21 +64,24 @@ const ScheduleEditor = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [clientsRes, groupsRes, playlistsRes] = await Promise.all([
+        const [clientsRes, groupsRes, clientGroupsRes, playlistsRes] = await Promise.all([
           api.get('/clients'),
           api.get('/device-groups'),
+          api.get('/client-groups').catch(() => ({ data: [] })),
           api.get('/playlists')
         ]);
         setClients(clientsRes.data || []);
         setAllGroups(Array.isArray(groupsRes.data) ? groupsRes.data : (groupsRes.data?.groups || []));
+        setClientGroups(clientGroupsRes.data || []);
         setPlaylists(playlistsRes.data);
-
+ 
         if (id && id !== 'new') {
           const res = await api.get(`/schedules/${id}`);
           const data = res.data;
           setForm(prev => ({
             ...prev,
             ...data,
+            client_group_id: data.client_group_id || '',
             start_datetime: data.start_datetime ? String(data.start_datetime).slice(0, 16) : '',
             end_datetime: data.end_datetime ? String(data.end_datetime).slice(0, 16) : '',
             repeat_until: data.repeat_until ? String(data.repeat_until).slice(0, 16) : '',
@@ -87,6 +93,11 @@ const ScheduleEditor = () => {
             status: data.status || 'aguardando',
             status_reason: data.status_reason || '',
           }));
+          if (data.client_group_id) {
+            setTargetType('group');
+          } else {
+            setTargetType('client');
+          }
         }
       } catch (err) {
         addToast('error', 'Erro', 'Falha ao carregar dados do agendamento.');
@@ -111,24 +122,26 @@ const ScheduleEditor = () => {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim() || (!form.client_id && !form.group_id) || !form.playlist_id) {
-      addToast('warning', 'Atenção', 'Preencha o nome, o cliente ou grupo e o plano.');
+    const isTargetGroup = targetType === 'group';
+    if (!form.name.trim() || (isTargetGroup ? !form.client_group_id : (!form.client_id && !form.group_id)) || !form.playlist_id) {
+      addToast('warning', 'Atenção', 'Preencha o nome, o destinatário (empresa ou grupo de clientes) e o plano.');
       return;
     }
-
+ 
     setSaving(true);
     try {
       const payload = {
         ...form,
-        client_id: form.client_id || null,
+        client_id: isTargetGroup ? null : (form.client_id || null),
         device_id: null,
-        group_id: form.group_id || null,
+        group_id: isTargetGroup ? null : (form.group_id || null),
+        client_group_id: isTargetGroup ? (form.client_group_id || null) : null,
         repeat_config: {
           ...(form.repeat_config || {}),
           duration_minutes: Number(form.repeat_config?.duration_minutes || 60),
         },
       };
-
+ 
       if (id && id !== 'new') {
         const res = await api.put(`/schedules/${id}`, payload);
         setForm(prev => ({
@@ -176,9 +189,12 @@ const ScheduleEditor = () => {
   const grupoSelecionado = gruposVisiveis.find((group) => String(group.id) === String(form.group_id))
     || allGroups.find((group) => String(group.id) === String(form.group_id));
 
-  const resumoEscopo = form.group_id
-    ? (grupoSelecionado?.name || 'Grupo selecionado')
-    : (clients.find((c) => String(c.id) === String(form.client_id))?.name || 'Cliente selecionado');
+  const resumoEscopo = targetType === 'group'
+    ? (clientGroups.find(cg => String(cg.id) === String(form.client_group_id))?.name || 'Grupo de Clientes')
+    : (form.group_id
+       ? `${clients.find(c => String(c.id) === String(form.client_id))?.name || 'Cliente'} — ${grupoSelecionado?.name || 'Grupo de TVs'}`
+       : (clients.find(c => String(c.id) === String(form.client_id))?.name || 'Cliente selecionado')
+      );
 
   const resumoPlaylist = playlists.find((playlist) => String(playlist.id) === String(form.playlist_id))?.name || 'Plano de exibição';
 
@@ -210,39 +226,90 @@ const ScheduleEditor = () => {
               <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Ex: Programação da manhã" />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '18px' }}>
-              <div className="input-group">
-                <label>Cliente *</label>
-                <select value={form.client_id || ''} onChange={e => setForm(p => ({ ...p, client_id: e.target.value, group_id: '' }))}>
-                  <option value="">— Selecione o cliente —</option>
-                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}{c.company ? ` — ${c.company}` : ''}</option>)}
-                </select>
-              </div>
-              <div className="input-group">
-                <label>Ou Grupo de Clientes</label>
-                <select value={form.group_id || ''} onChange={e => {
-                  const group = allGroups.find((item) => String(item.id) === String(e.target.value));
-                  setForm(p => ({
-                    ...p,
-                    group_id: e.target.value,
-                    client_id: group?.client_id ? String(group.client_id) : (p.client_id || ''),
-                  }));
-                }}>
-                  <option value="">— Selecione o grupo —</option>
-                  {gruposVisiveis.map(g => <option key={g.id} value={g.id}>{g.name}{g.description ? ` — ${g.description}` : ''}</option>)}
-                </select>
-                {form.client_id && gruposVisiveis.length === 0 && (
-                  <div style={{ marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                    Nenhum grupo encontrado para a empresa selecionada.
-                  </div>
-                )}
-                {!form.client_id && allGroups.length === 0 && (
-                  <div style={{ marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                    Nenhum grupo cadastrado até o momento.
-                  </div>
-                )}
+            {/* Seletor premium de Destinatário */}
+            <div className="input-group" style={{ marginBottom: '20px' }}>
+              <label>Destinatário da exibição (Escopo)</label>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => { setTargetType('client'); setForm(p => ({ ...p, client_group_id: '' })); }}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontWeight: '700',
+                    transition: 'all 0.2s',
+                    backgroundColor: targetType === 'client' ? 'var(--primary)' : 'var(--bg-input)',
+                    color: targetType === 'client' ? '#fff' : 'var(--text-muted)',
+                    border: 'none'
+                  }}
+                >
+                  🏢 Empresa / Cliente
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setTargetType('group'); setForm(p => ({ ...p, client_id: '', group_id: '' })); }}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontWeight: '700',
+                    transition: 'all 0.2s',
+                    backgroundColor: targetType === 'group' ? 'var(--primary)' : 'var(--bg-input)',
+                    color: targetType === 'group' ? '#fff' : 'var(--text-muted)',
+                    border: 'none'
+                  }}
+                >
+                  📁 Grupo de Clientes
+                </button>
               </div>
             </div>
+
+            {targetType === 'group' ? (
+              <div className="input-group">
+                <label>Grupo de Clientes *</label>
+                <select value={form.client_group_id || ''} onChange={e => setForm(p => ({ ...p, client_group_id: e.target.value }))}>
+                  <option value="">— Selecione o grupo de clientes —</option>
+                  {clientGroups.map(cg => <option key={cg.id} value={cg.id}>{cg.name}{cg.description ? ` — ${cg.description}` : ''}</option>)}
+                </select>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '18px' }}>
+                <div className="input-group">
+                  <label>Empresa / Cliente *</label>
+                  <select value={form.client_id || ''} onChange={e => setForm(p => ({ ...p, client_id: e.target.value, group_id: '' }))}>
+                    <option value="">— Selecione a empresa —</option>
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}{c.company ? ` — ${c.company}` : ''}</option>)}
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label>Ou Grupo de TVs / Aparelhos</label>
+                  <select value={form.group_id || ''} onChange={e => {
+                    const group = allGroups.find((item) => String(item.id) === String(e.target.value));
+                    setForm(p => ({
+                      ...p,
+                      group_id: e.target.value,
+                      client_id: group?.client_id ? String(group.client_id) : (p.client_id || ''),
+                    }));
+                  }}>
+                    <option value="">— Sem grupo (Exibir em todas as TVs) —</option>
+                    {gruposVisiveis.map(g => <option key={g.id} value={g.id}>{g.name}{g.description ? ` — ${g.description}` : ''}</option>)}
+                  </select>
+                  {form.client_id && gruposVisiveis.length === 0 && (
+                    <div style={{ marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                      Nenhum grupo de TVs encontrado para a empresa selecionada.
+                    </div>
+                  )}
+                  {!form.client_id && allGroups.length === 0 && (
+                    <div style={{ marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                      Nenhum grupo de TVs cadastrado até o momento.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="input-group">
               <label>Plano de exibição *</label>

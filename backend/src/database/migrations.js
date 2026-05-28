@@ -728,6 +728,16 @@ async function runMigrations() {
       END $$;
     `);
 
+    // V3.1 — Agendamento por Grupo de Clientes
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schedules' AND column_name='client_group_id') THEN
+          ALTER TABLE schedules ADD COLUMN client_group_id UUID REFERENCES client_groups(id) ON DELETE CASCADE;
+        END IF;
+      END $$;
+    `);
+
     console.log('✅ Migrations completed successfully');
   } catch (err) {
     console.error('❌ Migration error:', err);
