@@ -471,7 +471,7 @@ const Player = () => {
   }, [playlist?.id, playlist?.manifest?.version]);
 
   useEffect(() => {
-    const currentPlaylist = playlistRef.current;
+    const currentPlaylist = playlist;
     if (!currentPlaylist || currentPlaylist.items.length === 0) return;
     if (isTransitioning) return;
 
@@ -501,7 +501,7 @@ const Player = () => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [playlist?.id, playlist?.manifest?.version, currentIndex, mediaNonce, activeLayer, isTransitioning]);
+  }, [playlist?.id, playlist?.manifest?.version, currentIndex, mediaNonce, activeLayer, isTransitioning, layerA.item, layerB.item]);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);

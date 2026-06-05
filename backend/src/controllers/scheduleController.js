@@ -464,7 +464,7 @@ async function create(req, res) {
         client_id, device_id, group_id, client_group_id, playlist_id, name, start_datetime, end_datetime,
         days_of_week, start_time, end_time, priority, repeat_type, repeat_value,
         repeat_days, repeat_until, repeat_config, active, last_status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16::jsonb, $17, $18, $19)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17::jsonb, $18, $19)
       RETURNING *`,
       [
         payload.client_id,
