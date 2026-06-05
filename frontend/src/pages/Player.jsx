@@ -501,7 +501,7 @@ const Player = () => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [currentIndex, mediaNonce, activeLayer, isTransitioning]);
+  }, [playlist?.id, playlist?.manifest?.version, currentIndex, mediaNonce, activeLayer, isTransitioning]);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
