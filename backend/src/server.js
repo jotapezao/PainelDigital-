@@ -117,7 +117,15 @@ app.get('/api/app-version', async (req, res) => {
           }
         } catch (ghErr) {
           console.error('Error fetching from GitHub:', ghErr.message);
-          // Fallback to manual settings if GH fails
+          // Salva no cache as informações manuais do banco por 10 minutos
+          // para evitar spam de chamadas falhas ao GitHub e acúmulo de logs no Railway.
+          githubCache = {
+            data: {
+              version: settings.latest_app_version || '1.0.0',
+              url: settings.app_download_url || ''
+            },
+            expiry: now + 600000 // 10 minutos
+          };
         }
       }
     }

@@ -195,7 +195,17 @@ const Player = () => {
     if (isVideo && navigator.onLine) {
       // For videos, blob: URLs are extremely unstable on Android TV WebViews.
       // If we are online, we ALWAYS bypass the blob URL and stream directly from the network/server.
-      let networkUrl = media.original_url || media.media?.original_url || (media.filename ? `/uploads/${media.filename}` : '');
+      let networkUrl = media.original_url || media.media?.original_url;
+      if (!networkUrl && media.url && !media.url.startsWith('blob:')) {
+        networkUrl = media.url;
+      }
+      if (!networkUrl && media.media?.url && !media.media.url.startsWith('blob:')) {
+        networkUrl = media.media.url;
+      }
+      if (!networkUrl && media.filename) {
+        networkUrl = `/uploads/${media.filename}`;
+      }
+
       if (networkUrl && !networkUrl.startsWith('blob:')) {
         if (!/^https?:\/\//i.test(networkUrl) && !networkUrl.startsWith('data:')) {
           const backendHost = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/api$/, '') : 'https://midiamais.up.railway.app';
