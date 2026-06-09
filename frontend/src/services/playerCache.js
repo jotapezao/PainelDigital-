@@ -1,3 +1,5 @@
+import api from './api';
+
 const CACHE_NAME = 'painel-digital-player-cache-v2';
 const INDEX_KEY = '@DigitalSignage:playerCacheIndex';
 const PLAYLIST_KEY = '@DigitalSignage:lastCachedPlaylist';
@@ -38,7 +40,17 @@ function chaveMidia(media) {
 }
 
 function resolverUrlMidia(media) {
-  return media?.original_url || media?.url || media?.cached_url || '';
+  const url = media?.original_url || media?.url || media?.cached_url || '';
+  if (!url) return '';
+  if (/^https?:\/\//i.test(url) || url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('file:') || url.startsWith('capacitor:') || url.startsWith('content:')) {
+    return url;
+  }
+  const backendHost = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/api$/, '') : 'https://midiamais.up.railway.app';
+  const cleanPath = url.replace(/^\/+/, '');
+  if (cleanPath.startsWith('uploads/')) {
+    return `${backendHost}/${cleanPath}`;
+  }
+  return `${backendHost}/uploads/${cleanPath}`;
 }
 
 function clonarPlaylist(playlist) {
@@ -238,20 +250,11 @@ export async function sincronizarPlaylistComCache(playlist, onSyncComplete, opco
 
   salvarPlaylist(playlist);
 
-  if (onSyncComplete && resultado.completo) {
+  if (onSyncComplete) {
     onSyncComplete(playlistTotalmenteLocal);
   }
 
-  if (resultado.completo && playlistTotalmenteLocal?.items?.length) {
-    return playlistTotalmenteLocal;
-  }
-
-  const cachedPlaylist = carregarPlaylistSalva();
-  if (cachedPlaylist?.items?.length) {
-    return cachedPlaylist;
-  }
-
-  return playlistComCacheExistente;
+  return playlistTotalmenteLocal;
 }
 
 export async function sincronizarPlaylistEmSegundoPlano(playlist, onSyncComplete) {

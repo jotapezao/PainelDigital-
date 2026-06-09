@@ -159,8 +159,7 @@ const Player = () => {
     url.startsWith('data:') ||
     url.startsWith('file:') ||
     url.startsWith('capacitor://') ||
-    url.startsWith('content:') ||
-    url.startsWith('/')
+    url.startsWith('content:')
   );
   const resolveMediaSource = (media) => {
     if (!media) return '';
@@ -171,7 +170,11 @@ const Player = () => {
     // Em dispositivos nativos (Android/TV), caminhos relativos como /uploads/ tentam carregar do localhost
     // Resolvemos isso de forma absoluta usando a URL base da nossa API
     const backendHost = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/api$/, '') : 'https://midiamais.up.railway.app';
-    return `${backendHost}/uploads/${raw.replace(/^\/+/, '')}`;
+    const cleanPath = raw.replace(/^\/+/, '');
+    if (cleanPath.startsWith('uploads/')) {
+      return `${backendHost}/${cleanPath}`;
+    }
+    return `${backendHost}/uploads/${cleanPath}`;
   };
 
   const normalizeMediaType = (media) => {
@@ -523,6 +526,12 @@ const Player = () => {
   useEffect(() => {
     if (layerA.visible) {
       if (videoRefA.current) {
+        try {
+          videoRefA.current.muted = true;
+          videoRefA.current.load();
+        } catch (e) {
+          // Ignora falhas de muting/loading antes do play
+        }
         videoRefA.current.play().catch((err) => {
           console.warn('[Player Layer A] Erro ao reproduzir vídeo:', err.message);
         });
@@ -544,6 +553,12 @@ const Player = () => {
   useEffect(() => {
     if (layerB.visible) {
       if (videoRefB.current) {
+        try {
+          videoRefB.current.muted = true;
+          videoRefB.current.load();
+        } catch (e) {
+          // Ignora falhas de muting/loading antes do play
+        }
         videoRefB.current.play().catch((err) => {
           console.warn('[Player Layer B] Erro ao reproduzir vídeo:', err.message);
         });
@@ -1101,23 +1116,11 @@ const Player = () => {
     const outgoingLayer = activeLayer; // Salva qual camada está saindo ('A' ou 'B')
 
     if (activeLayer === 'A') {
-      // Inicia o vídeo na camada B imediatamente para evitar atraso/tela preta
-      if (videoRefB.current) {
-        videoRefB.current.play().catch(err => {
-          console.warn('[Player] Falha ao iniciar play no B:', err.message);
-        });
-      }
       // Torna B visível e inicia a transição, mas MANTÉM A visível (para continuar reproduzindo o vídeo/imagem no fade)
       setLayerB({ item: nextItem, visible: true, effect: `${effect}-in` });
       setLayerA(prev => ({ ...prev, effect: `${effect}-out` }));
       setActiveLayer('B');
     } else {
-      // Inicia o vídeo na camada A imediatamente para evitar atraso/tela preta
-      if (videoRefA.current) {
-        videoRefA.current.play().catch(err => {
-          console.warn('[Player] Falha ao iniciar play no A:', err.message);
-        });
-      }
       // Torna A visível e inicia a transição, mas MANTÉM B visível
       setLayerA({ item: nextItem, visible: true, effect: `${effect}-in` });
       setLayerB(prev => ({ ...prev, effect: `${effect}-out` }));
