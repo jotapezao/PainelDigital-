@@ -738,6 +738,54 @@ async function runMigrations() {
       END $$;
     `);
 
+    // V3.2 — Histórico de status de dispositivos (Módulo de Relatórios)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS device_status_history (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        device_id UUID NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+        status VARCHAR(20) NOT NULL,
+        started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        ended_at TIMESTAMPTZ
+      );
+    `);
+
+    await client.query(`
+      CREATE OR REPLACE FUNCTION record_device_status_change()
+      RETURNS TRIGGER AS $$
+      BEGIN
+        IF (TG_OP = 'UPDATE' AND OLD.status IS NOT DISTINCT FROM NEW.status) THEN
+          RETURN NEW;
+        END IF;
+
+        UPDATE device_status_history
+        SET ended_at = NOW()
+        WHERE device_id = NEW.id AND ended_at IS NULL;
+
+        INSERT INTO device_status_history (device_id, status, started_at)
+        VALUES (NEW.id, NEW.status, NOW());
+
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+    `);
+
+    await client.query(`
+      DROP TRIGGER IF EXISTS trigger_device_status_change ON devices;
+      CREATE TRIGGER trigger_device_status_change
+      AFTER INSERT OR UPDATE ON devices
+      FOR EACH ROW
+      EXECUTE FUNCTION record_device_status_change();
+    `);
+
+    await client.query(`
+      INSERT INTO device_status_history (device_id, status, started_at)
+      SELECT id, status, NOW()
+      FROM devices d
+      WHERE NOT EXISTS (
+        SELECT 1 FROM device_status_history h WHERE h.device_id = d.id AND h.ended_at IS NULL
+      );
+    `);
+
     console.log('✅ Migrations completed successfully');
   } catch (err) {
     console.error('❌ Migration error:', err);

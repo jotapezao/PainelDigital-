@@ -19,6 +19,7 @@ const statsRoutes = require('./routes/stats');
 const deviceGroupRoutes = require('./routes/device_groups');
 const clientGroupRoutes = require('./routes/client_groups');
 const settingsRoutes = require('./routes/settings');
+const reportRoutes = require('./routes/reports');
 
 const app = express();
 const server = http.createServer(app);
@@ -161,6 +162,7 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/device-groups', deviceGroupRoutes);
 app.use('/api/client-groups', clientGroupRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {

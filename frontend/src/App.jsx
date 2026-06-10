@@ -21,6 +21,7 @@ import ScheduleEditor from './pages/ScheduleEditor';
 import UserEditor from './pages/UserEditor';
 import Settings from './pages/Settings';
 import FAQ from './pages/FAQ';
+import Reports from './pages/Reports';
 
 const PrivateRoute = ({ children, adminOnly = false }) => {
   const { user, loading } = useAuth();
@@ -95,6 +96,10 @@ function App() {
               <Route index element={<Logs />} />
             </Route>
             
+            <Route path="/reports" element={<PrivateRoute><Layout title="Relatórios de Desempenho" /></PrivateRoute>}>
+              <Route index element={<Reports />} />
+            </Route>
+
             <Route path="/settings" element={<PrivateRoute adminOnly><Layout title="Configurações do Sistema" /></PrivateRoute>}>
               <Route index element={<Settings />} />
             </Route>
