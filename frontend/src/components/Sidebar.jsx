@@ -28,8 +28,13 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     const handleUpdateEvent = () => setHasUpdate(true);
+    const handleUpdateClear = () => setHasUpdate(false);
     window.addEventListener('app:update_available', handleUpdateEvent);
-    return () => window.removeEventListener('app:update_available', handleUpdateEvent);
+    window.addEventListener('app:update_cleared', handleUpdateClear);
+    return () => {
+      window.removeEventListener('app:update_available', handleUpdateEvent);
+      window.removeEventListener('app:update_cleared', handleUpdateClear);
+    };
   }, []);
 
   useEffect(() => {
@@ -42,6 +47,12 @@ const Sidebar = ({ isOpen, onClose }) => {
       }
     };
     fetchSettings();
+
+    const handleSettingsUpdate = (e) => {
+      setSettings(e.detail);
+    };
+    window.addEventListener('settings:updated', handleSettingsUpdate);
+    return () => window.removeEventListener('settings:updated', handleSettingsUpdate);
   }, []);
 
   const baseItems = [

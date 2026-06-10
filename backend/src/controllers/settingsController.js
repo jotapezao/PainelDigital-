@@ -24,6 +24,13 @@ async function updateSettings(req, res) {
     github_repo, player_sync_interval_minutes
   } = req.body;
   const intervaloSincronizacao = Number.parseInt(player_sync_interval_minutes, 10);
+  
+  // Clear the GitHub release cache on settings update
+  const clearCache = req.app.get('clearGithubCache');
+  if (clearCache) {
+    clearCache();
+  }
+
   try {
     const { rows } = await pool.query(
       `UPDATE system_settings 

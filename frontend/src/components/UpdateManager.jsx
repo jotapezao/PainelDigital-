@@ -21,6 +21,7 @@ const UpdateManager = () => {
           window.dispatchEvent(new CustomEvent('app:update_available', { detail: updateData }));
         } else {
           localStorage.removeItem('app_update_available');
+          window.dispatchEvent(new CustomEvent('app:update_cleared'));
         }
       } catch (error) {
         console.error('Falha ao verificar atualizações OTA:', error);
@@ -29,7 +30,14 @@ const UpdateManager = () => {
 
     checkUpdate();
     const interval = setInterval(checkUpdate, 4 * 60 * 60 * 1000); // 4h
-    return () => clearInterval(interval);
+    
+    const handleRecheck = () => checkUpdate();
+    window.addEventListener('app:recheck_update', handleRecheck);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('app:recheck_update', handleRecheck);
+    };
   }, []);
 
   const isVersionOlder = (current, latest) => {

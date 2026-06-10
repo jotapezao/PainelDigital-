@@ -62,6 +62,13 @@ let githubCache = {
   expiry: 0
 };
 
+// Expose cache clearing to controllers
+app.set('clearGithubCache', () => {
+  githubCache.data = null;
+  githubCache.expiry = 0;
+  console.log('[OTA] GitHub API release cache cleared.');
+});
+
 // OTA Version Check - Digital Signage App
 app.get('/api/app-version', async (req, res) => {
   try {

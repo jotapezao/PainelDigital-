@@ -16,15 +16,33 @@ const Settings = () => {
     logo_url: '',
     player_sync_interval_minutes: 2
   });
+  const [activeVersionInfo, setActiveVersionInfo] = useState(null);
+  const [updateData, setUpdateData] = useState(() =>
+    JSON.parse(localStorage.getItem('app_update_available') || 'null')
+  );
 
   useEffect(() => {
     fetchSettings();
+
+    const handleUpdate = () => {
+      setUpdateData(JSON.parse(localStorage.getItem('app_update_available') || 'null'));
+    };
+    window.addEventListener('app:update_available', handleUpdate);
+    window.addEventListener('app:update_cleared', handleUpdate);
+    return () => {
+      window.removeEventListener('app:update_available', handleUpdate);
+      window.removeEventListener('app:update_cleared', handleUpdate);
+    };
   }, []);
 
   const fetchSettings = async () => {
     try {
-      const res = await api.get('/settings');
-      setSettings(res.data);
+      const [settingsRes, versionRes] = await Promise.all([
+        api.get('/settings'),
+        api.get('/app-version')
+      ]);
+      setSettings(settingsRes.data);
+      setActiveVersionInfo(versionRes.data);
     } catch (err) {
       addToast('Erro ao carregar configurações', 'error');
     } finally {
@@ -36,8 +54,17 @@ const Settings = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.put('/settings', settings);
+      const res = await api.put('/settings', settings);
+      setSettings(res.data);
       addToast('Configurações atualizadas com sucesso!', 'success');
+
+      // Notifica as alterações no painel e na atualização do app
+      window.dispatchEvent(new CustomEvent('settings:updated', { detail: res.data }));
+      window.dispatchEvent(new CustomEvent('app:recheck_update'));
+
+      // Recarrega informações ativas de versão
+      const versionRes = await api.get('/app-version');
+      setActiveVersionInfo(versionRes.data);
     } catch (err) {
       addToast('Erro ao atualizar configurações', 'error');
     } finally {
@@ -94,8 +121,6 @@ const Settings = () => {
   };
 
   if (loading) return <div className="loading">Carregando...</div>;
-
-  const updateData = JSON.parse(localStorage.getItem('app_update_available') || 'null');
 
   return (
     <div className="animate-fade-in">
@@ -230,6 +255,34 @@ const Settings = () => {
               Configure aqui a versão mais recente do aplicativo Android. Quando você alterar a versão aqui, todos os dispositivos conectados receberão uma notificação para baixar o novo arquivo.
             </p>
           </div>
+
+          {activeVersionInfo && (
+            <div style={{
+              marginBottom: '24px',
+              padding: '16px 20px',
+              borderRadius: '12px',
+              background: 'var(--bg-input)',
+              border: '1px solid var(--border)',
+            }}>
+              <h3 style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '12px', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                🟢 Versão Ativa no Sistema
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.875rem' }}>
+                <div>
+                  <strong>Origem:</strong> {settings.github_repo ? `GitHub Releases (${settings.github_repo})` : 'Manual (Fall-back)'}
+                </div>
+                <div>
+                  <strong>Versão Instalável:</strong> v{activeVersionInfo.latestVersion || '1.0.0'}
+                </div>
+                <div style={{ gridColumn: 'span 2', wordBreak: 'break-all' }}>
+                  <strong>Link do APK:</strong> {activeVersionInfo.url ? <a href={activeVersionInfo.url} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>{activeVersionInfo.url}</a> : <span style={{ color: 'var(--text-muted)' }}>Nenhum link configurado</span>}
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <strong>Mensagem:</strong> {activeVersionInfo.message || 'Sem mensagem'}
+                </div>
+              </div>
+            </div>
+          )}
 
         <form onSubmit={handleSubmit}>
           <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>

@@ -382,27 +382,7 @@ const Player = () => {
     };
   }, [previewId, user?.client_id]);
 
-  useEffect(() => {
-    if (previewId || deviceCacheEnabled) return;
 
-    let active = true;
-    const limpar = async () => {
-      try {
-        await limparCacheLocalDoPlayer();
-        if (!active) return;
-        limparCacheDeMidiaLocal();
-        limparObjectUrlsDoPlayer();
-      } catch (err) {
-        console.warn('[Player] Não foi possível limpar o cache local:', err.message);
-      }
-    };
-
-    limpar();
-
-    return () => {
-      active = false;
-    };
-  }, [previewId, deviceCacheEnabled]);
 
   useEffect(() => {
     fetchPlaylist();
@@ -527,6 +507,7 @@ const Player = () => {
     if (layerA.visible) {
       if (videoRefA.current) {
         try {
+          videoRefA.current.defaultMuted = true;
           videoRefA.current.muted = true;
           videoRefA.current.load();
         } catch (e) {
@@ -554,6 +535,7 @@ const Player = () => {
     if (layerB.visible) {
       if (videoRefB.current) {
         try {
+          videoRefB.current.defaultMuted = true;
           videoRefB.current.muted = true;
           videoRefB.current.load();
         } catch (e) {
@@ -618,65 +600,8 @@ const Player = () => {
 
     const ensureVideoCached = async (media, readyForPlayback = true) => {
       if (!media) return null;
-      const type = normalizeMediaType(media);
       const originalUrl = getOriginalUrl(media);
-      const cacheKey = getMediaKey(media);
-      if (!cacheKey || !originalUrl || type !== 'video') return originalUrl;
-
-      const existing = getCacheEntry(media);
-      if (existing?.objectUrl) return existing.objectUrl;
-      if (existing?.promise) return existing.promise;
-
-      const task = (async () => {
-        try {
-          const response = await fetch(originalUrl, { cache: 'force-cache' });
-          if (!response.ok) throw new Error(`http_${response.status}`);
-
-          const lengthHeader = response.headers.get('content-length');
-          const totalBytes = lengthHeader ? parseInt(lengthHeader, 10) : 0;
-          if (totalBytes && totalBytes > MAX_CACHED_VIDEO_BYTES) {
-            return originalUrl;
-          }
-
-          const blob = await response.blob();
-          if (blob.size > MAX_CACHED_VIDEO_BYTES) {
-            return originalUrl;
-          }
-
-          const objectUrl = URL.createObjectURL(blob);
-          if (cancelled) {
-            URL.revokeObjectURL(objectUrl);
-            return originalUrl;
-          }
-
-          mediaCacheRef.current.set(cacheKey, {
-            objectUrl,
-            originalUrl,
-            readyForPlayback,
-          });
-          return objectUrl;
-        } catch {
-          return originalUrl;
-        }
-      })();
-
-      mediaCacheRef.current.set(cacheKey, {
-        promise: task,
-        originalUrl,
-        readyForPlayback,
-      });
-
-      const resolved = await task;
-      const entry = mediaCacheRef.current.get(cacheKey);
-      if (entry?.promise) {
-        delete entry.promise;
-        mediaCacheRef.current.set(cacheKey, {
-          ...entry,
-          objectUrl: resolved,
-          readyForPlayback,
-        });
-      }
-      return resolved;
+      return originalUrl;
     };
 
     const pruneCache = (keepKeys) => {
@@ -1105,23 +1030,44 @@ const Player = () => {
   };
 
   const nextMedia = () => {
-    if (!playlist || playlist.items.length === 0 || isTransitioning) return;
+    console.log('[Player] Entrando em nextMedia');
+    if (!playlist || playlist.items.length === 0 || isTransitioning) {
+      console.warn('[Player] nextMedia abortado: playlist vazia ou transição em andamento');
+      return;
+    }
 
     const nextIndex = (currentIndex + 1) % playlist.items.length;
     const nextItem = playlist.items[nextIndex];
     const effect = playlist.transition_effect || 'fade';
-    
-    setIsTransitioning(true);
 
-    const outgoingLayer = activeLayer; // Salva qual camada está saindo ('A' ou 'B')
+    setIsTransitioning(true);
+    console.log(`[Player] Transição para índice ${nextIndex} usando efeito ${effect}`);
+
+    const outgoingLayer = activeLayer; // salva camada que sai
 
     if (activeLayer === 'A') {
-      // Torna B visível e inicia a transição, mas MANTÉM A visível (para continuar reproduzindo o vídeo/imagem no fade)
+      if (videoRefB.current) {
+        try {
+          videoRefB.current.defaultMuted = true;
+          videoRefB.current.muted = true;
+        } catch (e) {}
+        videoRefB.current.play().catch(err => {
+          console.warn('[Player] Falha ao iniciar play no B:', err.message);
+        });
+      }
       setLayerB({ item: nextItem, visible: true, effect: `${effect}-in` });
       setLayerA(prev => ({ ...prev, effect: `${effect}-out` }));
       setActiveLayer('B');
     } else {
-      // Torna A visível e inicia a transição, mas MANTÉM B visível
+      if (videoRefA.current) {
+        try {
+          videoRefA.current.defaultMuted = true;
+          videoRefA.current.muted = true;
+        } catch (e) {}
+        videoRefA.current.play().catch(err => {
+          console.warn('[Player] Falha ao iniciar play no A:', err.message);
+        });
+      }
       setLayerA({ item: nextItem, visible: true, effect: `${effect}-in` });
       setLayerB(prev => ({ ...prev, effect: `${effect}-out` }));
       setActiveLayer('A');
@@ -1130,24 +1076,22 @@ const Player = () => {
     setCurrentIndex(nextIndex);
     if (nextIndex === currentIndex) setMediaNonce(n => n + 1);
 
-    // Tempo da transição CSS (respeita a configuração da playlist ou padrão 0.8s)
     const transitionDur = parseFloat(playlist.transition_duration) || 0.8;
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
-    
+
     transitionTimerRef.current = setTimeout(() => {
+      console.log('[Player] Transição CSS concluída');
       setIsTransitioning(false);
-      
-      // Apenas apaga/pausa a camada que saiu DEPOIS que a transição visual completou totalmente!
       if (outgoingLayer === 'A') {
         setLayerA(prev => ({ ...prev, visible: false, effect: 'none' }));
       } else {
         setLayerB(prev => ({ ...prev, visible: false, effect: 'none' }));
       }
-    }, (transitionDur * 1000) + 50); 
+    }, (transitionDur * 1000) + 50);
   };
 
   const handleVideoEnd = (layer) => {
-    // Só avança se o vídeo que terminou for o da camada ativa
+    console.log('[Player] handleVideoEnd disparado na camada', layer);
     if (layer === activeLayer) {
       if (timerRef.current) {
         clearTimeout(timerRef.current);

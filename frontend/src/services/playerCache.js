@@ -60,7 +60,7 @@ function clonarPlaylist(playlist) {
 function extrairMediasDaPlaylist(playlist) {
   const mediasDoManifesto = Array.isArray(playlist?.manifest?.medias) ? playlist.manifest.medias : [];
   if (mediasDoManifesto.length > 0) {
-    return mediasDoManifesto.filter((media) => media?.url && media?.type !== 'widget');
+    return mediasDoManifesto.filter((media) => media?.url && media?.type !== 'widget' && media?.type !== 'video');
   }
 
   return (playlist?.items || [])
@@ -72,7 +72,7 @@ function extrairMediasDaPlaylist(playlist) {
       size_bytes: item.size_bytes || 0,
       updated_at: item.media_updated_at || item.updated_at || null,
     }))
-    .filter((media) => media?.url && media?.type !== 'widget');
+    .filter((media) => media?.url && media?.type !== 'widget' && media?.type !== 'video');
 }
 
 async function baixarMidia(cache, media) {
@@ -129,8 +129,10 @@ async function aplicarUrlsLocais(playlist, indice) {
 
   copia.items = await Promise.all((copia.items || []).map(async (item) => {
     const mediaId = item.media_id || item.id;
+    const itemType = item.type || item.media_type || '';
+    if (itemType === 'widget' || itemType === 'video') return item;
+
     const registro = indice[mediaId];
-    if ((item.type || item.media_type) === 'widget') return item;
     if (!registro?.url) return aplicarUrlLocalEmItem(cache, item);
 
     const itemComRegistro = {
